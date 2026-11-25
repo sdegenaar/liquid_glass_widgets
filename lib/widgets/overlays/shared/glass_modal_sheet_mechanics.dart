@@ -9,6 +9,10 @@ part of '../glass_modal_sheet.dart';
 /// same line so the two can never disagree about who owns a drag.
 const double _kTopDetentThreshold = 0.95;
 
+/// Height of the touch zone along the sheet's top edge that drags the sheet
+/// and holds its drag handle.
+const double _kHandleZoneHeight = 44.0;
+
 /// The discrete snap positions a [GlassModalSheet] can occupy.
 enum GlassSheetState {
   /// Sheet is fully offscreen — invisible and not interactable.
@@ -33,10 +37,13 @@ enum GlassSheetState {
 ///     Sign in with Apple). Maps to [GlassSheetState.half] internally.
 ///   • [large]  — the screen-height, opaque stop (Maps / Music). Maps to
 ///     [GlassSheetState.full].
+///   • [fitted] — a stop at the height of the sheet's content. Maps to
+///     [GlassSheetState.half].
 ///
 /// A sheet declares any non-empty subset: `{medium}` is half-only glass,
 /// `{large}` is full-only opaque, `{medium, large}` is the default two-stop
-/// sheet, and adding [small] puts a peek floor underneath.
+/// sheet, and adding [small] puts a peek floor underneath. [fitted] must be
+/// the only detent, in [GlassSheetMode.dismissible].
 ///
 /// [small] is the maps-style resting floor — the state a persistent sheet
 /// returns to instead of dismissing. Its styling lives in the top-level
@@ -55,7 +62,16 @@ enum GlassSheetDetent {
 
   /// The full-screen detent — covers the screen and uses a solid fill, maps to [GlassSheetState.full].
   large,
+
+  /// The content-height detent — a sheet as tall as its content, maps to [GlassSheetState.half].
+  ///
+  /// The sheet is never taller than [GlassModalSheet.fullSize]. Must be the
+  /// only detent, in [GlassSheetMode.dismissible].
+  fitted,
 }
+
+const _fittedDetentMessage = 'GlassSheetDetent.fitted must be the only '
+    'detent, in GlassSheetMode.dismissible.';
 
 /// Controls whether the sheet can be swiped to dismiss or must stay docked.
 enum GlassSheetMode {
@@ -280,6 +296,17 @@ class SheetGeometry {
   /// Whether the sheet can be dragged below its lowest detent to dismiss.
   final bool dismissible;
 
+  /// Whether the sheet's one stop fits [contentHeight]. See
+  /// [GlassSheetDetent.fitted].
+  final bool fitsContent;
+
+  /// The height in logical pixels that the sheet's one stop fits
+  /// when [fitsContent] is true, or null while it is not yet known.
+  ///
+  /// The detent never rises above [fittedLimitPosition]; it rests there while
+  /// this is null.
+  final double? contentHeight;
+
   /// Creates a sheet geometry configuration.
   const SheetGeometry({
     required this.mode,
@@ -290,6 +317,8 @@ class SheetGeometry {
     this.enableHalf = true,
     this.enableFull = true,
     this.dismissible = true,
+    this.fitsContent = false,
+    this.contentHeight,
   });
 
   /// Resolve whether the peek floor is active, from the public API's detents
@@ -305,6 +334,60 @@ class SheetGeometry {
   }) =>
       detents.contains(GlassSheetDetent.small) ||
       mode == GlassSheetMode.persistent;
+
+  /// Resolve whether the half stop is active, from the public API's detents.
+  ///
+  /// Both [GlassSheetDetent.medium] and [GlassSheetDetent.fitted] rest at
+  /// [GlassSheetState.half].
+  static bool resolveHalf({required Set<GlassSheetDetent> detents}) =>
+      detents.contains(GlassSheetDetent.medium) ||
+      detents.contains(GlassSheetDetent.fitted);
+
+  /// Resolve whether the full stop is active, from the public API's detents.
+  static bool resolveFull({required Set<GlassSheetDetent> detents}) =>
+      detents.contains(GlassSheetDetent.large);
+
+  /// Resolve whether the sheet fits its content, from the public API's
+  /// detents and mode.
+  ///
+  /// True only when [GlassSheetDetent.fitted] is the only detent and [mode]
+  /// is [GlassSheetMode.dismissible]. Any other set that holds
+  /// [GlassSheetDetent.fitted] is a mistake that the widget asserts against
+  /// in debug. In release, [resolveHalf] treats that detent as
+  /// [GlassSheetDetent.medium].
+  static bool resolveFitsContent({
+    required Set<GlassSheetDetent> detents,
+    required GlassSheetMode mode,
+  }) =>
+      mode == GlassSheetMode.dismissible &&
+      detents.length == 1 &&
+      detents.contains(GlassSheetDetent.fitted);
+
+  /// Resolve the state a sheet opens at, from the [requested] initial state
+  /// and the public API's detents and mode.
+  ///
+  /// A sheet that fits its content opens at [GlassSheetState.half] for any
+  /// [requested] state except [GlassSheetState.hidden]. Otherwise a
+  /// [requested] stop that [detents] does not offer falls back to the other
+  /// one; without this the sheet would have no matching rest position.
+  static GlassSheetState resolveInitialState(
+    GlassSheetState requested, {
+    required Set<GlassSheetDetent> detents,
+    required GlassSheetMode mode,
+  }) {
+    if (resolveFitsContent(detents: detents, mode: mode)) {
+      return requested == GlassSheetState.hidden
+          ? GlassSheetState.hidden
+          : GlassSheetState.half;
+    }
+    if (requested == GlassSheetState.half && !resolveHalf(detents: detents)) {
+      return GlassSheetState.full;
+    }
+    if (requested == GlassSheetState.full && !resolveFull(detents: detents)) {
+      return GlassSheetState.half;
+    }
+    return requested;
+  }
 
   /// The rest states this sheet can occupy, ordered low → high. This is the
   /// single source of truth for the state machine — snapping, min/max bounds,
@@ -367,6 +450,16 @@ class SheetGeometry {
   /// Like [positionFor] but applies cascade constraints so snap positions are
   /// always ordered: `hidden ≤ peek ≤ half ≤ full`.
   double positionForState(GlassSheetState state, double screenHeight) {
+    if (fitsContent) {
+      if (state == GlassSheetState.hidden || state == GlassSheetState.peek) {
+        return 0;
+      }
+      final limit = fittedLimitPosition(screenHeight);
+      final height = contentHeight;
+      return height == null || screenHeight <= 0
+          ? limit
+          : (height / screenHeight).clamp(0.0, limit);
+    }
     final hiddenPos = positionFor(GlassSheetState.hidden, screenHeight,
         mode: mode, halfSize: halfSize, fullSize: fullSize, peekSize: peekSize);
     final peekPos = positionFor(GlassSheetState.peek, screenHeight,
@@ -392,6 +485,13 @@ class SheetGeometry {
         return safeFull;
     }
   }
+
+  /// Upper bound for a content-fitted sheet: the position of the full stop,
+  /// from [fullSize], although that stop is not active.
+  double fittedLimitPosition(double screenHeight) => screenHeight <= 0
+      ? 0
+      : positionFor(GlassSheetState.full, screenHeight, fullSize: fullSize)
+          .clamp(0.0, 1.0);
 
   /// The lowest detent in the active configuration.
   GlassSheetState get minState => orderedStates.first;
@@ -572,10 +672,35 @@ class GlassModalSheetController {
   /// "not mounted yet" from a sheet genuinely sitting at 0.0.
   double? get _livePosition => _state?._animationController.value;
 
+  SheetGeometry? get _fittedGeometry {
+    final geometry = _state?._geometry;
+    return geometry != null && geometry.fitsContent ? geometry : null;
+  }
+
+  /// Whether a fitted sheet rests or follows its content, as opposed to
+  /// sliding a held frame under a finger or a spring.
+  bool get _fittedFollowsContent {
+    final state = _state;
+    return state != null &&
+        state._geometry.fitsContent &&
+        state._fitted.heldGeometry == null;
+  }
+
+  Rect _fittedFrame(Rect resting, double screenHeight) => Rect.fromLTWH(
+        resting.left,
+        screenHeight * (1 - value),
+        resting.width,
+        _state!._currentEffectiveHeight,
+      );
+
   /// Freezes the sheet at its current position when the closing morph takes
   /// over, so a dismissal does not keep sliding the sheet toward the floor
   /// while the morph portal shrinks it back into the trigger.
-  void _freezeForMorphClose() => _state?._animationController.stop();
+  void _freezeForMorphClose() => _state?._freezeForMorphClose();
+
+  /// Lets a fitted sheet follow its content once the opening morph has
+  /// handed off to it.
+  void _endMorphOpen() => _state?._endMorphOpen();
 }
 
 // ===========================================================================

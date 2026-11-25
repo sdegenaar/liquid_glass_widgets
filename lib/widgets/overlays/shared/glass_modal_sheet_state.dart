@@ -58,7 +58,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   ScrollMetrics? _contentMetrics;
 
   // ── Geometry & Metrics ────────────────────────────────────────────────────
-  late SheetGeometry _geometry;
+  late SheetGeometry _measuredGeometry;
+  SheetGeometry get _geometry => _fitted.heldGeometry ?? _measuredGeometry;
 
   /// The vertical bar strip the sheet is presented over, or null where bars
   /// are horizontal. See [GlassVerticalBar].
@@ -85,24 +86,37 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   /// touch's hit-test transform in [_onPointerDown].
   double _layoutPerPointer = 1.0;
 
+  // ── Fit to Content ────────────────────────────────────────────────────────
+
+  /// What the sheet tracks while it fits its content
+  /// ([GlassSheetDetent.fitted]).
+  final _fitted = _FittedSheet();
+
   @override
   void initState() {
     super.initState();
+    // A sheet that fails this check is never disposed. Check before the
+    // observer is registered, so that the sheet leaves nothing behind.
+    assert(_debugCheckFittedDetent());
     WidgetsBinding.instance.addObserver(this);
 
     // Mirror the coercion show() applies: if the caller passed an initialState
     // that isn't in the offered detents, snap to the nearest one that is.
     // Without this an embedded GlassModalSheet whose initialState doesn't match
     // its detents would wedge (no orderedStates entry → no rest position).
-    final resolvedInitial = _resolveInitialState(
+    final resolvedInitial = SheetGeometry.resolveInitialState(
       widget.initialState,
-      widget.detents,
+      detents: widget.detents,
+      mode: widget.mode,
     );
 
     _currentStateNotifier = ValueNotifier(resolvedInitial);
     _lastVisibleState = resolvedInitial;
     _settledState = resolvedInitial;
-    _geometry = _buildGeometry();
+    _measuredGeometry = _buildGeometry();
+    _fitted.morphOpening = _measuredGeometry.fitsContent &&
+        (context.getInheritedWidgetOfExactType<_SheetMorphScope>()?.inMorph ??
+            false);
 
     _animationController = AnimationController.unbounded(vsync: this);
     _animationController.addListener(_onPositionTick);
@@ -134,9 +148,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     final stripFullSize = GlassModalSheet._stripFullSize(context);
     if (stripFullSize != _stripFullSize) {
       _stripFullSize = stripFullSize;
-      _geometry = _buildGeometry();
+      _measuredGeometry = _buildGeometry();
+      if (_measuredGeometry.fitsContent) _scheduleFitSettle();
     }
-    if (prevLayoutSize != Size.zero && prevLayoutSize != _layoutSize) {
+    if (_geometry.fitsContent) {
+      // A fitted detent is a height in pixels, so its position moves with the
+      // layout size. It re-settles once the content is measured at that size.
+      if (prevLayoutSize != _layoutSize) _scheduleFitSettle();
+    } else if (prevLayoutSize != Size.zero && prevLayoutSize != _layoutSize) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted &&
             _gestureArena.phase == GesturePhase.idle &&
@@ -163,12 +182,23 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       _contentMetrics = null;
     }
 
-    final oldGeometry = _geometry;
-    _geometry = _buildGeometry();
+    final oldGeometry = _measuredGeometry;
+    _measuredGeometry = _buildGeometry();
+    if (!_measuredGeometry.fitsContent) {
+      _fitted.heldGeometry = null;
+      _fitted.pointer = null;
+    }
 
     // Hot Reload reaction: if dimensions changed, force position recalculation
     if (oldGeometry.halfSize != _geometry.halfSize ||
-        oldGeometry.fullSize != _geometry.fullSize) {
+        oldGeometry.fullSize != _geometry.fullSize ||
+        oldGeometry.fitsContent != _geometry.fitsContent ||
+        (_geometry.fitsContent &&
+            oldGeometry.contentHeight != _geometry.contentHeight)) {
+      if (_geometry.fitsContent) {
+        _scheduleFitSettle();
+        return;
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _gestureArena.phase == GesturePhase.idle) {
           _snapToState(_currentState, animate: true);
@@ -203,15 +233,16 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       // A window that had no size is being sized for the first time (an app
       // launched in the background, coming to the foreground), not resized:
       // there is nothing to re-settle, and the layout size arrives with the
-      // MediaQuery's next build.
-      if (_lastPhysicalSize != Size.zero) {
+      // MediaQuery's next build. A fitted sheet waits for that build too: its
+      // detent is a height in pixels, measured against the new layout size.
+      if (_lastPhysicalSize != Size.zero && !_geometry.fitsContent) {
         _snapToState(_currentState, animate: true);
       }
       _lastPhysicalSize = view.physicalSize;
     }
   }
 
-  SheetGeometry _buildGeometry() => SheetGeometry(
+  SheetGeometry _buildGeometry({double? fittedHeight}) => SheetGeometry(
         mode: widget.mode,
         halfSize: widget.halfSize,
         fullSize: widget.fullSize ?? _stripFullSize,
@@ -220,30 +251,105 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           detents: widget.detents,
           mode: widget.mode,
         ),
-        enableHalf: widget.detents.contains(GlassSheetDetent.medium),
-        enableFull: widget.detents.contains(GlassSheetDetent.large),
+        enableHalf: SheetGeometry.resolveHalf(detents: widget.detents),
+        enableFull: SheetGeometry.resolveFull(detents: widget.detents),
         dismissible: widget.dismissible,
+        fitsContent: _fitsContent,
+        contentHeight: fittedHeight ?? _fittedContentHeight,
       );
 
-  /// Coerce [requested] to the nearest detent the sheet actually offers.
+  /// Whether the sheet fits its content. Any other set that holds
+  /// [GlassSheetDetent.fitted] asserts, and sizes as if that detent were
+  /// [GlassSheetDetent.medium] in release.
+  bool get _fitsContent {
+    assert(_debugCheckFittedDetent());
+    return SheetGeometry.resolveFitsContent(
+      detents: widget.detents,
+      mode: widget.mode,
+    );
+  }
+
+  bool _debugCheckFittedDetent() {
+    assert(
+        !widget.detents.contains(GlassSheetDetent.fitted) ||
+            SheetGeometry.resolveFitsContent(
+              detents: widget.detents,
+              mode: widget.mode,
+            ),
+        _fittedDetentMessage);
+    return true;
+  }
+
+  /// The height of the fitted detent: the content's, but never less
+  /// than the drag handle's touch zone while the handle shows, so a sheet
+  /// with empty content can still be swiped away. The bottom margin below
+  /// the sheet counts too.
+  double? get _fittedContentHeight {
+    final measured = _fitted.measuredContentHeight;
+    if (measured == null) return null;
+    final content = widget.showDragIndicator
+        ? math.max(measured, _kHandleZoneHeight)
+        : measured;
+    return content + widget.bottomMargin;
+  }
+
+  /// Records the content's natural height from its layout.
   ///
-  /// Mirrors the fallback [GlassModalSheet.show] performs before pushing the
-  /// route, so that embedded [GlassModalSheet] widgets are consistent: without
-  /// this an `initialState` that isn't in [detents] leaves the sheet with no
-  /// matching rest position and it renders stuck.
-  static GlassSheetState _resolveInitialState(
-    GlassSheetState requested,
-    Set<GlassSheetDetent> detents,
-  ) {
-    if (requested == GlassSheetState.half &&
-        !detents.contains(GlassSheetDetent.medium)) {
-      return GlassSheetState.full;
+  /// Runs during layout, so it only updates the geometry. The first
+  /// measurement lands before the initial snap in [initState]'s post-frame
+  /// callback, which opens the sheet straight at the fitted height; later
+  /// ones move the sheet after the frame.
+  void _onContentMeasured(double height) {
+    final previous = _fitted.measuredContentHeight;
+    if (previous != null && (previous - height).abs() < 0.01) return;
+    // The opening morph aims its droplet at the frame the sheet opened with.
+    // The sheet keeps that frame until the morph hands off to it.
+    if (previous != null && _fitted.morphOpening) {
+      _fitted.heldGeometry ??= _measuredGeometry;
     }
-    if (requested == GlassSheetState.full &&
-        !detents.contains(GlassSheetDetent.large)) {
-      return GlassSheetState.half;
+    _fitted.measuredContentHeight = height;
+    _measuredGeometry = _buildGeometry();
+    if (previous != null) _scheduleFitSettle();
+  }
+
+  void _scheduleFitSettle() => _fitted.scheduleSettle(_settleOnFittedDetent);
+
+  /// Moves the sheet to where the state it rests at, or is heading for, now
+  /// sits, without changing that state.
+  ///
+  /// Deliberately not [SheetGeometry.resolveTarget]: a sheet whose content
+  /// grew past the snap threshold would resolve to hidden from its old
+  /// height. A hidden sheet stays hidden, and a sliding sheet keeps its
+  /// frame until the slide ends.
+  void _settleOnFittedDetent() {
+    if (!mounted || !_geometry.fitsContent) return;
+    if (_fitted.heldGeometry != null) {
+      // A slide owns the frame while a finger, a spring or the closing morph
+      // moves it. A held frame that nothing moves any more is let go here,
+      // so the sheet can never stop following its content.
+      if (_fitted.heldByTouchOrMorph || _animationController.isAnimating) {
+        return;
+      }
+      _fitted.heldGeometry = null;
     }
-    return requested;
+    if (_currentState == GlassSheetState.hidden) return;
+    final layoutHeight = _layoutSize.height;
+    if (layoutHeight <= 0) return;
+    final state = _geometry.maxState;
+    final target = _geometry.positionForState(state, layoutHeight);
+    final animating = _animationController.isAnimating;
+    if (_currentState == state &&
+        !animating &&
+        (_animationController.value - target).abs() < 1e-6) {
+      return;
+    }
+    _snapToState(
+      state,
+      // Carry the spring's momentum when it is already moving, so a detent
+      // that moves every frame (content following the keyboard) is chased
+      // smoothly rather than restarted from rest each frame.
+      velocity: animating ? _animationController.velocity * layoutHeight : 0,
+    );
   }
 
   // ════════════════════════════════════════════════════════════════════════
@@ -252,11 +358,32 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
   void _snapToState(GlassSheetState state,
       {bool animate = true, double velocity = 0}) {
-    if (!mounted) return;
+    if (!mounted || _fitted.morphClosing) return;
 
     if (widget.mode == GlassSheetMode.persistent &&
         state == GlassSheetState.hidden) {
       state = GlassSheetState.peek;
+    }
+
+    if (_geometry.fitsContent) {
+      // A fitted sheet rests at one stop, whichever visible state is asked.
+      if (state != GlassSheetState.hidden) state = _geometry.maxState;
+      // A slide in or out keeps one frame for the whole trip: the visible one
+      // on the way out, the measured one on the way in.
+      // An instant snap ends a slide without completing its spring, so
+      // nothing else would let go of the frame it held.
+      if (!animate && !_fitted.heldByTouchOrMorph) {
+        _fitted.heldGeometry = null;
+      }
+      if (animate && _fitted.heldGeometry == null) {
+        if (state == GlassSheetState.hidden) {
+          if (_currentState != GlassSheetState.hidden) {
+            _fitted.heldGeometry = _visibleFrameGeometry();
+          }
+        } else if (_currentState == GlassSheetState.hidden) {
+          _fitted.heldGeometry = _measuredGeometry;
+        }
+      }
     }
 
     final layoutHeight = _layoutSize.height;
@@ -269,7 +396,10 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         targetPosition,
         layoutHeight > 0 ? velocity / layoutHeight : 0.0,
       );
-      _animationController.animateWith(simulation);
+      final slide = _animationController.animateWith(simulation);
+      // Completes only if the spring runs to its end, not when a touch or
+      // another spring replaces it.
+      if (_fitted.heldGeometry != null) slide.then((_) => _finishFittedSlide());
     } else {
       _animationController.value = targetPosition;
     }
@@ -320,6 +450,13 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
   void _jumpTo(double value) {
     if (!mounted) return;
+    // A jump moves a fitted sheet's whole frame, as a drag does, rather than
+    // cropping it. From hidden, that is the measured frame, as on a slide in.
+    if (_geometry.fitsContent) {
+      _fitted.heldGeometry ??= _currentState == GlassSheetState.hidden
+          ? _measuredGeometry
+          : _visibleFrameGeometry();
+    }
     _animationController.value = value;
     _currentPosition = value;
 
@@ -375,15 +512,31 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // ════════════════════════════════════════════════════════════════════════
 
   void _onPointerDown(PointerDownEvent event) {
+    // A fitted sheet ignores touches while it slides out. One that a jump
+    // left partly on screen can still be dragged back.
+    if (_fitted.heldByTouchOrMorph ||
+        (_geometry.fitsContent &&
+            _currentState == GlassSheetState.hidden &&
+            _animationController.isAnimating)) {
+      return;
+    }
     _layoutPerPointer = _layoutPixelsPerPointerPixel(event);
 
     // ALWAYS initialize the gesture arena so swipes can start from anywhere,
     // even from buttons or interactive children.
     _gestureArena.beginPointer(
         event.position.dy, event.position.dx, _currentPosition, event.kind);
+    if (_geometry.fitsContent) {
+      _fitted.pointer = event.pointer;
+      // A resize can be halfway to the measured height. The visible sheet
+      // is the detent the finger grabbed and the origin of its drag. A sheet
+      // grabbed during a slide keeps the frame it is sliding.
+      _fitted.heldGeometry ??= _visibleFrameGeometry();
+      _animationController.stop();
+    }
 
     // If the touch is in the handle zone (top 44 pixels), immediately set phase.
-    if (event.localPosition.dy <= 44.0) {
+    if (event.localPosition.dy <= _kHandleZoneHeight) {
       _gestureArena.phase = GesturePhase.handleDrag;
     }
 
@@ -459,6 +612,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   }
 
   void _onPointerMove(PointerMoveEvent event) {
+    if (_geometry.fitsContent && event.pointer != _fitted.pointer) return;
     if (_isInteractingWithChild) {
       return;
     }
@@ -518,6 +672,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   }
 
   void _onPointerUp(PointerUpEvent event) {
+    if (_geometry.fitsContent && event.pointer != _fitted.pointer) return;
     _isInteractingWithChild = false;
     _suppressScalingForSession = false;
     _saturationController.reverse();
@@ -527,7 +682,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     _gestureArena.reset();
     _frozenState = null;
 
-    if (!wasDragging) return;
+    if (!wasDragging) {
+      _fitted.pointer = null;
+      _finishFittedSlide();
+      return;
+    }
 
     final estimate = _gestureArena.velocityTracker.getVelocityEstimate();
     final velocity = -(estimate?.pixelsPerSecond.dy ?? 0.0);
@@ -545,16 +704,65 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
 
     // The flick is judged by the finger's speed; the spring carries on at
-    // the sheet's, in its own layout pixels.
+    // the sheet's, in its own layout pixels. A fitted sheet slides the frame
+    // the finger held, back to its detent or away.
+    _fitted.pointer = null;
     _snapToState(target, velocity: velocity * _layoutPerPointer);
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
+    if (_geometry.fitsContent && event.pointer != _fitted.pointer) return;
+    _fitted.pointer = null;
     _isInteractingWithChild = false;
     _suppressScalingForSession = false;
     _saturationController.reverse();
     _gestureArena.reset();
     _frozenState = null;
+    _finishFittedSlide();
+  }
+
+  /// The geometry of the frame the sheet shows now, as a detent of its own.
+  SheetGeometry _visibleFrameGeometry() =>
+      _buildGeometry(fittedHeight: _currentPosition * _layoutSize.height);
+
+  /// Ends a fitted sheet's slide once nothing moves the held frame and it
+  /// rests on that frame's stop, then takes the latest measurement. A slide
+  /// that a touch stopped short carries on instead.
+  void _finishFittedSlide() {
+    if (!mounted ||
+        _fitted.heldGeometry == null ||
+        _fitted.heldByTouchOrMorph ||
+        _animationController.isAnimating) {
+      return;
+    }
+    final target =
+        _geometry.positionForState(_currentState, _layoutSize.height);
+    if ((_animationController.value - target).abs() > 0.002) {
+      _snapToState(_currentState);
+      return;
+    }
+    // A spring ends within its tolerance of the stop. The morph presenter
+    // reads anything short of the stop as a swipe, so land on it exactly
+    // while the frame is still held.
+    if (_animationController.value != target) {
+      _animationController.value = target;
+    }
+    _fitted.heldGeometry = null;
+    _settleOnFittedDetent();
+  }
+
+  void _endMorphOpen() {
+    if (!_fitted.morphOpening) return;
+    _fitted.morphOpening = false;
+    _scheduleFitSettle();
+  }
+
+  void _freezeForMorphClose() {
+    _animationController.stop();
+    if (_geometry.fitsContent) {
+      _fitted.morphClosing = true;
+      _fitted.heldGeometry ??= _visibleFrameGeometry();
+    }
   }
 
   // ════════════════════════════════════════════════════════════════════════
@@ -627,7 +835,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     final maxPos = _geometry.positionForState(states.last, _layoutSize.height);
     final prevPos = _geometry.positionForState(
         states[states.length - 2], _layoutSize.height);
-    if (maxPos <= prevPos) return 0.0;
+    if (maxPos <= prevPos) {
+      return _geometry.fitsContent && _currentState == states.last ? 1.0 : 0.0;
+    }
     return ((_currentPosition - prevPos) / (maxPos - prevPos)).clamp(0.0, 1.0);
   }
 
@@ -650,17 +860,25 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // Without a peek detent, dismissal translates the lowest enabled frame.
     // Do not interpolate through disabled half/peek geometry on the way out:
     // peekWidth and peek margins may describe a completely different surface.
+    final resizing = _geometry.fitsContent &&
+        _fitted.heldGeometry == null &&
+        _currentState != GlassSheetState.hidden;
+    final livePosition = pos;
     double dismissOffset = 0.0;
     if (widget.mode == GlassSheetMode.dismissible && !_geometry.enablePeek) {
       final pivotPos = _geometry.positionForState(
           SheetMorphGeometry.dismissPivotState(_geometry), mqHeight);
       if (pos < pivotPos) {
-        dismissOffset = (pivotPos - pos) * mqHeight;
+        if (!resizing) dismissOffset = (pivotPos - pos) * mqHeight;
         pos = pivotPos;
         final expansionRange = fullPos - halfPos;
-        t = expansionRange > 0.0001
-            ? ((pos - halfPos) / expansionRange).clamp(0.0, 1.0)
-            : 1.0;
+        // A fitted sheet's half and full positions are the same, and an empty
+        // range would give it the full look. It keeps the half state's look.
+        if (!_geometry.fitsContent) {
+          t = expansionRange > 0.0001
+              ? ((pos - halfPos) / expansionRange).clamp(0.0, 1.0)
+              : 1.0;
+        }
       }
     }
 
@@ -690,7 +908,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     late double glassOpacity;
 
     // Ideal target visual height of the window
-    final targetVisualHeight = pos * mqHeight;
+    final targetVisualHeight = (resizing ? livePosition : pos) * mqHeight;
 
     // baseSettings is now passed from outside to avoid theme lookups every frame.
 
@@ -725,8 +943,12 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       glassOpacity = 1.0 - colorOpacity;
     } else {
       final range = fullPos - halfPos;
-      final tProgress =
-          range > 0.0001 ? ((pos - halfPos) / range).clamp(0.0, 1.0) : 1.0;
+      // A fitted sheet has no half-to-full range; it keeps the half look.
+      final tProgress = _geometry.fitsContent
+          ? t
+          : range > 0.0001
+              ? ((pos - halfPos) / range).clamp(0.0, 1.0)
+              : 1.0;
 
       effectiveSettings = LiquidGlassSettings.lerp(sHalf, sFull, tProgress);
       currentExpandedColor = Color.lerp(cHalf, cFull, tProgress)!;
@@ -930,7 +1152,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
     return _RenderMetrics(
       stretchT: stretchT,
-      effectiveHeight: effectiveHeight,
+      // A fitted sheet's first frame, before its first snap, sits at position
+      // 0, and its bottom margin would make its height negative.
+      effectiveHeight: math.max(0.0, effectiveHeight),
       effectiveBottom: effectiveBottom - dismissOffset,
       topRadius: topRadius,
       bottomRadius: bottomRadius,
@@ -1043,25 +1267,26 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         child: contentChild,
       );
     }
-    final content = GlassVerticalBar(
-      data: _sheetVerticalBar(
-        bar: verticalBar,
-        frame: Rect.fromLTRB(
-          restingInsets.left,
-          (1.0 - _geometry.positionForState(_currentState, mqHeight)) *
-              mqHeight,
-          mqSize.width - restingInsets.right,
-          mqHeight,
-        ).shift(side?.rect.topLeft ?? Offset.zero),
-        screenSize: side?.screenSize ?? mqSize,
-        textDirection: textDirection,
-      ),
-      child: contentChild,
-    );
+    GlassVerticalBarData? stripAt(double restingPosition) => _sheetVerticalBar(
+          bar: verticalBar,
+          frame: Rect.fromLTRB(
+            restingInsets.left,
+            (1.0 - restingPosition) * mqHeight,
+            mqSize.width - restingInsets.right,
+            mqHeight,
+          ).shift(side?.rect.topLeft ?? Offset.zero),
+          screenSize: side?.screenSize ?? mqSize,
+          textDirection: textDirection,
+        );
+    // A fitted sheet's resting top moves with its content, which does not
+    // rebuild this method, so the builder works its strip out each frame.
+    final restingStrip = _geometry.fitsContent
+        ? null
+        : stripAt(_geometry.positionForState(_currentState, mqHeight));
 
     return AnimatedBuilder(
       animation: _sheetAnimation,
-      child: content,
+      child: contentChild,
       builder: (context, cachedContent) {
         final fullPos =
             _geometry.positionForState(GlassSheetState.full, mqHeight);
@@ -1072,7 +1297,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         double pos = _animationController.value;
 
         // Snap to exact positions when not dragging
-        if (_gestureArena.phase == GesturePhase.idle) {
+        if (_geometry.fitsContent) {
+          // Very short content can put the fitted stop and hidden within the
+          // same rounding tolerance. Only round toward the intended detent.
+          final target =
+              _currentState == GlassSheetState.hidden ? 0.0 : fullPos;
+          if (_fitted.heldGeometry == null && (pos - target).abs() < 0.002) {
+            pos = target;
+          }
+        } else if (_gestureArena.phase == GesturePhase.idle) {
           if ((pos - halfPos).abs() < 0.002) pos = halfPos;
           if ((pos - fullPos).abs() < 0.002) pos = fullPos;
           if ((pos - minPos).abs() < 0.002) pos = minPos;
@@ -1172,8 +1405,21 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           topFadeHeight: widget.topFadeHeight,
           onDismiss: () => _snapToState(GlassSheetState.hidden),
           suppressInteractionOnChildren: widget.suppressInteractionOnChildren,
+          contentFit: _geometry.fitsContent
+              ? _SheetContentFit(
+                  maxHeight:
+                      _geometry.fittedLimitPosition(mqHeight) * mqHeight -
+                          widget.bottomMargin,
+                  onMeasured: _onContentMeasured,
+                )
+              : null,
           contentZoneKey: _contentZoneKey,
-          child: cachedContent!,
+          // Rebuilt every frame, but it notifies the strip's controls only
+          // when the data changes.
+          child: GlassVerticalBar(
+            data: _geometry.fitsContent ? stripAt(fullPos) : restingStrip,
+            child: cachedContent!,
+          ),
         );
 
         // ScrollMetricsNotification covers content that has not been dragged
@@ -1218,4 +1464,56 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 /// controller is used as an animation listener target from outside the class.
 class _ProgressNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
+}
+
+/// What a [GlassSheetDetent.fitted] sheet tracks besides its geometry: the
+/// content's measured height, the frame the sheet holds while it slides, and
+/// what holds that frame.
+///
+/// Owned by [_GlassModalSheetState], which builds the geometry from these
+/// values and moves the sheet.
+class _FittedSheet {
+  /// The content's natural height from its latest layout; null until it is
+  /// laid out.
+  double? measuredContentHeight;
+
+  /// The frame a fitted sheet keeps while it slides: under a finger, on the
+  /// spring back to its detent, on the way in from hidden and on the way out,
+  /// after a jump to a position, and while the opening morph draws it.
+  /// The child is still measured meanwhile, and the sheet takes the latest
+  /// measurement when the slide ends. Null while the sheet rests or resizes.
+  SheetGeometry? heldGeometry;
+
+  /// The pointer whose finger holds the sheet, or null when no finger does.
+  /// The sheet ignores every other pointer meanwhile.
+  int? pointer;
+
+  /// Whether the closing morph has taken over the sheet. The sheet then
+  /// keeps its held frame and no longer snaps.
+  bool morphClosing = false;
+
+  /// Whether the opening morph still draws the sheet. A frame held meanwhile
+  /// stays until the morph hands off to the sheet.
+  bool morphOpening = false;
+
+  /// Whether the next frame will retarget the fitted detent.
+  bool _settleScheduled = false;
+
+  /// Whether a finger or a morph holds the sheet's frame.
+  bool get heldByTouchOrMorph =>
+      pointer != null || morphClosing || morphOpening;
+
+  /// Runs [settle] at the start of the next frame, once however often this
+  /// is called before then.
+  void scheduleSettle(VoidCallback settle) {
+    if (_settleScheduled) return;
+    _settleScheduled = true;
+    // Starting the new spring in the animation phase gives its ticker a
+    // start time in this frame. Even if the child changes again next frame,
+    // the spring advances before its next retarget.
+    SchedulerBinding.instance.scheduleFrameCallback((_) {
+      _settleScheduled = false;
+      settle();
+    });
+  }
 }

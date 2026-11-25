@@ -15,7 +15,7 @@ Settings for the primary content and the sheet's basic behavior.
 | `mode` | `SheetMode` | `dismissible` | Logic gate for the state machine. `dismissible` allows `resolveTarget` to include `hidden`. `persistent` clamps `minState` to `peek`. |
 | `controller` | `GlassModalSheetController?` | `null` | A synchronization bridge. Attaches to `_GlassModalSheetState` to provide imperative access to the underlying `AnimationController`. |
 | `onStateChanged` | `ValueChanged?` | `null` | Emits when `_currentState` changes. Fired *after* state update but *before* snap animation completes. |
-| `padding` | `EdgeInsetsGeometry?` | `null` | Applied to the content zone via `Padding` widget, positioned below the 44px handle zone. |
+| `padding` | `EdgeInsetsGeometry?` | `null` | Insets the content and counts toward its fitted height. The drag handle overlays the top 44 logical pixels. |
 | `barrierColor` | `Color` | `black54` | (In `show`) The `barrierColor` of the `GeneralDialog`. Tap logic is handled by a `GestureDetector` in the `Scaffold`. |
 | `isDismissible` | `bool` | `true` | (In `show`) Controls `barrierDismissible`. If `true`, the `Scaffold` background triggers `snapToState(SheetState.hidden)`. |
 | `useRootNavigator` | `bool` | `false` | (In `show`) If true, pushes the modal onto the top-level `Navigator`, bypassing local navigation stacks. |
@@ -26,6 +26,48 @@ Settings for the primary content and the sheet's basic behavior.
 | `sheetAnimationStyle` | `AnimationStyle?` | `null` | (In `show`) Customizes the slide presentation's `duration`, `reverseDuration`, `curve`, and `reverseCurve` (defaults to 500 ms `Curves.easeOutQuart` each way). Ignored while a morph (`morphFrom` / `morphFromRect`) is running, which uses its own spring; still applies when the morph falls back to the slide. |
 
 ---
+
+### Fit a bottom sheet to its content
+
+Pass `detents: const {GlassSheetDetent.fitted}` to `GlassModalSheet.show`, an
+embedded `GlassModalSheet`, or `GlassModalSheetScaffold`. The sheet's height
+follows its content. It is never taller than `fullSize`; `halfSize` has no
+effect. A scrollable body handles longer content. Include any safe-area or
+keyboard padding your content needs.
+
+`GlassSheetDetent.fitted` must be the only detent, in
+`GlassSheetMode.dismissible`. The sheet opens at its fitted height for any
+`initialState` except `hidden`, and reports `GlassSheetState.half`.
+
+```dart
+GlassModalSheet.show<void>(
+  context: context,
+  detents: const {GlassSheetDetent.fitted},
+  builder: (context) {
+    final scroll = ScrollControllerProvider.of(context)!;
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        controller: scroll.controller,
+        physics: scroll.physics,
+        padding: const EdgeInsets.fromLTRB(20, 44, 20, 16),
+        child: const Text('Your changes have been saved.'),
+      ),
+    );
+  },
+);
+```
+
+The drag handle overlays the top of the content and keeps the sheet at least
+44 logical pixels tall while it shows. For a larger minimum height, wrap the
+content in a `ConstrainedBox`:
+
+```dart
+builder: (context) => ConstrainedBox(
+  constraints: const BoxConstraints(minHeight: 240),
+  child: const MySheetBody(),
+),
+```
 
 ## 2. Mastering Content & Interaction (The Pro Way)
 To make your content feel integrated with the "Liquid Glass" system, use these advanced techniques.

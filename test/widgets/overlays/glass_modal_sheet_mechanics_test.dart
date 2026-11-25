@@ -58,6 +58,57 @@ void main() {
 
   // ── SheetGeometry.positionFor ─────────────────────────────────────────────
 
+  test('fitted geometry caps at fullSize, not halfSize', () {
+    SheetGeometry geometry(double? height) => SheetGeometry(
+          mode: GlassSheetMode.dismissible,
+          fitsContent: true,
+          contentHeight: height,
+          enableFull: false,
+          enableHalf: true,
+          enablePeek: false,
+          halfSize: 0.4,
+          fullSize: 650,
+          peekSize: 900,
+        );
+    const stop = GlassSheetState.half;
+    for (final height in [null, 900.0]) {
+      expect(geometry(height).positionForState(stop, 1000), 0.65);
+    }
+    expect(geometry(500).positionForState(stop, 1000), 0.5);
+    expect(geometry(2).positionForState(stop, 1000), 0.002);
+    expect(geometry(20).positionForState(stop, 0), 0);
+    expect(geometry(20).positionForState(GlassSheetState.hidden, 1000), 0);
+  });
+
+  test('only fitted alone, in dismissible mode, fits content', () {
+    expect(
+        SheetGeometry.resolveFitsContent(
+            detents: const {GlassSheetDetent.fitted},
+            mode: GlassSheetMode.dismissible),
+        isTrue);
+    // Any other set that holds fitted asserts in the widget. In release it
+    // keeps a half stop, as if fitted were medium.
+    for (final (detents, mode) in [
+      (
+        {GlassSheetDetent.fitted, GlassSheetDetent.medium},
+        GlassSheetMode.dismissible
+      ),
+      (
+        {GlassSheetDetent.fitted, GlassSheetDetent.large},
+        GlassSheetMode.dismissible
+      ),
+      (
+        {GlassSheetDetent.small, GlassSheetDetent.fitted},
+        GlassSheetMode.dismissible
+      ),
+      ({GlassSheetDetent.fitted}, GlassSheetMode.persistent),
+    ]) {
+      expect(SheetGeometry.resolveFitsContent(detents: detents, mode: mode),
+          isFalse);
+      expect(SheetGeometry.resolveHalf(detents: detents), isTrue);
+    }
+  });
+
   group('SheetGeometry.positionFor static', () {
     test('hidden → 0.0', () {
       expect(SheetGeometry.positionFor(GlassSheetState.hidden, screen.height),

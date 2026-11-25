@@ -345,6 +345,14 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
               onTap: () => _showCustomDimensions(context),
               color: CupertinoColors.activeOrange,
             ),
+            SizedBox(height: 16),
+            _buildScenarioTile(
+              title: 'Content-fitted sheet',
+              description: 'Change the length of a packing list',
+              icon: CupertinoIcons.list_bullet,
+              onTap: () => _showFittedSheet(context),
+              color: CupertinoColors.systemGreen,
+            ),
           ],
 
           // Peek Scenarios
@@ -891,6 +899,70 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         subtitle:
             'Peek is taller (150px), Half is lower (35%), and Full only reaches 80% height.',
       ),
+    );
+  }
+
+  void _showFittedSheet(BuildContext context) {
+    var showAll = false;
+    const items = [
+      'Passport',
+      'Boarding pass',
+      'Wallet',
+      'Phone charger',
+      'Headphones',
+      'Travel adapter',
+      'Water bottle',
+      'Sunglasses',
+      'Jacket',
+      'Notebook',
+      'Umbrella',
+      'Book',
+      'Snacks',
+      'Camera',
+      'Walking shoes',
+    ];
+    GlassModalSheet.show<void>(
+      context: context,
+      quality: widget.currentQuality,
+      detents: const {GlassSheetDetent.fitted},
+      builder: (context) => StatefulBuilder(builder: (context, update) {
+        final scroll = ScrollControllerProvider.of(context)!;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 44, 24, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Packing list',
+                    style:
+                        TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Flexible(
+                  child: SingleChildScrollView(
+                    controller: scroll.controller,
+                    physics: scroll.physics,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final item
+                            in items.take(showAll ? items.length : 2))
+                          Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(item)),
+                      ],
+                    ),
+                  ),
+                ),
+                CupertinoButton(
+                  onPressed: () => update(() => showAll = !showAll),
+                  child: Text(showAll ? 'Show essentials' : 'Show all items'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 
