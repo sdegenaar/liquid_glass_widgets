@@ -14,6 +14,7 @@
 ## Bug Fixes
 
 - **Disabled `GlassButton` Impeller Metal glass preservation:** In `GlassSurfaceStyle.glass` mode, disabled buttons now dim only their interior content (`Opacity(opacity: 0.5)`) inside `AdaptiveGlass` rather than wrapping the glass shader in an ancestor `Opacity` `saveLayer`, preventing disabled glass buttons and toggles from losing their refractive pill surface on Impeller Metal.
+- **`GlassSwitch` under Reduce Motion:** With `GlassAccessibilityData.reduceMotion` (system Reduce Motion, or a `GlassAccessibilityScope` override) the switch no longer plays its 380 ms thumb travel, press bloom, or overshoot settle. Taps, drags, cancelled drags, and external `value` changes all land on the next frame; value reporting, the disabled state, and semantics are unchanged. Previously the flag only suppressed haptics.
 
 ## Deprecations
 
