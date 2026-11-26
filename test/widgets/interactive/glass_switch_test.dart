@@ -1540,4 +1540,121 @@ void main() {
       });
     });
   });
+
+  group('GlassSwitch Reduce Motion', () {
+    // A switch whose parent owns the value, as in a real settings row.
+    Widget host({
+      required bool reduceMotion,
+      bool initialValue = false,
+      ValueChanged<bool>? onChanged,
+    }) {
+      var value = initialValue;
+      return createTestApp(
+        child: MediaQuery(
+          data: MediaQueryData(disableAnimations: reduceMotion),
+          child: Center(
+            child: StatefulBuilder(
+              builder: (context, setState) => GlassSwitch(
+                value: value,
+                onChanged: (next) {
+                  onChanged?.call(next);
+                  setState(() => value = next);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget controlled({required bool value, required bool reduceMotion}) =>
+        createTestApp(
+          child: MediaQuery(
+            data: MediaQueryData(disableAnimations: reduceMotion),
+            child: Center(
+              child: GlassSwitch(value: value, onChanged: (_) {}),
+            ),
+          ),
+        );
+
+    testWidgets('an external value change still animates by default',
+        (tester) async {
+      await tester.pumpWidget(controlled(value: false, reduceMotion: false));
+      await tester.pumpWidget(controlled(value: true, reduceMotion: false));
+
+      expect(tester.hasRunningAnimations, isTrue);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('an external value change lands without animating',
+        (tester) async {
+      await tester.pumpWidget(controlled(value: false, reduceMotion: true));
+      await tester.pumpWidget(controlled(value: true, reduceMotion: true));
+
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('a tap toggles the value without thumb travel or bloom',
+        (tester) async {
+      final changes = <bool>[];
+      await tester.pumpWidget(
+        host(reduceMotion: true, onChanged: changes.add),
+      );
+
+      await tester.tap(find.byType(GlassSwitch));
+      await tester.pump();
+
+      expect(changes, [true]);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('press and hold does not start the press bloom',
+        (tester) async {
+      await tester.pumpWidget(host(reduceMotion: true));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSwitch)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.hasRunningAnimations, isFalse);
+
+      await gesture.up();
+      await tester.pump();
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('a drag reports the new value and settles without animating',
+        (tester) async {
+      final changes = <bool>[];
+      await tester.pumpWidget(
+        host(reduceMotion: true, onChanged: changes.add),
+      );
+
+      await tester.timedDrag(
+        find.byType(GlassSwitch),
+        const Offset(40, 0),
+        const Duration(milliseconds: 300),
+      );
+      await tester.pump();
+
+      expect(changes, [true]);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('a cancelled gesture settles without animating',
+        (tester) async {
+      await tester.pumpWidget(host(reduceMotion: true));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSwitch)),
+      );
+      await gesture.moveBy(const Offset(30, 0));
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump();
+
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+  });
 }
