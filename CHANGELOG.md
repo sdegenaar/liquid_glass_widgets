@@ -17,6 +17,7 @@
 
 - **Disabled `GlassButton` Impeller Metal glass preservation:** In `GlassSurfaceStyle.glass` mode, disabled buttons now dim only their interior content (`Opacity(opacity: 0.5)`) inside `AdaptiveGlass` rather than wrapping the glass shader in an ancestor `Opacity` `saveLayer`, preventing disabled glass buttons and toggles from losing their refractive pill surface on Impeller Metal.
 - **`GlassTextField` press callbacks after dispose:** A pointer up or cancel that arrives after the field has left the tree (for example when the press itself pops the route or swaps the field out) no longer throws `setState() called after dispose()`. The press `Listener` stays in the pointer-down hit test path, so its callbacks now check `mounted` before updating the press-scale state.
+- **`GlassModalSheet` persistent sheet dipping below its smallest detent on a fast fling:** In `GlassSheetMode.persistent` the snap spring is now clamped at the smallest detent, so a hard downward fling no longer carries the sheet below it (and, flung hard enough, below the screen edge) before settling. A release from a rubber-band drag below the detent still springs back as before; `GlassSheetMode.dismissible` sheets are unchanged.
 
 ## Deprecations
 
