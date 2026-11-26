@@ -991,6 +991,20 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Resistance factor when dragging beyond bounds. Default: 0.08.
   final double resistance;
 
+  /// Resistance factor when dragging **below the smallest detent**.
+  ///
+  /// Defaults to `null`, which uses [resistance]: the sheet rubber-bands below
+  /// its lowest stop exactly as before.
+  ///
+  /// Set it to `0` to stop the drag at the smallest detent. This is meant for
+  /// a [GlassSheetMode.persistent] sheet that is always-visible chrome (for
+  /// example bottom navigation): with a rubber band the whole sheet can be
+  /// pulled under the screen edge.
+  ///
+  /// Has no effect on a dismissible sheet being swiped away, where the lowest
+  /// stop is the hidden state.
+  final double? minDetentResistance;
+
   /// Snap progress threshold (0.0 - 1.0). Default: 0.4.
   final double snapThreshold;
 
@@ -1118,6 +1132,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.fullSettings,
     this.stretch = 0.5,
     this.resistance = 0.08,
+    this.minDetentResistance,
     this.snapThreshold = 0.4,
     this.velocityThreshold = 700.0,
     this.fillTransition = GlassFillTransition.gradual,
@@ -1201,6 +1216,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           fullSettings: fullSettings,
           stretch: stretch,
           resistance: resistance,
+          minDetentResistance: minDetentResistance,
           snapThreshold: snapThreshold,
           velocityThreshold: velocityThreshold,
           fillTransition: fillTransition,

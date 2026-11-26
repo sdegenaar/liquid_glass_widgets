@@ -1198,4 +1198,57 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('GlassTextField press state after dispose', () {
+    // The press Listener is registered in the pointer-down hit test, so it
+    // still receives the matching pointer-up or pointer-cancel after the field
+    // has left the tree — for example when the press itself pops the route or
+    // swaps the field out.
+    Future<void> pumpField(WidgetTester tester, {required bool visible}) {
+      return tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: visible ? const GlassTextField() : const SizedBox.shrink(),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('pointer up after the field is removed does not throw',
+        (tester) async {
+      await pumpField(tester, visible: true);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassTextField)),
+      );
+      await tester.pump();
+
+      await pumpField(tester, visible: false);
+      expect(find.byType(GlassTextField), findsNothing);
+
+      await gesture.up();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('pointer cancel after the field is removed does not throw',
+        (tester) async {
+      await pumpField(tester, visible: true);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassTextField)),
+      );
+      await tester.pump();
+
+      await pumpField(tester, visible: false);
+      expect(find.byType(GlassTextField), findsNothing);
+
+      await gesture.cancel();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

@@ -1,85 +1,139 @@
 # Platform Support
 
-> Last updated: 2026-07-30 · Tracks v0.25.x
+> Last updated: 2026-11-26 · Tracks `v1.21+` (Flutter `>= 3.41.0`, Dart `>= 3.5.0`)
 
-This document describes the rendering behaviour, known limitations, and
-developer guidance for each platform that `liquid_glass_widgets` targets.
+This document describes the rendering behaviour, shader pipeline, known
+limitations, and developer guidance for every platform targeted by
+`liquid_glass_widgets`.
 
 ---
 
 ## Supported Platforms
 
-| Platform | Tier | Renderer | `GlassQuality.premium` | `GlassQuality.standard` | `GlassQuality.minimal` |
-|---|---|---|---|---|---|
-| iOS (Impeller) | ✅ Primary | Impeller → Metal | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter |
-| Android (Impeller) | ✅ Primary | Impeller → Vulkan/OpenGL ES | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter |
-| Android (Skia) | ✅ Supported | Skia → OpenGL ES | ⬇️ Capped to `standard` | ✅ Lightweight shader | ✅ BackdropFilter |
-| macOS | ✅ Supported | Impeller → Metal | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter |
-| Web (CanvasKit) | ⚠️ Partial | CanvasKit (Skia-based) | ⬇️ Capped to `standard` | ✅ Lightweight shader | ✅ BackdropFilter |
-| Windows | ⚠️ Partial | Skia → ANGLE → DirectX | ⬇️ Capped to `standard` | ✅ Lightweight shader | ✅ BackdropFilter |
-| Linux | ⚠️ Partial | Skia (default) / Impeller (opt-in) | ⬇️ Capped to `standard` (Skia) | ✅ Lightweight shader | ✅ BackdropFilter |
+| Platform | Tier | Active Renderer | `GlassQuality.premium` | `GlassQuality.standard` | `GlassQuality.minimal` | `GlassSurfaceStyle.solid` |
+|---|---|---|---|---|---|---|
+| **iOS** | ✅ Primary | Impeller → Metal | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **Android (Impeller)** | ✅ Primary | Impeller → Vulkan / GLES | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **Android (Skia)** | ✅ Supported | Skia → OpenGL ES | ⬇️ Capped to `standard` | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **macOS** | ✅ Supported | Impeller → Metal | ✅ Full shader | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **Windows** | ⚠️ Partial | Skia/ANGLE → DirectX (Impeller opt-in / Flutter 3.50+ desktop defaults) | ⬇️ Capped to `standard` on Skia & under `GlassAdaptiveScope` | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **Linux** | ⚠️ Partial | Skia (Impeller opt-in / Flutter 3.50+ desktop defaults) | ⬇️ Capped to `standard` on Skia & under `GlassAdaptiveScope` | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
+| **Web (CanvasKit / Wasm)** | ⚠️ Partial | CanvasKit / SkWasm | ⬇️ Always capped to `standard` | ✅ Lightweight shader | ✅ BackdropFilter | ✅ Shader-free |
 
 > **Tier definitions:**
-> - **Primary** — fully validated on real hardware with automated and manual QA.
-> - **Supported** — API-complete; runs correctly but explicit QA passes are still
->   pending (tracked in the 1.0.0 roadmap).
-> - **Partial** — runs with known limitations documented below.
+> - **Primary** — actively calibrated and validated against native iOS 26/27 and Android hardware/simulators.
+> - **Supported** — API-complete and validated on real desktop/legacy mobile renderers, including keyboard traversal and focus rings.
+> - **Partial** — API-complete with shader CI validation across HLSL/FXC, SPIR-V, and `impellerc`, with platform-specific caps or caveats documented below.
 
 ---
 
-## Rendering Quality Tiers
+## Rendering Tiers & Surface Modes
 
-`liquid_glass_widgets` uses a three-tier rendering system that automatically
-adapts to the active renderer. The tier is exposed as `GlassQuality`.
+`liquid_glass_widgets` adapts automatically to the active Flutter rendering
+backend (`ui.ImageFilter.isShaderFilterSupported` and `kIsWeb`) and supports
+both **iOS 27** (`GlassStyle.ios27`, default) and **iOS 26**
+(`GlassStyle.ios26`) optics.
 
-### `GlassQuality.premium`
+### `GlassQuality.premium` (Impeller)
 
-Full custom GLSL shader pipeline:
+Full custom GLSL multi-pass pipeline (`liquid_glass_geometry_blended.frag` +
+`liquid_glass_render.frag`, plus `lens_content_warp.frag` for native iOS 26/27
+tab-bar lens optics via `IndicatorLensOptics`):
 
-- Two-pass GPU render: geometry precompute → lighting + refraction
-- True `refract()` call per pixel (lensing, not just blur)
-- Specular highlights, chromatic aberration, and SDF metaball blend
-- **Requires Impeller.** Automatically capped to `standard` on Skia, Web, and
-  Windows because `ui.ImageFilter.isShaderFilterSupported` returns `false` on
-  those renderers.
-- **Not suitable for scrollable lists** — the texture capture is not
-  scroll-position-aware. Use `standard` for any widget that scrolls.
+- Two-pass GPU render: blended SDF geometry precompute → lighting & refraction
+- True per-pixel `refract()` (`GlassLensModel.paraxial` on `ios27`, Snell bevel
+  on `ios26`), luminance-weighted `frost`, directional `rimShade` / `rimLight`,
+  chromatic dispersion, native lifted tab-bar content-fold + spectral-fringe
+  optics (`IndicatorLensOptics`), shader-level touch specular (`uTouchPosition`
+  / `uTouchIntensity`), and SDF metaball blending (`LiquidGlassBlendGroup`)
+- Shared backdrop reads via `GlassBackdropGroup` across top/bottom bar chrome
+  and progressive blur strips (`v1.9.0+`, `v1.20.0+`)
+- **Requires Impeller.** Automatically capped to `GlassQuality.standard` when
+  `kIsWeb` is `true` or `ui.ImageFilter.isShaderFilterSupported` returns
+  `false`
+- **Default under `GlassStyle.ios27` / `ios26` for:**
+  - Persistent navigation chrome (`GlassAppBar`, `GlassTabBar`, `GlassToolbar`,
+    `GlassScaffold.bodyOverlays`)
+  - Transient overlays (`GlassDialog`, `showGlassConfirmationDialog`,
+    `GlassModalSheet`, `GlassMenu`, `GlassPopover`, `GlassContextMenu`)
+  - Hero interactive lenses (`GlassSwitch`, `GlassSlider`,
+    `GlassSegmentedControl`), which lazy-mount their lens shader only while
+    pressed or dragged so resting rows hold zero shader layers
+- **Not for scrolling list cards** — use `GlassSurfaceStyle.solid` (preferred,
+  matching iOS `.insetGrouped` lists) or `GlassQuality.standard` / `minimal` for
+  scrolling body content.
 
-### `GlassQuality.standard`
+### `GlassQuality.standard` (All Platforms)
 
-Lightweight custom GLSL fragment shader:
+Single-pass lightweight fragment shaders (`lightweight_glass.frag` and
+`interactive_indicator.frag`):
 
-- 5–10× faster than `BackdropFilter`
-- Calibrated blur, saturation, and specular rim
-- Works on all platforms including Skia, CanvasKit, and Windows
-- Recommended default for most widgets
+- Works identically across Impeller, Skia, CanvasKit/Wasm, Windows, and Linux
+- Meniscus rim absorption, directional `rimLight`, perimeter hairline contours,
+  `GlassBodyMode.adaptive` / `GlassBodyMode.clear`, and optional wallpaper
+  refraction via `LiquidGlassScope` / `GlassBackgroundSource`
+- Interactive indicator lenses skip backdrop blur in `standard` mode to keep
+  frame times flat on Skia and Web
+- Recommended default for standalone body glass containers and cross-platform
+  apps targeting Web or Skia.
 
-### `GlassQuality.minimal`
+### `GlassQuality.minimal` (Zero Custom Shaders)
 
-Zero custom shader. Renders via `BackdropFilter` blur + Rec. 709 saturation + specular rim stroke:
+Shader-free frosted path (`_FrostedFallback`: `ClipPath` + `BackdropFilter` +
+Rec. 709 saturation + specular rim stroke):
 
-- Cross-platform safe: Skia, Impeller, Web, Windows, Linux
-- No fragment shader compilation — zero GPU-budget risk
-- Use for: large lists with many glass cards, background panels, or any
-  context where shader load must be kept flat
-- Visually similar to frosted glass — saturation and specular rim match
-  the upstream FakeGlass approach
+- Safe on every renderer with zero custom fragment shader compilation
+- Stationary surfaces (bars, cards, resting buttons marked `isStationary: true`)
+  keep their `BackdropFilter` blur; animated interactive buttons omit
+  `BackdropFilter` during spring motion to avoid compositor flicker
+- Pair with `const GlassThemeData.minimal()` (`GlassThemeVariant.minimalLight`
+  and `GlassThemeVariant.minimalDark`, `v1.19+` / `v1.20+`) for calibrated
+  neutral light/dark tints out of the box.
+
+### `GlassSurfaceStyle.solid` & Nested Vibrancy (`AdaptiveGlass.vibrancy`)
+
+- **`GlassSurfaceStyle.solid`** bypasses `AdaptiveGlass`, `BackdropFilter`, and
+  all fragment shaders completely (zero GPU shader cost on every platform). Use
+  it on `GlassContainer.card`, `GlassGroupedSection`,
+  `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`,
+  `GlassDatePicker`, `GlassMultiDatePicker`, and `GlassModalSheet` (for an
+  always-opaque sheet at every detent); child inputs, pickers, buttons, and
+  `GlassToggle.button` inherit `solid` automatically via
+  `InheritedGlassSurfaceStyle`.
+- **Nested glass vibrancy (`_VibrancyFill`)** activates automatically when a
+  grouped glass control is placed inside an enclosing glass surface
+  (`InheritedLiquidGlass.avoidsRefraction == true`), matching UIKit's
+  `UIVibrancyEffect` with zero second `BackdropFilter` pass and avoiding
+  Impeller tile-memory stalls.
 
 ### Automatic Quality Negotiation (`GlassAdaptiveScope`)
 
-Wrap your app or a subtree with `GlassAdaptiveScope` to let the library
-benchmark frame timing on first launch and automatically select the highest
-quality tier the device can sustain:
+Enable `LiquidGlassWidgets.wrap(adaptiveQuality: true, ...)` (or mount
+`GlassAdaptiveScope` directly) to negotiate a session-wide quality ceiling in
+three phases:
 
-| P75 frame time | Quality selected |
-|---|---|
-| < 20 ms | `premium` |
-| 20–28 ms | `standard` |
-| > 28 ms | `minimal` |
+1. **Phase 1 — Static probe (synchronous):** Forces `minimal` if
+   `ui.ImageFilter.isShaderFilterSupported == false`, and caps `maxQuality` to
+   `standard` on Web, Windows, and Linux (see
+   [`GlassQualityAdapter`](../lib/utils/glass_quality_adapter.dart)).
+2. **Phase 2 — Warm-up benchmark:** Skips initial startup frames, then samples
+   real raster frame timings (`P75`):
 
-The settled quality is cached for the session. See
-[`GlassQualityAdapter`](../lib/utils/glass_quality_adapter.dart) for full
-configuration options including `minQuality`, `maxQuality`, and `allowStepUp`.
+   | P75 raster time | Quality ceiling selected |
+   |---|---|
+   | `< 20 ms` | `premium` |
+   | `20–28 ms` | `standard` *(or frost-free `premium` first when `frostStep: true`)* |
+   | `> 28 ms` | `minimal` |
+
+3. **Phase 3 — Runtime hysteresis:** Degrades when `P95 > 1.5× targetFrameMs`
+   for 2 consecutive windows; recovers (when `allowStepUp: true`) after 10
+   consecutive windows below `0.6× targetFrameMs` with an 8-second cooldown.
+   Supports `frostStep: true` (drops iOS 27 `frost` before stepping down from
+   `premium` to `standard`) and `GlassAdaptiveScope.holdMeasurement()` to pause
+   sampling during heavy app work (`v1.20.0+`).
+
+See [`ADAPTIVE_QUALITY.md`](./ADAPTIVE_QUALITY.md) for threshold calibration,
+cold-start persistence, and `GlassAdaptiveScopeConfig` examples.
 
 ---
 
@@ -87,95 +141,50 @@ configuration options including `minQuality`, `maxQuality`, and `allowStepUp`.
 
 **Renderer:** Impeller → SPIRV-Cross → MSL → Metal
 
-- All three quality tiers work correctly.
-- `GlassQuality.premium` is the full native shader pipeline.
-- PlatformView compositing (e.g. `webview_flutter`, `google_maps_flutter`):
-  see the [`platformViewBackdrop` section](#platformviewbackdrop-quality-cliff)
-  below.
-
-### Known iOS Engine Quirks
-
-- **`ClipRRect(borderRadius: 9999)` / PlatformView mutator stack** — Flutter
-  PR [#177551](https://github.com/flutter/flutter/pull/177551) (merged Dec 2025,
-  available in Flutter 3.41+) forwards `ClipRRect` clip data to the iOS
-  PlatformView compositor. `LiquidOval` uses `BorderRadius.circular(9999)` as
-  its approximation specifically to benefit from this forwarding. Shapes that
-  cannot be expressed as `ClipRRect` (arbitrary `ClipPath`) still require
-  `platformViewBackdrop: true` to clip correctly over a PlatformView.
+- Primary reference platform for both `GlassStyle.ios27` and `GlassStyle.ios26`.
+- All quality tiers, `GlassBackdropGroup` shared backdrops, `LiquidGlassBlendGroup`
+  teardrop morphs, display-bezel superellipse page transitions
+  (`GlassPageTransitionClip` / `GlassPageTransitionsBuilder`), and iPhone Duo
+  vertical chrome (`GlassVerticalBar`) are fully supported.
+- **Native `reduceTransparency` detection:** Currently approximated via
+  `MediaQuery.highContrastOf(context)` inside `GlassAccessibilityScope` while
+  awaiting upstream [Flutter #190318](https://github.com/flutter/flutter/issues/190318).
+- **`ClipRRect(borderRadius: 9999)` PlatformView forwarding:** Flutter
+  PR [#177551](https://github.com/flutter/flutter/pull/177551) (included in
+  Flutter `3.41+`) forwards `ClipRRect` clips to the iOS PlatformView mutator
+  stack. `LiquidOval` uses a large rounded-rect radius on native platforms to
+  benefit from this forwarding; arbitrary `ClipPath` shapes over PlatformViews
+  still require `platformViewBackdrop: true` or `PlatformViewGlassMode.passthrough`.
 
 ---
 
 ## Android
 
-**Renderer:** Impeller → SPIRV-Cross → GLSL ES → Vulkan or OpenGL ES (Impeller)
-             Skia → OpenGL ES (legacy)
+**Renderer:** Impeller → SPIRV-Cross → GLSL ES → Vulkan / OpenGL ES (default),
+or Skia → OpenGL ES (`--no-enable-impeller`)
 
-### Impeller (Default Since Flutter 3.27)
+### Impeller (Default)
 
-- All three quality tiers work correctly.
-- `GlassQuality.premium` is enabled by default on hardware that passes the
-  warm-up benchmark (P75 < 20 ms).
-- Devices below the warm-up threshold fall back to `standard` or `minimal`
-  automatically when `GlassAdaptiveScope` is used.
+- All three quality tiers work. `LiquidGlassWidgets.initialize()` preloads all
+  six shaders asynchronously before `runApp()` to avoid first-frame stalls.
+- Under `GlassAdaptiveScope`, Android devices default to conservative warm-up
+  seeding (`standard` until Phase 2 finishes) unless `initialQuality` is set,
+  protecting GLES-only devices from cold-start jank while promoting capable
+  Vulkan devices to `premium`.
 
-### Skia (Legacy — `--no-enable-impeller`)
+### Skia (Legacy)
 
-- `GlassQuality.premium` is **not available**. `ui.ImageFilter.isShaderFilterSupported`
-  returns `false` on Skia. Requests for `premium` are silently capped to
-  `standard` at render time.
-- `standard` and `minimal` both work correctly.
+- `ui.ImageFilter.isShaderFilterSupported` returns `false`; any `premium`
+  request silently caps to `GlassQuality.standard` at render time.
+- `standard`, `minimal`, and `GlassSurfaceStyle.solid` all work normally.
 
-**Detection at runtime:**
+**Runtime renderer check:**
 
 ```dart
 import 'dart:ui' as ui;
+
 final bool impellerAvailable = ui.ImageFilter.isShaderFilterSupported;
 ```
-
----
-
-## Web (CanvasKit)
-
-**Renderer:** CanvasKit (Skia-based WASM)
-
-### Quality Limits
-
-`GlassQuality.premium` is not available on Web. `kIsWeb` is checked at render
-time and the effective quality is capped to `GlassQuality.standard`. This cap
-is applied inside `AdaptiveGlass` before the shader decision tree runs.
-
-### Known Bug: `LiquidOval` Circular Clipping (CanvasKit)
-
-**Status:** Active — no upstream fix available yet.
-
-`LiquidOval` uses `ClipRRect(borderRadius: BorderRadius.circular(9999))` inside
-`_ShapeClip` to work around an iOS PlatformView compositing limitation
-(Flutter #177551). On Web/CanvasKit, this large radius breaks path clipping:
-the clipping path computed from `circular(9999)` overflows the widget bounds,
-causing the interactive `GlassGlow` effect to spill outside the pill boundary
-and destroying the CSS/SVG drop-shadow extraction on `DecoratedBox`.
-
-**Symptoms:**
-- `GlassButton` (default `LiquidOval` shape) shows a large rectangular glow
-  halo instead of a pill-shaped glow on Web
-- Drop shadows may render as a bounding-box rectangle rather than following
-  the shape
-
-**Proposed fix:** Branch on `kIsWeb` and substitute `ClipOval` /
-`BoxShape.circle` for Web/CanvasKit paths, or wait for the upstream engine fix
-for `ClipRRect(9999)` bounds calculation on Web.
-
-**Workaround:** Use `GlassQuality.minimal` on Web if the glow artefact is
-unacceptable, or use `LiquidRoundedRectangle` instead of `LiquidOval` shapes
-on buttons and pills where the exact oval clip is not critical.
-
-### Drop-Shadow Rendering
-
-On Web, `AdaptiveGlass` substitutes a `DecoratedBox` `BoxShadow` in place of
-the `GlassShadow` inverse-clipped `saveLayer` shadow used on native. This is
-the correct path for Web — the inverse-clipped `saveLayer` compositing model is
-not CanvasKit-compatible. The shadow is rendered by the CanvasKit (Skia WASM)
-engine, not by CSS or the browser's compositor.
 
 ---
 
@@ -183,194 +192,247 @@ engine, not by CSS or the browser's compositor.
 
 **Renderer:** Impeller → SPIRV-Cross → MSL → Metal
 
-macOS uses the same Impeller/Metal pipeline as iOS. All three quality tiers
-work correctly. The main differences from iOS:
-
-- `GlassAdaptiveScope` warm-up benchmarks reflect desktop GPU headroom, which
-  is typically much higher than mobile — most Mac hardware will settle at
-  `GlassQuality.premium`.
-- Keyboard focus traversal and Tab/Enter/Space activation are required on
-  macOS. This is a tracked 1.0.0 blocker — see the
-  [accessibility section of the roadmap](./ROADMAP.md#biggest-blocker-accessibility--keyboard-support).
-- No known platform-specific rendering bugs beyond the shared
-  `platformViewBackdrop` limitation documented below.
+- Uses the same Impeller/Metal shader pipeline as iOS; all three quality tiers
+  and `GlassBackdropGroup` / `LiquidGlassBlendGroup` work out of the box.
+- Most Apple Silicon and discrete-GPU Macs comfortably sustain
+  `GlassQuality.premium` under `GlassAdaptiveScope`.
+- Full keyboard traversal (`Tab`, `Space`, `Enter`, `Escape`), single-node
+  VoiceOver semantics (`GlassFocusRegion`), mouse hover highlights, and
+  macOS-appropriate checked radio menu semantics (`GlassMenuItem.semanticsChecked`)
+  are supported across the widget library.
 
 ---
 
 ## Windows
 
-**Renderer:** Skia → ANGLE → OpenGL ES → DirectX (default). Impeller on
-Windows is opt-in only (`flutter run --enable-impeller`) and still experimental
-as of 0.25.x — not used in any validated configuration.
+**Renderer:**
+- **Flutter `3.41–3.49`:** Skia → ANGLE → DirectX by default (Impeller opt-in
+  via `--enable-impeller`).
+- **Flutter `3.50+`:** Desktop Impeller rollout (ANGLE/DirectX or Vulkan).
 
-**Shader compilation path (Skia):** SkSL → glslang → SPIR-V → OpenGL via ANGLE.
+### Runtime Behaviour in `liquid_glass_widgets`
 
-### Quality Limits
-
-`GlassQuality.premium` is capped to `GlassQuality.standard` on Windows (Skia
-path). The detection gate is `ui.ImageFilter.isShaderFilterSupported`, which
-returns `false` on the Skia/ANGLE path, so the premium shader pipeline is
-never entered.
-
-### Shader Compatibility (SkSL / glslang)
-
-The Windows Flutter engine compiles shaders via **glslang**, which enforces
-GLSL ES 1.0 rules more strictly than the Impeller/Metal path. All shaders
-in this package have been written and validated to comply. The six rules
-that must be respected when modifying any `.frag` or `.glsl` file are:
-
-1. **No dynamic array indexing** — indices must be compile-time constants or
-   literal integers. All `uShapeData[]` accesses use hardcoded literal offsets
-   via the `SDF_SHAPE_N(BASE)` macro.
-2. **No `dFdx`/`dFdy` on scalar `float`** — guarded with
-   `#ifdef IMPELLER_TARGET_METAL` in `liquid_glass_geometry_blended.frag`.
-3. **No `min(int, int)`** — use a ternary expression instead.
-4. **No non-constant global initialisers** — unpack uniforms inside `main()`.
-5. **Loop bounds must be compile-time constants** — use `const int` literals
-   or fully-unrolled patterns (see `sceneSDF()` in `sdf.glsl`).
-6. **No array parameters by value** — access global arrays directly inside
-   functions.
-
-**Validating shaders on macOS (without a Windows machine):**
-
-```bash
-brew install glslang
-bash scripts/validate_shaders.sh
-```
-
-Run this before committing any change to `shaders/`. The full six-rule reference
-and the history of how `sdf.glsl` was fixed in 0.7.12 are documented in
-`.internal/FLUTTER_ISSUES.md` and `.internal/PERFORMANCE_AUDIT.md`.
-
-### Drop-Shadow Rendering
-
-`AdaptiveGlass` detects Windows via `defaultTargetPlatform == TargetPlatform.windows`
-and uses a `DecoratedBox` `BoxShadow` in place of the inverse-clipped `saveLayer`
-shadow. This is the correct path — the `saveLayer` shadow compositing model is
-unreliable on the Windows OpenGL/ANGLE backend.
+- **Skia:** `ui.ImageFilter.isShaderFilterSupported` is `false`, so `AdaptiveGlass`
+  caps `GlassQuality.premium` to `GlassQuality.standard`.
+- **Impeller on Windows (`--enable-impeller` / Flutter 3.50+ desktop defaults):**
+  - `AdaptiveGlass` checks `ui.ImageFilter.isShaderFilterSupported`, so explicit
+    `GlassQuality.premium` surfaces can execute when Impeller is active.
+  - By default, `LiquidGlassWidgets.initialize(warmUpMode: GlassWarmUpMode.auto)`
+    skips preloading the multi-pass premium shaders on Windows, and
+    `GlassAdaptiveScope` (`GlassQualityAdapter._staticProbe()`) caps quality to
+    `GlassQuality.standard` to prevent runtime GLSL/ANGLE compilation stalls on
+    the raster thread. Pass `warmUpMode: GlassWarmUpMode.always` if you
+    explicitly opt into desktop Impeller `premium` without `GlassAdaptiveScope`.
+- **Drop shadows:** `AdaptiveGlass` detects `TargetPlatform.windows` and uses
+  the inverse-clipped `DecoratedBox` `BoxShadow` fallback instead of the GPU
+  cutout shadow on own-layer surfaces to avoid OpenGL/ANGLE `saveLayer`
+  artifacts.
 
 ---
 
 ## Linux
 
-**Renderer:** Skia (default). Impeller on Linux is **not yet the default** on
-the stable channel as of 0.25.x — the Flutter team is actively working toward
-it but has not shipped it as stable-default for desktop.
+**Renderer:**
+- **Flutter `3.41–3.49`:** Skia by default (Impeller opt-in via
+  `--enable-impeller`).
+- **Flutter `3.50+`:** Desktop Impeller rollout (OpenGL ES / Vulkan).
 
-Linux follows the same Skia rules as Android (legacy mode):
+### Runtime Behaviour in `liquid_glass_widgets`
 
-- Skia (default) → `premium` capped to `standard`; `standard` and `minimal` work correctly
-- Impeller (opt-in via `--enable-impeller`) → all three quality tiers available,
-  but this configuration is untested and unsupported for this package
-
-No Linux-specific rendering bugs are currently tracked.
+- Mirrors Windows for quality negotiation:
+  - Under Skia, `ui.ImageFilter.isShaderFilterSupported` is `false` and
+    `premium` silently caps to `standard`.
+  - Under Impeller (`--enable-impeller` / Flutter 3.50+ desktop defaults),
+    `AdaptiveGlass` supports `premium` when requested directly, while
+    `GlassAdaptiveScope` static-caps to `standard` and `GlassWarmUpMode.auto`
+    skips multi-pass premium preload by default to avoid driver-dependent GLSL
+    compilation hitches.
+- `standard`, `minimal`, and `GlassSurfaceStyle.solid` work across both
+  renderers with no known Linux-specific bugs.
 
 ---
 
-## `platformViewBackdrop` Quality Cliff
+## Web (CanvasKit & WebAssembly / SkWasm)
 
-**Affects:** iOS, Android, macOS, Windows, Linux — any platform that embeds a
-`PlatformView` (e.g. `webview_flutter`, `google_maps_flutter`, `MapboxMap`).
+**Renderer:** CanvasKit (Skia Wasm) or SkWasm (`flutter build web --wasm`)
 
-### The Problem
+### Quality Limits & Shader Lifecycle
 
-When `platformViewBackdrop: true` is set on any `AdaptiveGlass`-backed widget
-(tab bar body, indicator, extra button, `GlassContainer`, etc.), rendering is
-forced to `_FrostedFallback` — a live `BackdropFilter` — regardless of the
-requested `GlassQuality` tier. This is the only technically correct path: the
-Impeller shader reads a captured backdrop snapshot that **excludes**
-hybrid-composed PlatformViews. A live `BackdropFilter` re-samples the
-composited scene each frame and therefore correctly blurs the map/webview
-content underneath.
+- `GlassQuality.premium` is **always capped to `GlassQuality.standard`** via
+  `kIsWeb` in `AdaptiveGlass`, `GlassEffect`, and `GlassAdaptiveScope` (and
+  `LiquidGlassWidgets.initialize()` skips multi-pass premium preload on Web).
+- `LightweightLiquidGlass` allocates per-widget `FragmentShader` instances on
+  Web (`kIsWeb`) rather than sharing a mutable global shader instance.
+- **Flutter `3.50+` Wasm builds (`flutter build web --wasm`):** All six
+  fragment shaders enforce single-exit `void main()` (`v1.17.4`,
+  `flutter/flutter#190809`) so `impellerc` compiles cleanly with zero warnings.
+- **Drop shadows:** `AdaptiveGlass` routes `kIsWeb` to the inverse-clipped
+  `DecoratedBox` `BoxShadow` fallback (the GPU cutout path is native-only).
 
-**Consequences:**
+### Known Limitation: `LiquidOval` Circular Clipping (CanvasKit)
 
-1. **Silent quality degradation** — `GlassQuality.premium` requested → renders
-   as `GlassQuality.minimal` (`BackdropFilter`) with no error or warning.
-2. **Continuous BackdropFilter during gesture** — the `isInteractive` blur
-   omission (which normally skips the `BackdropFilter` during drag to save GPU)
-   is overridden. The draggable indicator also runs a `BackdropFilter`
-   continuously while repositioning. This is GPU-expensive on complex map views.
-3. **Per-widget cost** — every widget with `platformViewBackdrop: true` in the
-   same scene adds one live `BackdropFilter` per frame.
+**Status:** Active (tracked in [`ROADMAP.md`](./ROADMAP.md#platform-edge-cases)).
 
-### API Guidance
+`LiquidOval` uses `BorderRadius.circular(9999)` (`GlassDefaults.capsuleRadius`)
+to preserve iOS PlatformView `ClipRRect` forwarding (Flutter #177551). On
+CanvasKit Web, that oversized radius can break path clipping on `GlassGlow` and
+`DecoratedBox` shadows.
 
-```dart
-// ❌ Don't do this unless your widget is literally over a PlatformView:
-AdaptiveGlass(
-  platformViewBackdrop: true,
-  quality: GlassQuality.premium, // silently ignored — renders as minimal
-  child: ...,
-)
+**Workaround on Web:** Use `LiquidRoundedSuperellipse` / `LiquidRoundedRectangle`
+with an explicit finite `borderRadius` (e.g. half the widget's height) or
+`GlassQuality.minimal` where circular clip artifacts appear.
 
-// ✅ Only set platformViewBackdrop when you know a PlatformView is beneath:
-GlassTabBar.bottom(
-  platformViewBackdrop: myPageHasMapView, // conditional
-  ...
-)
+---
+
+## Flutter 3.50+ & `cupertino_ui` Compatibility
+
+`liquid_glass_widgets` `1.x` supports **Flutter `>= 3.41.0`** while staying
+ready for **Flutter `3.50+`**:
+
+- **Shaders:** Validated against `impellerc` across Metal, OpenGL ES, Vulkan,
+  and SkSL targets with zero warnings (including the Flutter 3.50 / Windows FXC
+  single-exit `main()` requirement from `flutter/flutter#190809`).
+- **Apps migrating to standalone `package:cupertino_ui` on Flutter `3.50+`:**
+  Add Flutter's compatibility bridge to your `CupertinoApp` so `CupertinoTheme`
+  and `CupertinoLocalizations` propagate into `1.x` SDK-Cupertino packages:
+
+  ```dart
+  CupertinoApp(
+    builder: (context, child) => CupertinoUiCompatibilityBridge(child: child!),
+    home: const MyHomePage(),
+  )
+  ```
+
+- **Full `cupertino_ui` migration** (raising the SDK floor to Flutter
+  `>= 3.50.0`) is scheduled for **`2.0.0`** (see
+  [`ROADMAP.md`](./ROADMAP.md#sdk-dependency--behaviour-changes-scheduled-for-200)).
+
+---
+
+## Shader Compatibility Rules (Impeller, SkSL, HLSL/FXC, ANGLE)
+
+All six shaders in `shaders/` (`lightweight_glass.frag`,
+`interactive_indicator.frag`, `liquid_glass_geometry_blended.frag`,
+`liquid_glass_render.frag`, `lens_content_warp.frag`, and
+`progressive_blur.frag`) must compile cleanly on
+**Impeller** (Metal / Vulkan / GLES), **SkSL / SPIR-V**, **Windows HLSL/FXC**,
+and **Web ANGLE**. Respect these seven rules whenever editing any `.frag` or
+`.glsl` file:
+
+1. **Single-exit `void main()` alongside `sampler2D`** (`flutter/flutter#190809`)
+   — never place early or multiple `return;` statements inside `void main()` in
+   a fragment shader that samples a `sampler2D`. Assign `fragColor` through
+   structured `if`/`else` branches and exit once at the end of `main()`.
+   Enforced statically by `scripts/validate_shaders.sh` and
+   [`test/shaders/single_return_main_test.dart`](../test/shaders/single_return_main_test.dart).
+2. **No dynamic array indexing** — uniform array indices must be compile-time
+   constant literals (e.g. `uShapeData[]` via `SDF_SHAPE_N(BASE)`).
+3. **Static compile-time loop bounds** — all `for` loops must use `const int`
+   bounds or unrolled steps.
+4. **No unguarded `dFdx` / `dFdy` / `fwidth`** — unavailable on some SPIR-V
+   targets; guard Metal-only usage with `#ifdef IMPELLER_TARGET_METAL`.
+5. **No `min(int, int)`** — use ternary expressions (`a < b ? a : b`).
+6. **No non-constant global initialisers** — unpack uniforms inside `main()`.
+7. **No array parameters passed by value** — access global uniform arrays
+   directly inside helper functions.
+
+**Validate locally before opening a PR:**
+
+```bash
+bash scripts/validate_shaders.sh
+flutter test test/shaders/
 ```
 
-**Dartdoc note:** The `platformViewBackdrop` parameter dartdoc on `AdaptiveGlass`
-documents the quality cap. A dedicated API note is tracked as a pre-1.0 item
-in the roadmap.
-
-### Long-Term Fix
-
-Flutter engine progress on making `RepaintBoundary` / `ImageFilter` capture
-include hybrid-composed PlatformViews is being tracked. When that lands,
-`platformViewBackdrop` can route back to the native shader and this quality
-cliff disappears. No ETA from the Flutter team at time of writing.
-
-> Introduced in 0.19.2 — PR [#128](https://github.com/sdegenaar/liquid_glass_widgets/pull/128)
-> by [@jfhair](https://github.com/jfhair).
-> `platformViewFallbackColor` added in 0.19.5 to separate backer aesthetics
-> from shader uniform fill — PR [#138](https://github.com/sdegenaar/liquid_glass_widgets/pull/138).
+`scripts/validate_shaders.sh` runs the zero-dependency HLSL/FXC single-exit
+check, `glslangValidator --target-env vulkan1.0` (when installed), and Flutter's
+own `impellerc` across runtime stages (failing on any `[WARNING]` or error).
 
 ---
 
-## Skia vs Impeller Visual Comparison
+## PlatformViews (Maps, WebViews, Camera, Video)
 
-| Feature | Impeller (iOS/Android/macOS) | Skia / CanvasKit / Windows |
+Hybrid-composed `PlatformView`s (e.g. `google_maps_flutter`, `webview_flutter`,
+`camera`, `video_player`) are excluded from Flutter's `RepaintBoundary` /
+shader backdrop capture. `liquid_glass_widgets` provides **two** ways to render
+glass cleanly over a PlatformView:
+
+### Option 1: Live Blur Fallback (`platformViewBackdrop: true`)
+
+Available on `AdaptiveGlass`, `AdaptiveLiquidGlassLayer`, `GlassContainer`,
+`GlassButton`, `GlassIconButton`, `GlassToggle.button`, `GlassButtonGroup`,
+`GlassTabBar`, `GlassNavigationShell`, `GlassModalSheet`, `GlassPopover`,
+`GlassMenu`, and `showGlassConfirmationDialog`:
+
+- Routes the widget to `_FrostedFallback` (a live `BackdropFilter`), which
+  re-samples the composited scene including the PlatformView underneath.
+- **Trade-off ("quality cliff"):** Silently caps `GlassQuality.premium` to
+  `GlassQuality.minimal` (no shader refraction) and keeps the `BackdropFilter`
+  active during interaction/drags, adding one live `BackdropFilter` pass per
+  widget. Set `platformViewBackdrop: true` **only** when a PlatformView is
+  actually behind the control:
+
+  ```dart
+  GlassTabBar.bottom(
+    platformViewBackdrop: currentPageHasMapView,
+    ...
+  )
+  ```
+
+### Option 2: Premium Passthrough (`PlatformViewGlassMode.passthrough`, `v1.2.0+`)
+
+Configured via `LiquidGlassSettings(platformViewMode: PlatformViewGlassMode.passthrough)`:
+
+- Keeps the `GlassQuality.premium` shader rim, Fresnel, and lighting active
+  while letting coverage follow what was actually sampled — clear where the
+  backdrop texture was empty (so the PlatformView shows through instead of solid
+  black or `platformViewFallbackColor`), and opaque where Flutter widgets exist.
+- Best for floating pills/chrome over maps or video where you want sharp
+  transparent pass-through with a crisp refractive edge and no live
+  `BackdropFilter` cost.
+- Contrast with the default `PlatformViewGlassMode.fallbackColor` (which fills
+  unsampled pixels with `LiquidGlassSettings.platformViewFallbackColor`).
+
+---
+
+## Renderer Feature Matrix
+
+| Feature | Impeller (iOS / macOS / Android) | Skia / CanvasKit / Windows Skia |
 |---|---|---|
-| True refraction (`refract()`) | ✅ `premium` only | ❌ Not available |
-| Specular highlights | ✅ `premium` only | ❌ Not available |
-| Chromatic aberration | ✅ `premium` only | ❌ Not available |
-| SDF metaball blend | ✅ `premium` only | ❌ Not available |
-| Lightweight shader blur | ✅ `standard` | ✅ `standard` |
-| `BackdropFilter` fallback | ✅ `minimal` | ✅ `minimal` |
-| `GlassGlow` interactive glow | ✅ Widget-based | ⚠️ Shader-based (`glowIntensity`) |
-| Drop shadow | Inverse-clipped `saveLayer` | `DecoratedBox` drop shadow |
-| `LiquidOval` clip on Web | — | ⚠️ Known bug (glow spill) |
+| Per-pixel `refract()` (`paraxial` & Snell) | ✅ `premium` | ❌ Capped to `standard` |
+| Luminance-weighted iOS 27 `frost` | ✅ `premium` | ❌ Capped to `standard` |
+| Chromatic dispersion & SDF metaball blend | ✅ `premium` | ❌ Capped to `standard` |
+| `GlassBackdropGroup` shared backdrop reads | ✅ `premium` | ❌ N/A |
+| `ProgressiveBlur` shader | ✅ Custom two-pass blur | ⬇️ Graceful single-pass / fallback |
+| Lightweight shader (`lightweight_glass.frag`) | ✅ `standard` | ✅ `standard` |
+| `BackdropFilter` fallback (`GlassQuality.minimal`) | ✅ `minimal` | ✅ `minimal` |
+| `GlassSurfaceStyle.solid` (zero shader) | ✅ All modes | ✅ All modes |
+| `GlassGlow` touch specular | ✅ Widget + shader (`uTouchPosition`) | ⚠️ Shader-based (`glowIntensity`) |
+| Drop shadow (light mode) | GPU cutout (native) / inverse-clipped `BoxShadow` (Windows) | Inverse-clipped `BoxShadow` |
+| `LiquidOval` clipping | ✅ `ClipRRect` PlatformView forwarding | ⚠️ CanvasKit Web `circular(9999)` clip bug |
 
 ---
 
-## QA Status
+## Validation Status
 
-| Platform | Device / Environment | Impeller | Skia | Last Validated |
+| Platform | Environment | Impeller | Skia / Web | Notes |
 |---|---|---|---|---|
-| iOS | iPhone 15 Pro, iPhone 13 | ✅ | N/A | 0.25.x |
-| Android | Pixel 8 (Impeller/Vulkan) | ✅ | — | 0.25.x |
-| Android | Pixel 4 (Skia fallback) | — | ✅ | 0.25.x |
-| macOS | Apple Silicon, Intel | ✅ | — | Needs explicit pass |
-| Web | Chrome (CanvasKit) | N/A | ✅ | Needs explicit pass |
-| Windows | Windows 11 (Skia/ANGLE) | N/A | ✅ | Needs explicit pass |
-| Linux | Ubuntu 24 (Skia default) | N/A | ✅ | Needs explicit pass |
-
-> Cells marked "Needs explicit pass" are tracked as 1.0.0 entry criteria. See
-> [`ROADMAP.md`](./ROADMAP.md#platform-testing-matrix-complete).
+| **iOS** | iOS 26 & iOS 27 Simulator + physical iPhones | ✅ Validated | N/A | Primary calibration baseline (`v1.21+`) |
+| **Android** | Impeller (Vulkan / GLES) & Skia fallback | ✅ Validated | ✅ Validated | Conservative `GlassAdaptiveScope` warm-up |
+| **macOS** | Apple Silicon (Impeller Metal) | ✅ Validated | — | Full keyboard, focus ring & VoiceOver support |
+| **Web** | Chrome (CanvasKit & Wasm) | N/A | ✅ Shader CI + `standard`/`minimal` | Single-exit Wasm shaders verified (`v1.17.4+`); `LiquidOval` clip caveat |
+| **Windows** | Skia/ANGLE & `impellerc` HLSL/FXC CI | ⚠️ Static-capped to `standard` in `GlassAdaptiveScope` | ✅ Shader CI + `standard`/`minimal` | Single-exit HLSL/FXC verified (`v1.17.4+`) |
+| **Linux** | Skia & `impellerc` SPIR-V CI | ⚠️ Static-capped to `standard` in `GlassAdaptiveScope` | ✅ Shader CI + `standard`/`minimal` | No Linux-specific rendering bugs tracked |
 
 ---
 
 ## Filing Platform-Specific Issues
 
-When filing a bug that is platform-specific, include:
+When reporting a platform-specific bug, please include:
 
-- `flutter --version` output
-- `flutter doctor -v` output
-- Target platform and device (e.g. "Windows 11, AMD Radeon RX 6700, OpenGL")
-- Whether Impeller is enabled (`flutter run --enable-impeller` /
-  `--no-enable-impeller`)
-- A minimal reproduction if possible
+- `flutter --version` and `flutter doctor -v`
+- Target OS, device/GPU (e.g. *"Windows 11, AMD Radeon RX 6700"*, *"Pixel 8, Android 16"*)
+- Active renderer (`Impeller` vs. `Skia`, `--enable-impeller` / `--no-enable-impeller`, `--wasm`)
+- Active `GlassStyle`, `GlassQuality`, and whether `GlassAdaptiveScope` is enabled
+- A minimal reproduction snippet
 
 Issues: [github.com/sdegenaar/liquid_glass_widgets/issues](https://github.com/sdegenaar/liquid_glass_widgets/issues)
