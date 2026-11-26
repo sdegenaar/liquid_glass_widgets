@@ -1106,9 +1106,12 @@ class TabIndicatorState extends State<TabIndicator>
     );
     final iconStack = Stack(
       children: [
-        // Unselected (inverse clipped — visible OUTSIDE pill)
+        // Unselected (inverse clipped — visible OUTSIDE pill).
+        // Never a saveLayer here: its bounds are the track, so it would crop
+        // anything an item paints past the track (a badge and its halo) for
+        // as long as the lens moves. The lens side keeps `clipBehavior`.
         ClipPath(
-          clipBehavior: clipBehavior,
+          clipBehavior: Clip.antiAlias,
           clipper: JellyClipper(
             itemCount: widget.tabCount,
             alignment: resolvedAlignment,

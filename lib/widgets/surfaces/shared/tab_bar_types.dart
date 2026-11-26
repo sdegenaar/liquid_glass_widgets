@@ -121,6 +121,9 @@ class JellyClipper extends CustomClipper<Path> {
   /// This is below human perception threshold (sub-pixel).
   static const double _recalcThreshold = 0.001;
 
+  /// How far past the track the [inverse] mask keeps item content visible.
+  static const double _inverseOverflow = 50.0;
+
   @override
   Path getClip(Size size) {
     final lens = lensGeometry(size);
@@ -128,9 +131,14 @@ class JellyClipper extends CustomClipper<Path> {
         (Path()..addRRect(lens.rrect)).transform(lens.transform.storage);
 
     if (inverse) {
+      // The inverse mask only has to cut the lens out. Its outer rectangle is
+      // deliberately larger than the track: unselected items can paint past
+      // the track's edges (a GlassBadge sits above its icon and has a soft
+      // halo), and a rectangle fitted to the track would slice that overflow
+      // in a straight line.
       return Path()
         ..fillType = PathFillType.evenOdd
-        ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..addRect((Offset.zero & size).inflate(_inverseOverflow))
         ..addPath(indicatorPath, Offset.zero);
     }
 

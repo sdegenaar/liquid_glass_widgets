@@ -14,6 +14,7 @@
 ## Bug Fixes
 
 - **Disabled `GlassButton` Impeller Metal glass preservation:** In `GlassSurfaceStyle.glass` mode, disabled buttons now dim only their interior content (`Opacity(opacity: 0.5)`) inside `AdaptiveGlass` rather than wrapping the glass shader in an ancestor `Opacity` `saveLayer`, preventing disabled glass buttons and toggles from losing their refractive pill surface on Impeller Metal.
+- **`GlassTabBar` badge halo cut at the track edge:** A `GlassBadge` on a tab paints a soft halo that reaches past the top of the tab track, and the lens masks sliced it in a straight line. The inverse `JellyClipper` mask now extends past the track (it only has to cut the lens out), and the unselected icon layer no longer uses a `saveLayer` while the lens moves, since that layer is bounded by the track and cropped the overflow again. The lens side keeps its existing clip.
 
 ## Deprecations
 
