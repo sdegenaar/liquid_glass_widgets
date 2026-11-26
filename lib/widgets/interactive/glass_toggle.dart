@@ -323,6 +323,24 @@ class GlassToggle extends StatelessWidget {
 
   static void _noOp() {}
 
+  /// Resolves a [Color] (including [CupertinoDynamicColor]) against the
+  /// package's single brightness authority ([GlassTheme.brightnessOf]) and
+  /// active high-contrast setting so local [GlassTheme] and
+  /// [GlassContentAwareScope] brightness overrides are always honoured.
+  static Color _resolveDynamicColor(
+    Color color,
+    bool isDark,
+    bool highContrast,
+  ) {
+    if (color is CupertinoDynamicColor) {
+      if (isDark) {
+        return highContrast ? color.darkHighContrastColor : color.darkColor;
+      }
+      return highContrast ? color.highContrastColor : color.color;
+    }
+    return color;
+  }
+
   void _handleTap() {
     final handler = onChanged;
     if (handler == null) return;
@@ -336,42 +354,43 @@ class GlassToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnabled = onChanged != null;
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final highContrast = MediaQuery.maybeHighContrastOf(context) ?? false;
     final effectiveSurfaceStyle = surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
     final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
 
-    final resolvedColor = CupertinoDynamicColor.maybeResolve(color, context);
-    final resolvedActiveColor =
-        CupertinoDynamicColor.maybeResolve(activeColor, context) ??
-            CupertinoDynamicColor.resolve(
-              CupertinoTheme.of(context).primaryColor,
-              context,
-            );
+    Color resolve(Color c) => _resolveDynamicColor(c, isDark, highContrast);
+
+    final resolvedColor = color != null ? resolve(color!) : null;
+    final resolvedActiveColor = resolve(
+      activeColor ?? CupertinoTheme.of(context).primaryColor,
+    );
 
     // Native iOS 26/27: a disabled ON toggle desaturates to a muted neutral
-    // shaded pill rather than vibrant accent fill, while still staying visibly
-    // distinguishable from a disabled OFF pill.
-    final Color? disabledOnTint = (!isEnabled && value)
-        ? CupertinoColors.systemGrey
-            .resolveFrom(context)
-            .withValues(alpha: isDark ? 0.30 : 0.16)
+    // shaded pill rather than vibrant accent fill, while staying visibly
+    // distinct from a disabled OFF pill. Both glass tintColor and solid
+    // Opacity(0.5) attenuate disabled fills by 0.5, so passing 0.32 (light) /
+    // 0.56 (dark) lands both modes at the calibrated 0.16 / 0.28 rest alpha.
+    final Color? disabledOnFill = (!isEnabled && value)
+        ? resolve(CupertinoColors.systemGrey)
+            .withValues(alpha: isDark ? 0.56 : 0.32)
         : null;
 
     final Color effectiveForeground;
     if (!isEnabled) {
-      effectiveForeground =
-          CupertinoDynamicColor.maybeResolve(foregroundColor, context) ??
-              CupertinoColors.label.resolveFrom(context);
+      effectiveForeground = foregroundColor != null
+          ? resolve(foregroundColor!)
+          : resolve(CupertinoColors.label);
     } else if (value) {
-      effectiveForeground =
-          CupertinoDynamicColor.maybeResolve(activeForegroundColor, context) ??
-              (resolvedActiveColor.computeLuminance() > 0.55
-                  ? CupertinoColors.black
-                  : CupertinoColors.white);
+      effectiveForeground = activeForegroundColor != null
+          ? resolve(activeForegroundColor!)
+          : (resolvedActiveColor.computeLuminance() > 0.55
+              ? CupertinoColors.black
+              : CupertinoColors.white);
     } else {
       final explicitFg =
-          CupertinoDynamicColor.maybeResolve(foregroundColor, context);
+          foregroundColor != null ? resolve(foregroundColor!) : null;
       if (explicitFg != null) {
         effectiveForeground = explicitFg;
       } else if (isSolid && resolvedColor != null && resolvedColor.a > 0.5) {
@@ -379,7 +398,7 @@ class GlassToggle extends StatelessWidget {
             ? CupertinoColors.black
             : CupertinoColors.white;
       } else {
-        effectiveForeground = CupertinoColors.label.resolveFrom(context);
+        effectiveForeground = resolve(CupertinoColors.label);
       }
     }
 
@@ -464,9 +483,9 @@ class GlassToggle extends StatelessWidget {
           ? GlassButtonStyle.prominent
           : GlassButtonStyle.filled,
       surfaceStyle: surfaceStyle,
-      color: value ? (isSolid ? disabledOnTint : null) : color,
+      color: value ? (isSolid ? disabledOnFill : null) : color,
       tintColor:
-          value ? (isEnabled ? resolvedActiveColor : disabledOnTint) : null,
+          value ? (isEnabled ? resolvedActiveColor : disabledOnFill) : null,
       settings: settings,
       useOwnLayer: useOwnLayer,
       quality: quality,

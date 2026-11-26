@@ -578,5 +578,170 @@ void main() {
       await tester.pump();
       expect(received, isTrue);
     });
+
+    testWidgets(
+        'works inside unbounded horizontal SingleChildScrollView and ellipsizes in narrow bounds',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      GlassToggle.button(
+                        value: true,
+                        onChanged: (_) {},
+                        icon: const Icon(CupertinoIcons.star_fill),
+                        label: 'Favorites',
+                      ),
+                      const SizedBox(width: 8),
+                      GlassToggle.button(
+                        value: false,
+                        onChanged: (_) {},
+                        label: 'Recently Added',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: 90,
+                  child: GlassToggle.button(
+                    value: false,
+                    onChanged: (_) {},
+                    icon: const Icon(CupertinoIcons.wifi),
+                    label: 'Very Long Filter Label',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Favorites'), findsOneWidget);
+      expect(find.text('Very Long Filter Label'), findsOneWidget);
+    });
+
+    testWidgets('grows vertically without clipping under 2.0x Dynamic Type',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: Center(
+                child: GlassToggle.button(
+                  value: false,
+                  onChanged: (_) {},
+                  label: 'Accessible',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final size = tester.getSize(find.byType(GlassToggle));
+      expect(size.height, greaterThan(44.0));
+    });
+
+    testWidgets(
+        'honours GlassTheme.brightnessOf override over CupertinoApp brightness',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData(brightness: Brightness.light),
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: Center(
+                child: GlassToggle.button(
+                  value: false,
+                  onChanged: (_) {},
+                  label: 'Light Override',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text('Light Override'));
+      expect(
+        text.style?.color?.toARGB32(),
+        CupertinoColors.label.color.toARGB32(),
+      );
+    });
+
+    testWidgets(
+        'disabled solid ON keeps stronger neutral fill than disabled solid OFF',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlassToggle.button(
+                value: false,
+                onChanged: null,
+                label: 'Solid Dis Off',
+                surfaceStyle: GlassSurfaceStyle.solid,
+              ),
+              GlassToggle.button(
+                value: true,
+                onChanged: null,
+                label: 'Solid Dis On',
+                surfaceStyle: GlassSurfaceStyle.solid,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final buttons =
+          tester.widgetList<GlassButton>(find.byType(GlassButton)).toList();
+      expect(buttons[0].color, isNull);
+      expect(buttons[1].color, isNotNull);
+      expect(buttons[1].color!.a, closeTo(0.56, 0.02));
+    });
+
+    testWidgets(
+        'disabled prominent tinted GlassButton attenuates glass tint alpha without ancestor Opacity',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(CupertinoIcons.star_fill),
+              style: GlassButtonStyle.prominent,
+              tintColor: CupertinoColors.systemBlue,
+              enabled: false,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.ancestor(
+          of: find.byType(AdaptiveGlass),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+      final adaptive = tester.widget<AdaptiveGlass>(find.byType(AdaptiveGlass));
+      expect(adaptive.settings.glassColor.a, closeTo(0.425, 0.01));
+    });
   });
 }
