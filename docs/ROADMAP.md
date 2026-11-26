@@ -22,7 +22,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 | Light mode + dark mode | ✅ Done | `GlassTheme.brightnessOf` is the single brightness authority |
 | RTL layout verified | ✅ Done | `EdgeInsetsDirectional` / `AlignmentDirectional` audit complete; RTL tab bar & menu gestures verified |
 | Keyboard / Tab focus / Enter-Space | ✅ Done | Single-node semantics; `GlassFocusRegion`, focus ring, semantics across all widget families |
-| `docs/PLATFORM_SUPPORT.md` | 🔄 Refresh | Needs refresh from `0.25.x` baseline for Flutter 3.50 desktop Impeller defaults |
+| `docs/PLATFORM_SUPPORT.md` | ✅ Done | Refreshed for `v1.21+`, `GlassStyle.ios27`/`ios26`, `GlassSurfaceStyle.solid`, `PlatformViewGlassMode.passthrough`, HLSL/Wasm shaders, and Flutter 3.50 desktop Impeller defaults |
 | Navigation transition morph | ✅ Done (1.1.0) | `GlassNavigationShell` + `GlassAppBar.pinned` (#221) |
 | Scroll-to-minimize | ✅ Done (1.1.0) | `GlassTabBarMinimizeController`, all four behaviour cases (#228) |
 | Native gel morph | ✅ Done (1.2.0) | Capsule reshapes natively on push/pop; swell, bounce, glyph blur (#243) |
@@ -150,7 +150,7 @@ Ideas under consideration. None committed.
 
 ### Documentation and pub.dev
 
-- [ ] **Refresh `docs/PLATFORM_SUPPORT.md`** — update from `0.25.x` baseline for `1.17+` and Flutter 3.50 desktop Impeller defaults.
+- [x] **Refresh `docs/PLATFORM_SUPPORT.md`** — updated from `0.25.x` baseline for `v1.21+`, `GlassStyle.ios27`/`ios26`, `PlatformViewGlassMode.passthrough`, single-exit HLSL/Wasm shaders, and Flutter 3.50 desktop Impeller defaults.
 - [ ] **Migration guide (`docs/MIGRATION_1.x_TO_2.0.md`)** — step-by-step upgrade guide covering `cupertino_ui` / Flutter 3.50+, `GlassSurfaceStyle.solid` default flips, 44pt lone bar items, and retired `1.x` symbols.
 - [ ] **Widget catalogue page** — README or docs/ page with screenshots of every
   widget in both quality modes.
