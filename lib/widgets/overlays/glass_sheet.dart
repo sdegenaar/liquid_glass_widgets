@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:ui';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/interaction_notification.dart';
@@ -5,6 +7,7 @@ import '../../types/interaction_notification.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../shared/adaptive_glass.dart';
+import '../shared/glass_interaction_silence.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +16,13 @@ import '../../src/widgets/overlays/glass_sheet_defaults.dart';
 import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../constants/glass_defaults.dart';
 
+export '../shared/glass_interaction_silence.dart';
+
 /// A glass morphism bottom sheet following Apple's iOS 26 design patterns.
+///
+/// > **Deprecated:** use `GlassModalSheet` (`GlassModalSheet.show` with
+/// > `GlassSheetMode.dismissible` or `GlassSheetMode.persistent`) instead.
+/// > `GlassSheet` will be removed in 2.0.0.
 ///
 /// [GlassSheet] provides a modal bottom sheet with liquid glass effect,
 /// drag indicator, and iOS-style dismiss behavior.
@@ -96,6 +105,10 @@ import '../../constants/glass_defaults.dart';
 /// );
 /// ```
 
+@Deprecated(
+  'Use GlassModalSheet (GlassModalSheet.show / GlassSheetMode.dismissible '
+  'or GlassSheetMode.persistent) instead. Will be removed in 2.0.0.',
+)
 class GlassSheet extends StatefulWidget {
   /// Creates a glass sheet widget.
   ///
@@ -728,33 +741,6 @@ class _GlassDragIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(height / 2),
         ),
       ),
-    );
-  }
-}
-
-/// A universal wrapper that silences [GlassSheet] interactions for its child.
-///
-/// Wrap any interactive widget (buttons, switches, list tiles) in this
-/// to prevent the parent [GlassSheet] from scaling or glowing when the
-/// child is tapped.
-///
-/// Note: [GlassSheet.suppressInteractionOnChildren] must be set to `true`
-/// for this to have any effect.
-class GlassInteractionSilence extends StatelessWidget {
-  /// The widget that should silence the parent sheet.
-  final Widget child;
-
-  /// Creates a [GlassInteractionSilence].
-  const GlassInteractionSilence({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (event) {
-        InteractionNotification(event).dispatch(context);
-      },
-      behavior: HitTestBehavior.translucent,
-      child: child,
     );
   }
 }

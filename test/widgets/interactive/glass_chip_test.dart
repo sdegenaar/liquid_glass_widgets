@@ -1,3 +1,6 @@
+// GlassChip is deprecated (use GlassToggle.button) but stays covered here
+// until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package
 // ignore: unnecessary_import
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';

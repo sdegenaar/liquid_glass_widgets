@@ -62,6 +62,12 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   int _segmentIndex = 0;
   bool _switchOn = true;
   bool _switchOff = false;
+  bool _toggleOff = false;
+  bool _toggleOn = true;
+  bool _toggleOrange = true;
+  bool _toggleYellow = true;
+  bool _toggleHeartOff = false;
+  bool _toggleHeartOn = true;
   double _sliderContinuous = 0.50;
   double _sliderDiscrete = 0.75;
 
@@ -1126,6 +1132,123 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   ),
                                 );
                               },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  GlassGroupedSection(
+                    header: _buildSectionHeader(
+                      'TOGGLE BUTTONS (TOGGLE(.BUTTON))',
+                      secondaryColor,
+                    ),
+                    margin: EdgeInsets.zero,
+                    surfaceStyle: surfaceStyle,
+                    quality: _quality,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                GlassToggle.button(
+                                  value: _toggleOff,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleOff = v),
+                                  icon: const Icon(CupertinoIcons.wifi),
+                                  label: 'Off',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: _toggleOn,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleOn = v),
+                                  icon: const Icon(CupertinoIcons.wifi),
+                                  label: 'On',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: _toggleOrange,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleOrange = v),
+                                  label: 'Orange',
+                                  activeColor: CupertinoColors.systemOrange,
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: _toggleYellow,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleYellow = v),
+                                  label: 'Yellow',
+                                  activeColor: CupertinoColors.systemYellow,
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                GlassToggle.button(
+                                  value: _toggleHeartOff,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleHeartOff = v),
+                                  icon: Icon(
+                                    _toggleHeartOff
+                                        ? CupertinoIcons.heart_fill
+                                        : CupertinoIcons.heart,
+                                  ),
+                                  semanticLabel: 'Favorite Off',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: _toggleHeartOn,
+                                  onChanged: (v) =>
+                                      setState(() => _toggleHeartOn = v),
+                                  icon: Icon(
+                                    _toggleHeartOn
+                                        ? CupertinoIcons.heart_fill
+                                        : CupertinoIcons.heart,
+                                  ),
+                                  semanticLabel: 'Favorite On',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: false,
+                                  onChanged: null,
+                                  label: 'Dis Off',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                                GlassToggle.button(
+                                  value: true,
+                                  onChanged: null,
+                                  label: 'Dis On',
+                                  surfaceStyle: GlassSurfaceStyle.glass,
+                                  useOwnLayer: true,
+                                  quality: effectiveButtonQuality,
+                                ),
+                              ],
                             ),
                           ],
                         ),

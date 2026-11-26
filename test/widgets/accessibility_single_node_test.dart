@@ -114,6 +114,18 @@ void main() {
           onPressed: () {},
           semanticLabel: 'Settings',
         ),
+    'GlassToggle.button': () => GlassToggle.button(
+          value: true,
+          onChanged: (_) {},
+          icon: const Icon(CupertinoIcons.wifi),
+          label: 'Wi-Fi',
+        ),
+    'GlassToggle.button (icon-only)': () => GlassToggle.button(
+          value: false,
+          onChanged: (_) {},
+          icon: const Icon(CupertinoIcons.heart),
+          semanticLabel: 'Favorite',
+        ),
     'GlassChip': () => GlassChip(
           label: 'Design',
           semanticLabel: 'Design filter',

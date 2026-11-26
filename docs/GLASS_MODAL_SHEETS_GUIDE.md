@@ -125,7 +125,7 @@ InteractionNotification(event).dispatch(context);
 *Internal Logic:* When `suppressInteractionOnChildren` is `true`, the sheet listens for this notification. If caught, it sets `_suppressScalingForSession = true`, forcing the `interactionScale` to `1.0` and `stretch` to `0.0` for the remainder of the pointer session.
 
 ### 2.5. Solid Controls & Chips Inside Sheets (`1.x` Opt-In)
-Because `GlassModalSheet` already renders its own refractive glass surface, nesting glass-mode controls (`GlassChip`, `GlassButton`, `GlassIconButton`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, or `GlassPicker`) directly inside a sheet can cause double-refraction distortion and allocate per-control backdrop shader layers during sheet drags.
+Because `GlassModalSheet` already renders its own refractive glass surface, nesting glass-mode controls (`GlassToggle.button`, `GlassButton`, `GlassIconButton`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, or `GlassPicker`) directly inside a sheet can cause double-refraction distortion and allocate per-control backdrop shader layers during sheet drags.
 
 A sheet with `surfaceStyle: GlassSurfaceStyle.solid` does this for you: it publishes `GlassSurfaceStyle.solid` to its content. A glass sheet publishes nothing. To get solid controls on a glass sheet in `1.x`, wrap dense sheet content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, ...)`:
 
@@ -141,9 +141,9 @@ GlassModalSheet.show(
           spacing: 8,
           runSpacing: 8,
           children: [
-            GlassChip(label: 'All', selected: true, onTap: () {}),
-            GlassChip(label: 'Favorites', onTap: () {}),
-            GlassChip(label: 'Recent', onTap: () {}),
+            GlassToggle.button(label: 'All', value: true, onChanged: (_) {}),
+            GlassToggle.button(label: 'Favorites', value: false, onChanged: (_) {}),
+            GlassToggle.button(label: 'Recent', value: false, onChanged: (_) {}),
           ],
         ),
         const SizedBox(height: 16),

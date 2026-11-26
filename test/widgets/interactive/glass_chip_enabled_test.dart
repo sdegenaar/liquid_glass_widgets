@@ -1,3 +1,6 @@
+// GlassChip is deprecated (use GlassToggle.button) but stays covered here
+// until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package
 // A chip without a handler is drawn disabled by default (retaining disabled
 // button semantics); `enabled: true` draws it at full strength as static text.
 // `enabled: false` disables chips even when handlers are provided, across both
