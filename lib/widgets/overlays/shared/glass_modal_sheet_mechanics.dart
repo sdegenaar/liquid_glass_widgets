@@ -575,17 +575,21 @@ class SheetGeometry {
   }
 
   /// Applies rubber-band resistance when dragging beyond bounds.
+  ///
+  /// [minDetentResistance] replaces [resistance] below the smallest detent;
+  /// `0` stops the drag there. `null` keeps [resistance] on both sides.
   double applyResistance(
     double rawPosition,
     double screenHeight, {
     required double resistance,
+    double? minDetentResistance,
   }) {
     final minPos = positionForState(minState, screenHeight);
     final maxPos = positionForState(maxState, screenHeight);
 
     if (rawPosition < minPos) {
       final overflow = minPos - rawPosition;
-      return minPos - overflow * resistance;
+      return minPos - overflow * (minDetentResistance ?? resistance);
     }
     if (rawPosition > maxPos) {
       final overflow = rawPosition - maxPos;
