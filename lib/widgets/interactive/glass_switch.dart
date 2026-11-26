@@ -358,6 +358,16 @@ class _GlassSwitchState extends State<GlassSwitch>
         _settleOvershoot();
       }
 
+      // Reduce Motion: the thumb lands on its new side at once, with no
+      // travel and no liquid bloom.
+      if (_reduceMotion) {
+        _justEndedDrag = false;
+        _isPressed = false;
+        _positionController.value = widget.value ? 1.0 : 0.0;
+        _thicknessController.value = 0.0;
+        return;
+      }
+
       // Consume the drag-end flag before animating position so drag releases
       // keep their responsive ease-out settle curve instead of being
       // overwritten by the 380ms tap jump curve.
@@ -418,6 +428,10 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _animatePositionTo(double target, {bool fromDrag = false}) {
+    if (_reduceMotion) {
+      _positionController.value = target;
+      return;
+    }
     final distance = (target - _positionController.value).abs();
     if (distance <= 0.001) {
       _positionController.value = target;
@@ -443,7 +457,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _settleOvershoot() {
-    if (_dragOvershootPx.abs() <= 0.01) {
+    if (_reduceMotion || _dragOvershootPx.abs() <= 0.01) {
       _dragOvershootPx = 0.0;
       _releaseOvershootStartPx = 0.0;
       _overshootController.value = 0.0;
@@ -514,8 +528,32 @@ class _GlassSwitchState extends State<GlassSwitch>
   // Gesture handlers
   // ---------------------------------------------------------------------------
 
+  /// Whether the user asked for reduced motion (see [GlassAccessibilityData]).
+  ///
+  /// When true the switch still toggles, drags and reports its value exactly
+  /// as before, but nothing animates: no press bloom, no thumb travel and no
+  /// overshoot settle — every change lands on the next frame.
+  bool get _reduceMotion => GlassAccessibilityData.of(context).reduceMotion;
+
+  /// Deflates the press bloom: animated normally, instantly under Reduce
+  /// Motion.
+  void _deflateBloom() {
+    if (_reduceMotion) {
+      _thicknessController.value = 0.0;
+    } else {
+      unawaited(_thicknessController.forward(from: _thicknessController.value));
+    }
+  }
+
   void _startPressBloom() {
-    if (!_isInteractive || _isPressed) return;
+    if (!_isInteractive) return;
+    if (_reduceMotion) {
+      // No bloom under Reduce Motion: only reset the per-gesture flags.
+      _dragAbandonedExternally = false;
+      _justEndedDrag = false;
+      return;
+    }
+    if (_isPressed) return;
     _isPressed = true;
     if (_thicknessController.value >= 0.99) {
       _thicknessController.value = 0.0;
@@ -545,7 +583,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     if (!_isDragging) {
       // Fire haptic immediately — user feels the click the instant they lift.
       if (widget.enableHaptics) unawaited(HapticFeedback.lightImpact());
-      unawaited(_thicknessController.forward(from: _thicknessController.value));
+      _deflateBloom();
       _handleTap();
     }
   }
@@ -579,7 +617,9 @@ class _GlassSwitchState extends State<GlassSwitch>
     }
 
     // If we're not at perfect plump (e.g., still inflating), animate to 0.45
-    if ((_thicknessController.value - 0.45).abs() > 0.01) {
+    if (_reduceMotion) {
+      _thicknessController.value = 0.0;
+    } else if ((_thicknessController.value - 0.45).abs() > 0.01) {
       unawaited(_thicknessController.animateTo(
         0.45,
         duration: const Duration(milliseconds: 80),
@@ -598,7 +638,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     setState(() => _isDragging = false);
     _settleOvershoot();
     // Deflate bloom smoothly.
-    unawaited(_thicknessController.forward(from: _thicknessController.value));
+    _deflateBloom();
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
@@ -653,7 +693,7 @@ class _GlassSwitchState extends State<GlassSwitch>
       _justEndedDrag = false;
       _settleOvershoot();
       if (widget.enableHaptics) unawaited(HapticFeedback.lightImpact());
-      unawaited(_thicknessController.forward(from: _thicknessController.value));
+      _deflateBloom();
       _handleTap();
       _dragMidpointHapticFired = false;
       return;
@@ -674,7 +714,14 @@ class _GlassSwitchState extends State<GlassSwitch>
     _settleOvershoot();
 
     // Smoothly settle thumb toward the target state from the exact release point.
-    _animatePositionTo(shouldBeOn ? 1.0 : 0.0, fromDrag: true);
+    if (_reduceMotion) {
+      // The parent decides the value: snap to it instead of gliding from the
+      // release point.
+      _justEndedDrag = false;
+      _positionController.value = widget.value ? 1.0 : 0.0;
+    } else {
+      _animatePositionTo(shouldBeOn ? 1.0 : 0.0, fromDrag: true);
+    }
 
     // Notify parent only when the value actually changed.
     if (valueChanging) {
@@ -682,7 +729,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     }
 
     // Continue the settle bloom down to 0 so the landing feels weighty.
-    unawaited(_thicknessController.forward(from: _thicknessController.value));
+    _deflateBloom();
 
     // Haptic on snap — only if the state is changing AND the midpoint
     // crossing haptic didn't already fire (avoids a double-tap feel on

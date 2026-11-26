@@ -281,6 +281,7 @@ Configure the realism of the glass and how it turns into a solid color.
 | :--- | :--- | :--- | :--- |
 | `stretch` | `double` | `0.5` | Multiplier for the rubber-band effect when dragging beyond the 1.0 (Full) or 0.0 (Hidden/Peek) bounds. |
 | `resistance` | `double` | `0.08` | Exponential decay factor for dragging. Higher = more force needed to move off-state. |
+| `minDetentResistance` | `double?` | `null` | Resistance below the smallest detent only. `null` uses `resistance`. `0` stops the drag at the smallest detent, so a `persistent` sheet used as always-visible chrome cannot be pulled under the screen edge. |
 | `snapThreshold` | `double` | `0.4` | Percentage of the distance between two states (e.g. Half to Full) needed to trigger a snap. |
 | `velocityThreshold` | `double` | `700.0` | Points per second. If drag ends with velocity > this, we jump states regardless of position. |
 | `enablePeek` | `bool?` | `null` | Logic override. If `null`, derived from `mode` (`persistent` = true). |

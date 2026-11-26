@@ -514,6 +514,16 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
   final GlobalKey _textFieldKey = GlobalKey();
 
+  /// Updates the press state that drives the scale animation.
+  ///
+  /// Pointer up / cancel are delivered to every target of the pointer-down hit
+  /// test, including one that was disposed in between, so this is a no-op once
+  /// the state is unmounted.
+  void _setPressed(bool pressed) {
+    if (!mounted || _isPressed == pressed) return;
+    setState(() => _isPressed = pressed);
+  }
+
   /// Wraps [child] in a [GlassGlow] sensor only when [interactionBehavior]
   /// includes glow. Skips the widget entirely otherwise — zero allocation cost.
   Widget _wrapWithGlow(Widget child, bool isDark) {
@@ -865,11 +875,14 @@ class _GlassTextFieldState extends State<GlassTextField> {
           child: surfaceWidget,
         );
 
-        // Wrap with Listener to capture pointer down/up state for the bounce animation
+        // Wrap with Listener to capture pointer down/up state for the bounce animation.
+        // The Listener stays in the pointer-down hit test path, so the matching
+        // up / cancel can arrive after the field has been disposed (e.g. the
+        // press popped the route) — guard every callback with `mounted`.
         surfaceWidget = Listener(
-          onPointerDown: (_) => setState(() => _isPressed = true),
-          onPointerUp: (_) => setState(() => _isPressed = false),
-          onPointerCancel: (_) => setState(() => _isPressed = false),
+          onPointerDown: (_) => _setPressed(true),
+          onPointerUp: (_) => _setPressed(false),
+          onPointerCancel: (_) => _setPressed(false),
           child: surfaceWidget,
         );
       }
