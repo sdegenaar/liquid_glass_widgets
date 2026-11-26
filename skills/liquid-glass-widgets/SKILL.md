@@ -16,7 +16,7 @@ Follow this guide strictly when writing, refactoring, or reviewing UI code to en
 ### Rule 1: Glass is a Platter, Not a Wrapper
 Glass in the iOS 26/27 design system is reserved for the **navigation and control layer** — floating chrome that sits above content.
 - **DO use glass for:** Navigation bars (`GlassAppBar`), tab bars (`GlassTabBar`), floating chrome buttons (`GlassButton`, `GlassIconButton`, optionally tinted with `tintColor`), toolbars, modal sheets (`GlassModalSheet`), dialogs (`GlassDialog`), and standalone floating cards (`GlassContainer.card`).
-- **DO NOT use glass for:** Full-screen backgrounds, dense list view items, video players, image galleries, or text article bodies. Backgrounds should be rich wallpapers or gradients; content cards should be clean and readable. Cards, chips, buttons, and inputs inside scrolling lists should use `surfaceStyle: GlassSurfaceStyle.solid` (on `GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, `GlassDatePicker`, `GlassMultiDatePicker`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, `GlassChip`, `GlassButton`, `GlassButton.custom`, or `GlassIconButton`): a flat opaque card or translucent input/pill/button well matching native iOS inset-grouped lists. Inputs, pickers, chips, and buttons placed inside a solid card/section inherit `solid` automatically via `InheritedGlassSurfaceStyle`. `glass` is the 1.x default; `solid` becomes the default for list sections, date pickers, and `GlassContainer.card` in 2.0.0.
+- **DO NOT use glass for:** Full-screen backgrounds, dense list view items, video players, image galleries, or text article bodies. Backgrounds should be rich wallpapers or gradients; content cards should be clean and readable. Cards, chips, buttons, and inputs inside scrolling lists should use `surfaceStyle: GlassSurfaceStyle.solid` (on `GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, `GlassDatePicker`, `GlassMultiDatePicker`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, `GlassChip`, `GlassButton`, `GlassButton.custom`, or `GlassIconButton`; `GlassModalSheet` takes it too, for a sheet that is opaque at every detent): a flat opaque card or translucent input/pill/button well matching native iOS inset-grouped lists. Inputs, pickers, chips, and buttons placed inside a solid card/section inherit `solid` automatically via `InheritedGlassSurfaceStyle`. `glass` is the 1.x default; `solid` becomes the default for list sections, date pickers, and `GlassContainer.card` in 2.0.0.
 
 ### Rule 2: NEVER Nest Refractive Glass inside Refractive Glass
 Placing refractive glass widgets inside another refractive glass container is an optical and performance anti-pattern.
@@ -25,7 +25,7 @@ Placing refractive glass widgets inside another refractive glass container is an
 - **Exception — `GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`:** their glass is transient (only the thumb or pill turns to glass while it is touched or moving; at rest they look flat), so they are safe inside a `GlassContainer.card` / `GlassGroupedSection` with `surfaceStyle: GlassSurfaceStyle.solid`, which has no glass layer at all. This is the native iOS Settings pattern. On a default `glass` card, prefer placing them outside the card.
 - **Correct Pattern:**
   - In a `solid` card or `GlassGroupedSection`: standard text and icons, `GlassListTile`, `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` / `GlassChip` / `GlassButton` / `GlassButton.custom` / `GlassIconButton` (all auto-inherit `solid` styling at zero shader cost via `InheritedGlassSurfaceStyle`), `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl`.
-  - In a `GlassModalSheet` with dense controls or chips (`1.x`): wrap the sheet's `builder` content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)` so nested buttons, chips, inputs, and pickers inherit zero-shader solid wells instead of double-refracting over the sheet or allocating per-control shader layers during drags (becomes the default in `2.0.0`).
+  - In a `GlassModalSheet` with dense controls or chips (`1.x`): pass `surfaceStyle: GlassSurfaceStyle.solid` to the sheet when it should be opaque, or else wrap the sheet's `builder` content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)`, so nested buttons, chips, inputs, and pickers inherit zero-shader solid wells instead of double-refracting over the sheet or allocating per-control shader layers during drags (becomes the default in `2.0.0`).
   - In a `glass` card: standard text, icons, and non-refractive controls (or `GlassListTile`, which has no internal glass layer).
   - Outside the card / on the page platter: `GlassSegmentedControl`, `GlassButton`, `GlassIconButton`, `GlassSlider`, or standalone `GlassSwitch(useOwnLayer: true)`.
 
@@ -200,7 +200,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `showDatePicker` / `CupertinoDatePicker` | `GlassDatePicker` (`.compact`, `.graphical`, `.wheel`), `GlassMultiDatePicker` | `showGlassDatePicker(...)` returns `DateTime?` (caps modal width to `maxWidth = 400` on desktop/iPad by default and tints header actions via `tintColor`). |
 | `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` + `GlassPageRoute` | Typed `value` routing via `destinations`, or a `destination` builder. Automatically clips pages with rounded superellipse corners during push/pop and swipe-back (`transitionCornerRadius`; use `GlassPageTransitionsBuilder` in `MaterialApp.theme.pageTransitionsTheme`). |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). Forwards `autofillHints`, `autocorrect`, `enableSuggestions`, and `selectionControls` (e.g. `materialTextSelectionHandleControls` on Android); `GlassSearchBar` also supports `cancelButtonAlwaysVisible`. |
-| `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics and optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation. |
+| `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full, or fitted to its content) with spring physics, optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation, and `surfaceStyle: GlassSurfaceStyle.solid` for a sheet that is opaque at every detent. |
 | `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); `isPrimary: true` renders a solid accent capsule (`tintColor ?? CupertinoTheme.primaryColor`, auto-contrast white/black or explicit `foregroundColor`, hardware `Return`/`Enter` activation, reverting to neutral when disabled); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
 | `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
@@ -252,6 +252,24 @@ the controller and physics from `ScrollControllerProvider.of(context)!`.
 Bottom safe-area or keyboard padding supplied by the child counts toward the
 fitted height. For a minimum height, wrap the child in a `ConstrainedBox` with
 a `minHeight`.
+
+The sheet's surface is set by `surfaceStyle`. The default,
+`GlassSurfaceStyle.glass`, is glass that turns opaque toward the large detent.
+`GlassSurfaceStyle.solid` is opaque at every detent, and while the sheet
+moves, in `expandedColor` (or `expandedDarkColor` in dark mode). The
+per-state settings and `fillThreshold` then do not change the surface. A solid
+sheet publishes `GlassSurfaceStyle.solid` to its content, so you do not need
+the `InheritedGlassSurfaceStyle` wrapper shown above. A glass sheet publishes
+nothing; keep the wrapper there. For an always-opaque fitted sheet:
+
+```dart
+GlassModalSheet.show(
+  context: context,
+  detents: const {GlassSheetDetent.fitted},
+  surfaceStyle: GlassSurfaceStyle.solid,
+  builder: (sheetContext) => const MySheetBody(),
+);
+```
 
 ### GlassDialog
 Presents a native alert dialog:
@@ -492,7 +510,7 @@ GlassAppBar.pinned(
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.
-- [ ] **Did you avoid nesting glass in glass?** Never put glass-mode `GlassButton`, `GlassIconButton`, or `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`) or a `GlassModalSheet` wrapped in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)`, `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, and `GlassPicker` auto-inherit `solid`.
+- [ ] **Did you avoid nesting glass in glass?** Never put glass-mode `GlassButton`, `GlassIconButton`, or `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`) or a `GlassModalSheet` with `surfaceStyle: GlassSurfaceStyle.solid` or wrapped in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)`, `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, and `GlassPicker` auto-inherit `solid`.
 - [ ] **Did you use `GlassTabBar.bottom` instead of `GlassBottomBar`?** `GlassBottomBar` is deleted.
 - [ ] **`GlassButton` uses `onTap`, not `onPressed`.** (`GlassButton(onTap: () {})`) — the opposite of `ElevatedButton`.
 - [ ] **`GlassIconButton` uses `onPressed`, not `onTap`.** (`GlassIconButton(onPressed: () {})`).

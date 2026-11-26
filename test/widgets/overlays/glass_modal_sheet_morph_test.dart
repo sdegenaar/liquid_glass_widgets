@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
     show
         GlassQuality,
+        GlassSurfaceStyle,
         GlassTheme,
         GlassThemeData,
         InheritedLiquidGlass,
@@ -1027,6 +1028,40 @@ void main() {
           state: GlassSheetState.hidden,
           baseSettings: _glassSettings,
           enablePeek: false,
+        ),
+        0.0,
+      );
+    });
+
+    test('a solid surface fills at every visible detent', () {
+      for (final (state, enablePeek) in const [
+        (GlassSheetState.peek, true),
+        (GlassSheetState.peek, false),
+        (GlassSheetState.half, false),
+        (GlassSheetState.full, false),
+      ]) {
+        // Glass settings at every detent would leave a glass sheet unfilled
+        // at peek and half, and explicit glass full settings at full too.
+        expect(
+          SheetMorphGeometry.restingFillOpacity(
+            state: state,
+            baseSettings: _glassSettings,
+            peekSettings: _glassSettings,
+            halfSettings: _glassSettings,
+            fullSettings: _glassSettings,
+            enablePeek: enablePeek,
+            surfaceStyle: GlassSurfaceStyle.solid,
+          ),
+          1.0,
+          reason: '$state, enablePeek: $enablePeek',
+        );
+      }
+      expect(
+        SheetMorphGeometry.restingFillOpacity(
+          state: GlassSheetState.hidden,
+          baseSettings: _glassSettings,
+          enablePeek: false,
+          surfaceStyle: GlassSurfaceStyle.solid,
         ),
         0.0,
       );

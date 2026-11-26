@@ -989,6 +989,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       glassOpacity = 1.0 - colorOpacity;
     }
 
+    // A solid sheet is opaque everywhere, in the one expanded colour. The
+    // settings above still go to the glass controls inside it.
+    if (widget.surfaceStyle == GlassSurfaceStyle.solid) {
+      colorOpacity = 1.0;
+      glassOpacity = 0.0;
+      currentExpandedColor = effectiveExpandedColor;
+    }
+
     // Apply saturation glow pulse if enabled (classic style only; ios26/ios27
     // keep calibrated refraction and neutral rim without directional light injection)
     if (widget.enableSaturationGlow &&
@@ -1174,15 +1182,12 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final style = GlassThemeHelpers.resolveStyle(context);
-    final effectiveExpandedColor = (isDark ? widget.expandedDarkColor : null) ??
-        widget.expandedColor ??
-        (isDark
-            ? const Color(0xFF1C1C1E)
-            : (style == GlassStyle.classic
-                ? CupertinoColors.white
-                : const Color(0xFFF2F2F7)));
+    final effectiveExpandedColor = _sheetFillColor(
+      context,
+      expandedColor: widget.expandedColor,
+      expandedDarkColor: widget.expandedDarkColor,
+    );
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
@@ -1414,6 +1419,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
                 )
               : null,
           contentZoneKey: _contentZoneKey,
+          solidSurface: widget.surfaceStyle == GlassSurfaceStyle.solid,
           // Rebuilt every frame, but it notifies the strip's controls only
           // when the data changes.
           child: GlassVerticalBar(

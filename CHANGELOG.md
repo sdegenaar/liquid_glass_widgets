@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **`GlassModalSheet` surface style (`surfaceStyle`):** Adds `surfaceStyle` to `GlassModalSheet`, `GlassModalSheetScaffold`, and `GlassModalSheet.show`. `GlassSurfaceStyle.solid` makes the sheet opaque at every detent and at every moment: while it is dragged, slides in or out, or resizes as a `GlassSheetDetent.fitted` sheet. With `morphFrom`, the droplet starts as glass and the opaque fill fades in as it grows, as for a large sheet. It is filled with `expandedColor` / `expandedDarkColor` (default `#F2F2F7` light, white in `GlassStyle.classic`, `#1C1C1E` dark), its glass effects are set to zero under the fill, so the premium renderer skips its glass pass, and it publishes `GlassSurfaceStyle.solid` to its content so nested buttons, chips, and inputs render solid. The default, `GlassSurfaceStyle.glass`, keeps today's glass that turns opaque toward the large detent.
+
 # 1.21.0
 
 ## Features

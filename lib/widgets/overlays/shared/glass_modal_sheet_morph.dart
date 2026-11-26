@@ -920,6 +920,9 @@ class SheetMorphGeometry {
   /// hands off to glass, an opaque full detent hands off to opaque colour.
   /// Returning the wrong value here would show as a one-frame flash at the
   /// handoff, which is exactly what the unit tests pin down.
+  ///
+  /// A [GlassSurfaceStyle.solid] sheet is opaque in every visible state,
+  /// whatever its settings.
   static double restingFillOpacity({
     required GlassSheetState state,
     required LiquidGlassSettings baseSettings,
@@ -927,7 +930,11 @@ class SheetMorphGeometry {
     LiquidGlassSettings? peekSettings,
     LiquidGlassSettings? halfSettings,
     LiquidGlassSettings? fullSettings,
+    GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
   }) {
+    if (surfaceStyle == GlassSurfaceStyle.solid) {
+      return state == GlassSheetState.hidden ? 0.0 : 1.0;
+    }
     final sPeek = peekSettings ?? baseSettings;
     final sHalf = halfSettings ?? baseSettings;
     final sFull = fullSettings ?? baseSettings;
@@ -1042,6 +1049,7 @@ class GlassSheetMorphPresenter extends StatefulWidget {
     required this.platformViewBackdrop,
     required this.child,
     this.expandedDarkColor,
+    this.surfaceStyle = GlassSurfaceStyle.glass,
     this.barrierColor,
     this.placement = GlassSheetPlacement.automatic,
   });
@@ -1115,6 +1123,10 @@ class GlassSheetMorphPresenter extends StatefulWidget {
 
   /// See [GlassModalSheet.expandedDarkColor].
   final Color? expandedDarkColor;
+
+  /// See [GlassModalSheet.surfaceStyle]. A solid sheet's droplet is glass
+  /// with the base [settings], and its opaque fill fades in as it grows.
+  final GlassSurfaceStyle surfaceStyle;
 
   /// See [GlassModalSheet.quality].
   final GlassQuality? quality;
@@ -2049,14 +2061,20 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       fallback: kDefaultSheetSettings,
       isOverlayPlatter: true,
     );
-    final dropletSettings = SheetMorphGeometry.restingSettings(
-      state: activeState,
-      baseSettings: baseSettings,
-      enablePeek: enablePeek,
-      peekSettings: widget.peekSettings,
-      halfSettings: widget.halfSettings,
-      fullSettings: widget.fullSettings,
-    );
+    final solid = widget.surfaceStyle == GlassSurfaceStyle.solid;
+    // A solid sheet's per-state settings do not shape its surface, so its
+    // droplet takes the base settings, at the full visibility the sheet's
+    // own shell keeps.
+    final dropletSettings = solid
+        ? baseSettings.copyWith(visibility: 1.0)
+        : SheetMorphGeometry.restingSettings(
+            state: activeState,
+            baseSettings: baseSettings,
+            enablePeek: enablePeek,
+            peekSettings: widget.peekSettings,
+            halfSettings: widget.halfSettings,
+            fullSettings: widget.fullSettings,
+          );
     final fillOpacity = SheetMorphGeometry.restingFillOpacity(
           state: activeState,
           baseSettings: baseSettings,
@@ -2064,6 +2082,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
           peekSettings: widget.peekSettings,
           halfSettings: widget.halfSettings,
           fullSettings: widget.fullSettings,
+          surfaceStyle: widget.surfaceStyle,
         ) *
         math.max(SheetMorphGeometry.fillReveal(state.sizeT), contentOpacity);
 
@@ -2073,15 +2092,11 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       fallback: GlassQuality.premium,
     );
 
-    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final style = GlassThemeHelpers.resolveStyle(context);
-    final fillColor = (isDark ? widget.expandedDarkColor : null) ??
-        widget.expandedColor ??
-        (isDark
-            ? const Color(0xFF1C1C1E)
-            : (style == GlassStyle.classic
-                ? CupertinoColors.white
-                : const Color(0xFFF2F2F7)));
+    final fillColor = _sheetFillColor(
+      context,
+      expandedColor: widget.expandedColor,
+      expandedDarkColor: widget.expandedDarkColor,
+    );
 
     // Blob A — the trigger ghost. Shrinks to nothing over the first 40 % of the
     // opening so the liquid bridge snaps, and grows back on close so the real

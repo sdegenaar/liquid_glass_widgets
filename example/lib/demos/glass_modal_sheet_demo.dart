@@ -353,6 +353,17 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
               onTap: () => _showFittedSheet(context),
               color: CupertinoColors.systemGreen,
             ),
+            SizedBox(height: 16),
+            _buildScenarioTile(
+              title: 'Solid fitted sheet',
+              description: 'The packing list on an opaque sheet',
+              icon: CupertinoIcons.square_fill,
+              onTap: () => _showFittedSheet(
+                context,
+                surfaceStyle: GlassSurfaceStyle.solid,
+              ),
+              color: CupertinoColors.systemTeal,
+            ),
           ],
 
           // Peek Scenarios
@@ -902,7 +913,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
     );
   }
 
-  void _showFittedSheet(BuildContext context) {
+  void _showFittedSheet(
+    BuildContext context, {
+    GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
+  }) {
     var showAll = false;
     const items = [
       'Passport',
@@ -925,6 +939,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       context: context,
       quality: widget.currentQuality,
       detents: const {GlassSheetDetent.fitted},
+      surfaceStyle: surfaceStyle,
       builder: (context) => StatefulBuilder(builder: (context, update) {
         final scroll = ScrollControllerProvider.of(context)!;
         return SafeArea(
