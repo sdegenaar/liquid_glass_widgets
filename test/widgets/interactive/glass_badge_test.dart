@@ -1,7 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/widgets/interactive/glass_badge.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -438,6 +438,315 @@ void main() {
         isTrue,
         reason:
             'Default label must remain unchanged for backward compatibility',
+      );
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // GlassSurfaceStyle (glass vs solid + InheritedGlassSurfaceStyle)
+  // ────────────────────────────────────────────────────────────────────────────
+
+  group('GlassBadge surfaceStyle', () {
+    Widget wrapInTheme(
+      Widget child, {
+      Brightness brightness = Brightness.light,
+      bool highContrast = false,
+      GlassGlowColors? glowColors,
+    }) {
+      final variant = GlassThemeVariant(glowColors: glowColors);
+      return MediaQuery(
+        data: MediaQueryData(
+          platformBrightness: brightness,
+          highContrast: highContrast,
+        ),
+        child: CupertinoApp(
+          home: GlassTheme(
+            data: GlassThemeData(
+              brightness: brightness,
+              light: variant,
+              dark: variant,
+            ),
+            child: Center(child: child),
+          ),
+        ),
+      );
+    }
+
+    BoxDecoration findBadgeDecoration(WidgetTester tester) {
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(GlassBadge),
+          matching: find.byType(Container),
+        ),
+      );
+      return container.decoration! as BoxDecoration;
+    }
+
+    testWidgets('default glass count badge renders AdaptiveLiquidGlassLayer',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 2,
+            child: Icon(CupertinoIcons.bell),
+          ),
+        ),
+      );
+
+      expect(find.text('2'), findsOneWidget);
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsOneWidget);
+      final decoration = findBadgeDecoration(tester);
+      expect(decoration.border, isNotNull);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('default glass dot badge renders AdaptiveLiquidGlassLayer',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge.dot(
+            child: SizedBox(width: 40, height: 40),
+          ),
+        ),
+      );
+
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsOneWidget);
+      final decoration = findBadgeDecoration(tester);
+      expect(decoration.border, isNotNull);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets(
+        'solid count badge bypasses AdaptiveLiquidGlassLayer with flat styling',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 7,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Icon(CupertinoIcons.chat_bubble_2_fill),
+          ),
+        ),
+      );
+
+      expect(find.text('7'), findsOneWidget);
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
+      final decoration = findBadgeDecoration(tester);
+      expect(decoration.border, isNull);
+      expect(decoration.boxShadow, isNull);
+      expect(decoration.color, CupertinoColors.systemRed.color);
+    });
+
+    testWidgets('solid count badge caps at maxCount+ and pads small caps',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 6,
+            maxCount: 5,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Icon(CupertinoIcons.bell_fill),
+          ),
+        ),
+      );
+
+      expect(find.text('5+'), findsOneWidget);
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(GlassBadge),
+          matching: find.byType(Container),
+        ),
+      );
+      expect(container.padding,
+          const EdgeInsets.symmetric(horizontal: 6, vertical: 2));
+    });
+
+    testWidgets(
+        'solid dot badge bypasses AdaptiveLiquidGlassLayer with flat styling',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge.dot(
+            dotColor: CupertinoColors.systemGreen,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: SizedBox(width: 40, height: 40),
+          ),
+        ),
+      );
+
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
+      final decoration = findBadgeDecoration(tester);
+      expect(decoration.shape, BoxShape.circle);
+      expect(decoration.border, isNull);
+      expect(decoration.boxShadow, isNull);
+      expect(decoration.color, CupertinoColors.systemGreen.color);
+    });
+
+    testWidgets('inherits GlassSurfaceStyle.solid for count and dot badges',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const InheritedGlassSurfaceStyle(
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlassBadge(
+                  count: 3,
+                  child: Icon(CupertinoIcons.mail),
+                ),
+                GlassBadge.dot(
+                  child: SizedBox(width: 24, height: 24),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
+    });
+
+    testWidgets('explicit surfaceStyle.glass overrides ancestor solid scope',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const InheritedGlassSurfaceStyle(
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: GlassBadge(
+              count: 4,
+              surfaceStyle: GlassSurfaceStyle.glass,
+              child: Icon(CupertinoIcons.mail),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('4'), findsOneWidget);
+      expect(find.byType(AdaptiveLiquidGlassLayer), findsOneWidget);
+    });
+
+    testWidgets(
+        'resolves CupertinoDynamicColor for dark mode and high contrast',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 9,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Icon(CupertinoIcons.bell),
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      expect(
+        findBadgeDecoration(tester).color,
+        CupertinoColors.systemRed.darkColor,
+      );
+
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge.dot(
+            dotColor: CupertinoColors.systemGreen,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: SizedBox(width: 24, height: 24),
+          ),
+          brightness: Brightness.dark,
+          highContrast: true,
+        ),
+      );
+      expect(
+        findBadgeDecoration(tester).color,
+        CupertinoColors.systemGreen.darkHighContrastColor,
+      );
+    });
+
+    testWidgets('respects custom theme glowColors.danger in solid mode',
+        (tester) async {
+      const customDanger = Color(0xFF9C27B0);
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 1,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Icon(CupertinoIcons.bell),
+          ),
+          brightness: Brightness.dark,
+          glowColors: const GlassGlowColors(danger: customDanger),
+        ),
+      );
+
+      expect(findBadgeDecoration(tester).color, customDanger);
+    });
+
+    testWidgets(
+        'prints debug warning when settings or quality are passed in solid mode',
+        (tester) async {
+      final logs = <String?>[];
+      final originalDebugPrint = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) => logs.add(message);
+      try {
+        await tester.pumpWidget(
+          wrapInTheme(
+            const GlassBadge(
+              count: 5,
+              surfaceStyle: GlassSurfaceStyle.solid,
+              quality: GlassQuality.premium,
+              child: Icon(CupertinoIcons.bell),
+            ),
+          ),
+        );
+
+        expect(
+          logs.any((m) => m != null && m.contains('GlassBadge:')),
+          isTrue,
+        );
+
+        logs.clear();
+        await tester.pumpWidget(
+          wrapInTheme(
+            const GlassBadge(
+              count: 5,
+              surfaceStyle: GlassSurfaceStyle.solid,
+              child: Icon(CupertinoIcons.bell),
+            ),
+          ),
+        );
+
+        expect(
+          logs.any((m) => m != null && m.contains('GlassBadge:')),
+          isFalse,
+        );
+      } finally {
+        debugPrint = originalDebugPrint;
+      }
+    });
+
+    testWidgets('preserves semantics in solid mode', (tester) async {
+      await tester.pumpWidget(
+        wrapInTheme(
+          const GlassBadge(
+            count: 120,
+            maxCount: 99,
+            semanticCount: 120,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            child: Icon(CupertinoIcons.bell),
+          ),
+        ),
+      );
+
+      expect(find.text('99+'), findsOneWidget);
+      final badges = tester.widgetList<Semantics>(
+        find.descendant(
+          of: find.byType(GlassBadge),
+          matching: find.byType(Semantics),
+        ),
+      );
+      expect(
+        badges.any((s) => s.properties.label == '120 notifications'),
+        isTrue,
       );
     });
   });

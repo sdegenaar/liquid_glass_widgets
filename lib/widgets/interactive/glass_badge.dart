@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_surface_style.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
+import '../shared/glass_solid_surface.dart';
 
 /// Position of the badge relative to the child widget.
 enum BadgePosition {
@@ -49,12 +52,26 @@ enum BadgePosition {
 /// ### Dot Badge (Status Indicator)
 /// ```dart
 /// GlassBadge.dot(
-///   color: Colors.green, // Online status
+///   dotColor: CupertinoColors.systemGreen, // Online status
 ///   child: CircleAvatar(
 ///     backgroundImage: NetworkImage('https://...'),
 ///   ),
 /// )
 /// ```
+///
+/// ### Solid Badge (Zero-Shader Mode for Lists, Cards & Tab Bars)
+/// ```dart
+/// GlassBadge(
+///   count: 5,
+///   surfaceStyle: GlassSurfaceStyle.solid,
+///   child: Icon(CupertinoIcons.bell),
+/// )
+/// ```
+///
+/// Inside a solid `GlassContainer.card`, `GlassGroupedSection`, or
+/// `GlassModalSheet(surfaceStyle: GlassSurfaceStyle.solid)`, [GlassBadge]
+/// inherits [GlassSurfaceStyle.solid] automatically via
+/// [InheritedGlassSurfaceStyle] unless [surfaceStyle] is set explicitly.
 ///
 /// ### Custom Semantic Domain (Downloads, Messages, etc.)
 /// ```dart
@@ -130,6 +147,7 @@ class GlassBadge extends StatelessWidget {
     this.textColor,
     this.settings,
     this.quality,
+    this.surfaceStyle,
     this.showZero = false,
     this.maxCount = 99,
     this.semanticLabel,
@@ -145,7 +163,7 @@ class GlassBadge extends StatelessWidget {
   ///
   /// ```dart
   /// GlassBadge.dot(
-  ///   color: Colors.green,
+  ///   dotColor: CupertinoColors.systemGreen,
   ///   semanticLabel: 'Online',
   ///   child: Avatar(...),
   /// )
@@ -157,6 +175,7 @@ class GlassBadge extends StatelessWidget {
     this.position = BadgePosition.topRight,
     this.settings,
     this.quality,
+    this.surfaceStyle,
     this.semanticLabel,
   })  : isDot = true,
         count = 0,
@@ -234,11 +253,57 @@ class GlassBadge extends StatelessWidget {
   /// ```
   final int? semanticCount;
 
-  /// Custom glass settings (overrides theme)
+  /// Custom glass settings (overrides theme).
+  ///
+  /// Ignored when the resolved [surfaceStyle] is [GlassSurfaceStyle.solid].
   final LiquidGlassSettings? settings;
 
-  /// Rendering quality (overrides theme)
+  /// Rendering quality (overrides theme).
+  ///
+  /// Ignored when the resolved [surfaceStyle] is [GlassSurfaceStyle.solid].
   final GlassQuality? quality;
+
+  /// How the badge surface is rendered.
+  ///
+  /// When `null` (the default), inherits from the nearest ancestor
+  /// [InheritedGlassSurfaceStyle] (such as a `solid` `GlassContainer.card`,
+  /// `GlassGroupedSection`, or `GlassModalSheet`), falling back to
+  /// [GlassSurfaceStyle.glass].
+  ///
+  /// - [GlassSurfaceStyle.glass]: Wraps the badge in an
+  ///   [AdaptiveLiquidGlassLayer] with a translucent rim border and soft tinted
+  ///   shadow.
+  /// - [GlassSurfaceStyle.solid]: Renders a flat, native iOS pill or status
+  ///   dot with zero shader, backdrop-filter, or glass-layer overhead (no
+  ///   border or shadow). [settings] and [quality] have no effect in this mode.
+  final GlassSurfaceStyle? surfaceStyle;
+
+  static Color _resolveDynamicColor(
+    Color color,
+    bool isDark,
+    bool highContrast,
+  ) {
+    if (color is CupertinoDynamicColor) {
+      if (isDark) {
+        return highContrast ? color.darkHighContrastColor : color.darkColor;
+      }
+      return highContrast ? color.highContrastColor : color.color;
+    }
+    return color;
+  }
+
+  void _debugWarnIgnoredGlassParams() {
+    assert(() {
+      if (settings != null || quality != null) {
+        debugPrint(
+          'GlassBadge: `settings` / `quality` have no effect when '
+          '`surfaceStyle` is GlassSurfaceStyle.solid (a solid badge is a '
+          'flat fill and does not use the glass layer).',
+        );
+      }
+      return true;
+    }());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -302,19 +367,78 @@ class GlassBadge extends StatelessWidget {
   Widget _buildCountBadge(BuildContext context) {
     final themeData = GlassThemeData.of(context);
     final glowColors = themeData.glowColorsFor(context);
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final highContrast = MediaQuery.maybeHighContrastOf(context) ?? false;
+    final effectiveSurfaceStyle = surfaceStyle ??
+        InheritedGlassSurfaceStyle.maybeOf(context) ??
+        GlassSurfaceStyle.glass;
+    final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
 
+    Color resolve(Color c) => _resolveDynamicColor(c, isDark, highContrast);
+
+    final Color defaultDanger =
+        (isSolid && glowColors.danger == GlassGlowColors.fallback.danger)
+            ? resolve(CupertinoColors.systemRed)
+            : resolve(glowColors.danger ?? CupertinoColors.systemRed);
     final bgColor =
-        backgroundColor ?? glowColors.danger ?? const Color(0xFFFF3B30);
-    final fgColor = textColor ?? CupertinoColors.white;
+        backgroundColor != null ? resolve(backgroundColor!) : defaultDanger;
+    final fgColor = resolve(textColor ?? CupertinoColors.white);
 
     // Format count display
     final String displayText =
         count > maxCount ? '$maxCount+' : count.toString();
 
-    // Determine size based on digit count
-    final bool isWide = count > 9 || count > maxCount;
+    // Determine size based on displayed character count
+    final bool isWide = displayText.length > 1;
     final double minWidth = isWide ? 20.0 : 18.0;
     final double horizontalPadding = isWide ? 6.0 : 0.0;
+
+    final badge = Container(
+      constraints: BoxConstraints(
+        minWidth: minWidth,
+        minHeight: 18.0,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 2.0,
+      ),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(9),
+        border: isSolid
+            ? null
+            : Border.all(
+                color: CupertinoColors.white.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+        boxShadow: isSolid
+            ? null
+            : [
+                BoxShadow(
+                  color: bgColor.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+      ),
+      child: Text(
+        displayText,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: fgColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+          letterSpacing: -0.2,
+        ),
+      ),
+    );
+
+    if (isSolid) {
+      _debugWarnIgnoredGlassParams();
+      return badge;
+    }
+
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
       explicit: settings,
@@ -328,47 +452,52 @@ class GlassBadge extends StatelessWidget {
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
       quality: effectiveQuality,
-      child: Container(
-        constraints: BoxConstraints(
-          minWidth: minWidth,
-          minHeight: 18.0,
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: 2.0,
-        ),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: CupertinoColors.white.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: bgColor.withValues(alpha: 0.4),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Text(
-          displayText,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: fgColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            height: 1.2,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ),
+      child: badge,
     );
   }
 
   Widget _buildDotBadge(BuildContext context) {
-    final color = dotColor ?? CupertinoColors.systemGreen;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final highContrast = MediaQuery.maybeHighContrastOf(context) ?? false;
+    final color = _resolveDynamicColor(
+      dotColor ?? CupertinoColors.systemGreen,
+      isDark,
+      highContrast,
+    );
+    final effectiveSurfaceStyle = surfaceStyle ??
+        InheritedGlassSurfaceStyle.maybeOf(context) ??
+        GlassSurfaceStyle.glass;
+    final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
+
+    final dot = Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: isSolid
+            ? null
+            : Border.all(
+                color: CupertinoColors.white,
+                width: 2,
+              ),
+        boxShadow: isSolid
+            ? null
+            : [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
+      ),
+    );
+
+    if (isSolid) {
+      _debugWarnIgnoredGlassParams();
+      return dot;
+    }
+
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
       explicit: settings,
@@ -382,25 +511,7 @@ class GlassBadge extends StatelessWidget {
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
       quality: effectiveQuality,
-      child: Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: CupertinoColors.white,
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.5),
-              blurRadius: 6,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-      ),
+      child: dot,
     );
   }
 

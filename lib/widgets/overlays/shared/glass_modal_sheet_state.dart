@@ -802,8 +802,12 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     double newPosition =
         _gestureArena.dragStartSheetPosition - delta / layoutHeight;
 
-    newPosition = _geometry.applyResistance(newPosition, layoutHeight,
-        resistance: widget.resistance);
+    newPosition = _geometry.applyResistance(
+      newPosition,
+      layoutHeight,
+      resistance: widget.resistance,
+      minDetentResistance: widget.minDetentResistance,
+    );
     _animationController.value = newPosition;
 
     final snapshot = SheetSnapshot(

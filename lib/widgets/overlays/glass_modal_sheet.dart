@@ -219,6 +219,20 @@ class GlassModalSheet extends StatefulWidget {
   /// Resistance factor when dragging beyond bounds. Default: 0.08.
   final double resistance;
 
+  /// Resistance factor when dragging **below the smallest detent**.
+  ///
+  /// Defaults to `null`, which uses [resistance]: the sheet rubber-bands below
+  /// its lowest stop exactly as before.
+  ///
+  /// Set it to `0` to stop the drag at the smallest detent. This is meant for
+  /// a [GlassSheetMode.persistent] sheet that is always-visible chrome (for
+  /// example bottom navigation): with a rubber band the whole sheet can be
+  /// pulled under the screen edge.
+  ///
+  /// Has no effect on a dismissible sheet being swiped away, where the lowest
+  /// stop is the hidden state.
+  final double? minDetentResistance;
+
   /// Snap progress threshold (0.0 - 1.0). Default: 0.4.
   final double snapThreshold;
 
@@ -332,6 +346,7 @@ class GlassModalSheet extends StatefulWidget {
     this.fullSettings,
     this.stretch = 0.5,
     this.resistance = 0.08,
+    this.minDetentResistance,
     this.snapThreshold = 0.4,
     this.velocityThreshold = 700.0,
     this.settings,
@@ -514,6 +529,7 @@ class GlassModalSheet extends StatefulWidget {
     double horizontalMargin = 8.0,
     double bottomMargin = 8.0,
     double resistance = 0.08,
+    double? minDetentResistance,
     double snapThreshold = 0.4,
     double velocityThreshold = 700.0,
     Color? glowColor,
@@ -688,6 +704,7 @@ class GlassModalSheet extends StatefulWidget {
           horizontalMargin: horizontalMargin,
           bottomMargin: bottomMargin,
           resistance: resistance,
+          minDetentResistance: minDetentResistance,
           snapThreshold: snapThreshold,
           velocityThreshold: velocityThreshold,
           glowColor: glowColor,
