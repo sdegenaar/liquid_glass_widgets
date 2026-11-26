@@ -86,17 +86,19 @@ void main() {
         expect(tester.binding.hasScheduledFrame, isFalse);
 
         // Press and hold on the bar to activate the lifted glass pill:
-        // active interaction should restore Clip.antiAliasWithSaveLayer so
-        // the moving pill clips cleanly across icons.
+        // active interaction should restore Clip.antiAliasWithSaveLayer on the
+        // selected-lens mask so the moving pill clips cleanly across icons
+        // (the unselected inverse mask stays Clip.antiAlias so its track-bound
+        // saveLayer does not crop tab badges / halos painted past the track).
         final barCenter = tester.getCenter(find.byType(GlassTabBar));
         final gesture = await tester.startGesture(barCenter);
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump(const Duration(milliseconds: 50));
         expect(
           _countSaveLayerClipPaths(tester),
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
           reason: 'Active GlassTabBar.bottom press/drag should keep saveLayer '
-              'masking while the pill moves across icons.',
+              'masking on the lens side while the pill moves across icons.',
         );
 
         await gesture.up();
