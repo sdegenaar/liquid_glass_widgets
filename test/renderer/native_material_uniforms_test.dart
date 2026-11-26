@@ -18,12 +18,15 @@ void main() {
     expect(() => shader.setFloat(index + 1, 0), throwsA(anything));
   });
 
-  test('uBodyShade ends the render shader float uniforms at slot 45', () async {
+  test('uNativeAberration ends the render shader float uniforms at slot 53',
+      () async {
     final shader =
         (await ui.FragmentProgram.fromAsset(ShaderKeys.liquidGlassRender))
             .fragmentShader();
+    // uBodyShade (45), then uNativeLens (46-49) and uNativeAberration (50-53).
     shader.setFloat(45, 1);
-    expect(() => shader.setFloat(46, 0), throwsA(anything));
+    shader.setFloat(53, 1);
+    expect(() => shader.setFloat(54, 0), throwsA(anything));
   });
 
   test('uRimConfig ends the lightweight glass shader float uniforms at slot 38',

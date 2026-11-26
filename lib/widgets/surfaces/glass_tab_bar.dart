@@ -9,6 +9,7 @@ import '../../theme/glass_theme_helpers.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/indicator_jelly.dart';
+import '../../utils/indicator_lens.dart';
 import '../overlays/glass_menu.dart' show GlassMenuAlignment;
 import '../../theme/glass_theme.dart';
 import '../../types/glass_style.dart';
@@ -215,6 +216,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
     IndicatorJellyPhysics? indicatorJelly,
+    IndicatorLensOptics? indicatorLens,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -275,6 +277,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
           indicatorJelly: indicatorJelly,
+          indicatorLens: indicatorLens,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -362,6 +365,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
     IndicatorJellyPhysics? indicatorJelly,
+    IndicatorLensOptics? indicatorLens,
     double? indicatorBorderRadius,
     Color? selectedIconColor,
     Color? unselectedIconColor,
@@ -420,6 +424,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
           indicatorJelly: indicatorJelly,
+          indicatorLens: indicatorLens,
           indicatorBorderRadius: indicatorBorderRadius,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
@@ -829,6 +834,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
       this.indicatorSettings,
       this.indicatorPinchStrength = 0.4,
       this.indicatorJelly,
+      this.indicatorLens,
       this.indicatorExpansion =
           const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       this.backgroundKey,
@@ -996,6 +1002,15 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   /// Applies to horizontal tab bar layouts (not the vertical strip layout).
   final IndicatorJellyPhysics? indicatorJelly;
 
+  /// Optics of the lifted lens: how it bends the selected items and the
+  /// backdrop under it (see [IndicatorLensOptics]).
+  ///
+  /// Defaults to [IndicatorLensOptics.native], measured from UIKit. It runs
+  /// on Impeller at [GlassQuality.premium]; elsewhere, or with
+  /// [IndicatorLensOptics.disabled], the lens keeps its single-pass
+  /// refraction. Applies to [GlassTabBar.bottom] and [GlassTabBar.inline].
+  final IndicatorLensOptics? indicatorLens;
+
   /// Expansion padding applied to the active indicator pill during interaction.
   ///
   /// The pill grows by this amount beyond its cell boundary as the user drags,
@@ -1075,7 +1090,8 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
 
   /// Selected-icon magnification inside the indicator (bottom/searchable).
   ///
-  /// When null, defaults to 1.15 across [GlassStyle.ios27], [GlassStyle.ios26],
+  /// When null, defaults to 1.16 — the scale UIKit gives the selected items
+  /// while the lens is lifted — across [GlassStyle.ios27], [GlassStyle.ios26],
   /// and [GlassStyle.classic].
   final double? magnification;
 
@@ -1350,12 +1366,12 @@ class _GlassTabBarState extends State<GlassTabBar> {
   /// Selected-item magnification inside the lifted indicator.
   ///
   /// An explicit [GlassTabBar.magnification] always wins. Otherwise defaults to
-  /// 1.15 across styles — pairing with the 27.5 pt base icon on
+  /// 1.16 across styles, the scale UIKit gives every selected-copy tab button
+  /// while the lens is lifted — pairing with the 27.5 pt base icon on
   /// [GlassStyle.ios27] / [GlassStyle.ios26] and 24.0 pt on
-  /// [GlassStyle.classic] so lifted items get tactile zoom without ballooning
-  /// past the pill interior.
+  /// [GlassStyle.classic].
   double _resolveMagnification(BuildContext context) {
-    return widget.magnification ?? 1.15;
+    return widget.magnification ?? 1.16;
   }
 
   /// Icon size for tab items.
@@ -1508,6 +1524,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
       indicatorJelly: widget.indicatorJelly,
+      indicatorLens: widget.indicatorLens ?? IndicatorLensOptics.native,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,
@@ -1568,6 +1585,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
       indicatorJelly: widget.indicatorJelly,
+      indicatorLens: widget.indicatorLens ?? IndicatorLensOptics.native,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,

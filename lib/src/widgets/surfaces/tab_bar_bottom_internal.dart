@@ -6,6 +6,7 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 
@@ -17,9 +18,11 @@ import '../../../theme/glass_theme_settings.dart';
 import '../../../types/glass_quality.dart';
 import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
+import 'lens_content_warp.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../utils/indicator_jelly.dart';
+import '../../../utils/indicator_lens.dart';
 import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/overlays/glass_menu.dart' show GlassMenu;
 import '../../../widgets/shared/adaptive_glass.dart';
@@ -583,8 +586,29 @@ class TabIndicator extends StatefulWidget {
     this.showDuringDragWhenHidden = false,
     this.springDescription,
     this.indicatorJelly,
+    this.lensOptics,
     super.key,
   });
+
+  /// Whether the native lens can run for these settings: it draws the
+  /// selected content through a shader image filter (Impeller only) and
+  /// bends the backdrop in the premium glass shader.
+  static bool supportsNativeLens({
+    required GlassQuality quality,
+    required bool platformViewBackdrop,
+    required MaskingQuality maskingQuality,
+  }) {
+    if (quality != GlassQuality.premium ||
+        platformViewBackdrop ||
+        maskingQuality != MaskingQuality.high) {
+      return false;
+    }
+    return debugNativeLensSupported ?? ui.ImageFilter.isShaderFilterSupported;
+  }
+
+  /// Overrides the Impeller check in [supportsNativeLens] in tests.
+  @visibleForTesting
+  static bool? debugNativeLensSupported;
 
   final int tabIndex;
   final int tabCount;
@@ -619,6 +643,10 @@ class TabIndicator extends StatefulWidget {
   /// single values with [IndicatorJellyPhysics.copyWith], or pass
   /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
   final IndicatorJellyPhysics? indicatorJelly;
+
+  /// Native lens optics, or null for the single-pass refraction. The host
+  /// passes them only where [supportsNativeLens] holds.
+  final IndicatorLensOptics? lensOptics;
 
   /// How far the jelly indicator's leading and trailing edges expand
   /// past the tab boundary as the indicator translates. Higher values
@@ -670,6 +698,16 @@ class TabIndicatorState extends State<TabIndicator>
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   final GlobalKey _iconLayerKey = GlobalKey();
+
+  /// Room around the bar for the lifted lens and its content warp, which
+  /// reach past the bar's edges.
+  static const double _kLensBleed = 24.0;
+
+  IndicatorLensOptics? get _nativeLens {
+    final optics = widget.lensOptics;
+    return optics != null && optics.enabled ? optics : null;
+  }
+
   final GlobalKey _unselectedTabsKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
@@ -704,8 +742,10 @@ class TabIndicatorState extends State<TabIndicator>
     // the padding inset (4 px) to produce concentric nested arcs (32 − 4 = 28).
     // An explicit indicatorBorderRadius always takes priority.
     const indicatorPadding = 4.0;
+    // The native lens is a capsule at rest and lifted alike.
     final indicatorRadius = widget.indicatorBorderRadius ??
-        (widget.barBorderRadius >= GlassDefaults.capsuleRadius
+        (widget.barBorderRadius >= GlassDefaults.capsuleRadius ||
+                _nativeLens != null
             ? GlassDefaults.capsuleRadius
             : (widget.barBorderRadius - indicatorPadding).clamp(
                 0.0,
@@ -1045,6 +1085,25 @@ class TabIndicatorState extends State<TabIndicator>
     final textDirection = Directionality.of(context);
     final resolvedAlignment = alignment.resolve(textDirection);
     final resolvedExpansion = widget.indicatorExpansion.resolve(textDirection);
+    final nativeLens = _nativeLens;
+    final selectedClipper = JellyClipper(
+      itemCount: widget.tabCount,
+      alignment: resolvedAlignment,
+      thickness: thickness,
+      expansion: resolvedExpansion,
+      transform: jellyTransform,
+      jelly: jelly,
+      borderRadius: indicatorRadius * 2,
+    );
+    final selectedContent = Container(
+      padding: widget.tabPadding,
+      height: widget.barHeight,
+      child: widget.selectedTabBuilder(
+        context,
+        thickness,
+        resolvedAlignment,
+      ),
+    );
     final iconStack = Stack(
       children: [
         // Unselected (inverse clipped — visible OUTSIDE pill)
@@ -1069,28 +1128,14 @@ class TabIndicatorState extends State<TabIndicator>
             ),
           ),
         ),
-        // Selected (forward clipped — visible INSIDE pill)
-        ClipPath(
-          clipBehavior: clipBehavior,
-          clipper: JellyClipper(
-            itemCount: widget.tabCount,
-            alignment: resolvedAlignment,
-            thickness: thickness,
-            expansion: resolvedExpansion,
-            transform: jellyTransform,
-            jelly: jelly,
-            borderRadius: indicatorRadius * 2,
+        // Selected (forward clipped — visible INSIDE pill). The native lens
+        // draws it over the glass instead, below.
+        if (nativeLens == null)
+          ClipPath(
+            clipBehavior: clipBehavior,
+            clipper: selectedClipper,
+            child: selectedContent,
           ),
-          child: Container(
-            padding: widget.tabPadding,
-            height: widget.barHeight,
-            child: widget.selectedTabBuilder(
-              context,
-              thickness,
-              resolvedAlignment,
-            ),
-          ),
-        ),
       ],
     );
 
@@ -1171,6 +1216,8 @@ class TabIndicatorState extends State<TabIndicator>
             isBackgroundIndicator: false,
             paintBackground: false,
             paintGlass: true,
+            paintInnerShadow: nativeLens == null ? null : false,
+            lensOptics: nativeLens,
             padding: const EdgeInsets.all(4),
             expansion:
                 widget.indicatorExpansion.resolve(Directionality.of(context)),
@@ -1181,6 +1228,70 @@ class TabIndicatorState extends State<TabIndicator>
                 ? _iconLayerKey
                 : widget.backgroundKey,
           ),
+
+          // 4. Native lens: the selected content over the glass, warped on
+          // its own as UIKit warps `liftedContentWarpWrapper`, then the
+          // lens' inner shadow on top of it.
+          if (nativeLens != null) ...[
+            Positioned(
+              left: -_kLensBleed,
+              top: -_kLensBleed,
+              right: -_kLensBleed,
+              bottom: -_kLensBleed,
+              child: IgnorePointer(
+                child: LensContentWarp(
+                  optics: nativeLens,
+                  lift: thickness,
+                  clipBehavior: clipBehavior,
+                  backdrop: GlassTheme.brightnessOf(context) == Brightness.dark
+                      ? const Color(0xFF2A2A2C)
+                      : const Color(0xFFF5F5F7),
+                  lensGeometry: (size) {
+                    final lens = selectedClipper.lensGeometry(
+                      Size(
+                        size.width - 2 * _kLensBleed,
+                        size.height - 2 * _kLensBleed,
+                      ),
+                    );
+                    return (
+                      rrect: lens.rrect.shift(
+                        const Offset(_kLensBleed, _kLensBleed),
+                      ),
+                      transform: Matrix4.translationValues(
+                        _kLensBleed,
+                        _kLensBleed,
+                        0,
+                      )
+                        ..multiply(lens.transform)
+                        ..translateByDouble(-_kLensBleed, -_kLensBleed, 0, 1),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(_kLensBleed),
+                    child: selectedContent,
+                  ),
+                ),
+              ),
+            ),
+            AnimatedGlassIndicator(
+              velocity: velocity,
+              jelly: jelly,
+              itemCount: widget.tabCount,
+              alignment: alignment,
+              thickness: thickness,
+              quality: widget.quality,
+              indicatorColor: indicatorColor,
+              isBackgroundIndicator: false,
+              paintBackground: false,
+              paintGlass: false,
+              paintInnerShadow: true,
+              padding: const EdgeInsets.all(4),
+              expansion:
+                  widget.indicatorExpansion.resolve(Directionality.of(context)),
+              settings: widget.indicatorSettings,
+              borderRadius: indicatorRadius,
+            ),
+          ],
         ],
       ),
     );

@@ -12,6 +12,7 @@ import '../../renderer/liquid_glass_renderer.dart';
 import '../../types/glass_interaction_behavior.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/indicator_jelly.dart';
+import '../../../utils/indicator_lens.dart';
 import '../../../widgets/shared/adaptive_liquid_glass_layer.dart';
 import '../../../widgets/shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
@@ -62,6 +63,7 @@ class TabBarBottomLayout extends StatefulWidget {
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
     this.indicatorJelly,
+    this.indicatorLens = IndicatorLensOptics.native,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.selectedLabelColor,
@@ -77,7 +79,7 @@ class TabBarBottomLayout extends StatefulWidget {
     this.glowOpacity = 0.6,
     this.quality,
     this.backgroundQuality,
-    this.magnification = 1.15,
+    this.magnification = 1.16,
     this.innerBlur = 0.0,
     this.maskingQuality = MaskingQuality.high,
     this.backgroundKey,
@@ -128,6 +130,11 @@ class TabBarBottomLayout extends StatefulWidget {
   /// single values with [IndicatorJellyPhysics.copyWith], or pass
   /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
   final IndicatorJellyPhysics? indicatorJelly;
+
+  /// Optics of the lifted lens. The native lens runs where
+  /// [TabIndicator.supportsNativeLens] holds; elsewhere the indicator keeps
+  /// its single-pass refraction.
+  final IndicatorLensOptics indicatorLens;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
   final Color? selectedLabelColor;
@@ -264,6 +271,12 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
     final effectiveSettings = resolveBarGlassSettings(context, widget.settings);
+    final nativeLens = widget.indicatorLens.enabled &&
+        TabIndicator.supportsNativeLens(
+          quality: effectiveQuality,
+          platformViewBackdrop: widget.platformViewBackdrop,
+          maskingQuality: widget.maskingQuality,
+        );
 
     // RTL support.
     //
@@ -387,6 +400,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                         indicatorSettings: widget.indicatorSettings,
                         indicatorPinchStrength: widget.indicatorPinchStrength,
                         indicatorJelly: widget.indicatorJelly,
+                        lensOptics: nativeLens ? widget.indicatorLens : null,
                         onTabChanged: onTabSelected,
                         barHeight: widget.barHeight,
                         barBorderRadius: widget.barBorderRadius,
@@ -452,7 +466,8 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                                 alignment,
                                 tabs,
                                 resolvedSelectedIconColor,
-                                resolvedUnselectedIconColor),
+                                resolvedUnselectedIconColor,
+                                uniformScale: nativeLens),
                         magnification: widget.magnification,
                         innerBlur: widget.innerBlur,
                       ),
@@ -517,7 +532,11 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
       Alignment alignment,
       List<GlassTab> tabs,
       Color resolvedSelectedIconColor,
-      Color resolvedUnselectedIconColor) {
+      Color resolvedUnselectedIconColor,
+      {bool uniformScale = false}) {
+    // The native lens magnifies every item alike on its own centre (UIKit
+    // scales each selected-copy button by the same factor); the single-pass
+    // refraction tapers the zoom off with the distance to the pill instead.
     final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
 
     final currentTabFloat = ((alignment.x + 1) / 2) * tabs.length;
@@ -547,7 +566,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
               Expanded(
                 child: (i >= affectedStart && i <= affectedEnd)
                     ? Transform.scale(
-                        scale: _tabProximityScale(pillTabIndex, i, scale),
+                        scale: uniformScale
+                            ? scale
+                            : _tabProximityScale(pillTabIndex, i, scale),
                         child: BottomBarTabItem(
                           tab: tabs[i],
                           selected: true,

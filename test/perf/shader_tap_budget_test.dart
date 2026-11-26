@@ -194,7 +194,7 @@ void main() {
       expect(
         render,
         contains(
-          'if (uPinchStrength <= 0.001 && dot(uCaptureOffset, uCaptureOffset) < 1e-6)',
+          'if (pinch <= 0.001 && dot(uCaptureOffset, uCaptureOffset) < 1e-6)',
         ),
       );
       expect(

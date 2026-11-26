@@ -969,12 +969,12 @@ void main() {
   });
 
   group('GlassTabBar.bottom() — style magnification resolution', () {
-    testWidgets('defaults to 1.15 across ios27, ios26, and classic',
+    testWidgets('defaults to 1.16 across ios27, ios26, and classic',
         (tester) async {
       for (final (style, expected) in [
-        (GlassStyle.ios27, 1.15),
-        (GlassStyle.ios26, 1.15),
-        (GlassStyle.classic, 1.15),
+        (GlassStyle.ios27, 1.16),
+        (GlassStyle.ios26, 1.16),
+        (GlassStyle.classic, 1.16),
       ]) {
         await tester.pumpWidget(_wrap(
           GlassTheme(
