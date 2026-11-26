@@ -14,6 +14,7 @@
 ## Bug Fixes
 
 - **Disabled `GlassButton` Impeller Metal glass preservation:** In `GlassSurfaceStyle.glass` mode, disabled buttons now dim only their interior content (`Opacity(opacity: 0.5)`) inside `AdaptiveGlass` rather than wrapping the glass shader in an ancestor `Opacity` `saveLayer`, preventing disabled glass buttons and toggles from losing their refractive pill surface on Impeller Metal.
+- **`GlassModalSheet` persistent sheet dipping below its smallest detent on a fast fling:** In `GlassSheetMode.persistent` the snap spring is now clamped at the smallest detent, so a hard downward fling no longer carries the sheet below it (and, flung hard enough, below the screen edge) before settling. A release from a rubber-band drag below the detent still springs back as before; `GlassSheetMode.dismissible` sheets are unchanged.
 
 ## Deprecations
 

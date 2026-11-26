@@ -356,6 +356,25 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // Snap & State Management
   // ════════════════════════════════════════════════════════════════════════
 
+  /// Keeps a persistent sheet's snap spring from dipping below its smallest
+  /// detent.
+  ///
+  /// The spring is seeded with the release velocity, so a fast downward fling
+  /// carries it well past its target before it comes back — for the smallest
+  /// detent that means below the floor, and with a hard fling below the screen
+  /// edge, so the always-visible chrome blinks out for a few frames.
+  ///
+  /// The lower bound is the floor, or the current position when the sheet is
+  /// already below it (released from a rubber-band drag), so that return
+  /// still springs back instead of jumping.
+  Simulation _clampedToFloor(Simulation simulation, double layoutHeight) {
+    final floor = _geometry.positionForState(_geometry.minState, layoutHeight);
+    return ClampedSimulation(
+      simulation,
+      xMin: math.min(floor, _currentPosition),
+    );
+  }
+
   void _snapToState(GlassSheetState state,
       {bool animate = true, double velocity = 0}) {
     if (!mounted || _fitted.morphClosing) return;
@@ -396,7 +415,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         targetPosition,
         layoutHeight > 0 ? velocity / layoutHeight : 0.0,
       );
-      final slide = _animationController.animateWith(simulation);
+      final slide = _animationController.animateWith(
+        widget.mode == GlassSheetMode.persistent
+            ? _clampedToFloor(simulation, layoutHeight)
+            : simulation,
+      );
       // Completes only if the spring runs to its end, not when a touch or
       // another spring replaces it.
       if (_fitted.heldGeometry != null) slide.then((_) => _finishFittedSlide());
