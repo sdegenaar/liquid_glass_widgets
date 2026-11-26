@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-25 (v1.21.0 stable)
+> Last updated: 2026-11-26 (v1.22.0 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,13 +9,13 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.21.0)
+## Current Status (1.22.0)
 
 | Criterion | Status | Notes |
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,570+ tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,690+ tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | Zero files (`cupertino_ui` migration staged on `feat/flutter-3.50-migration` for 2.0) |
@@ -39,7 +39,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 | `GlassStepper` & popover blur ramp | ✅ Done (1.13.0) | Native two-button stepper capsule and `GlassPopover.blurRamp` |
 | Liquid droplet morph & `GlassMaterialize` | ✅ Done (1.14.0) | `morphFrom` / `morphFromRect` on sheets, dialogs, action sheets & popovers; blur-to-sharp materialize |
 | Contacts app HIG benchmark | ✅ Done (1.15.0) | `GlassSwipeActions`, `GlassDisclosureGroup`, `GlassEditScope` / `GlassReorderableList`, `GlassContextMenu`, `GlassFullScreenCover`, `GlassDatePicker`, `GlassNavigationStack` |
-| `GlassSurfaceStyle.solid` cards & wells | ✅ Done (1.15.0+) | Shader-free inset-grouped cards (`GlassContainer.card`, `GlassGroupedSection`, `GlassDisclosureGroup.standalone`) and automatic `InheritedGlassSurfaceStyle` `tertiarySystemFill` wells and button surfaces across all inputs, `GlassPicker`, `GlassChip`, `GlassButton`, and `GlassIconButton` (only container default flip awaits 2.0) |
+| `GlassSurfaceStyle.solid` cards, sheets & controls | ✅ Done (1.15.0–1.22.0) | Shader-free inset-grouped cards (`GlassContainer.card`, `GlassGroupedSection`, `GlassDisclosureGroup.standalone`), always-opaque `GlassModalSheet(surfaceStyle: .solid)` (#544), and automatic `InheritedGlassSurfaceStyle` wells/surfaces across all inputs, `GlassPicker`, `GlassToggle.button` (#545), `GlassBadge` (#554), `GlassChip`, `GlassButton`, and `GlassIconButton` (only container default flip awaits 2.0) |
 | `GlassStyle` presets & iOS 26/27 alignment | ✅ Done (1.17.0) | `GlassStyle.ios27` (default), `GlassStyle.ios26`, and `GlassStyle.classic` across platters, tab bars, interactive lenses, menus, sheets, and 320 pt alerts |
 | Bezel page clipping & Flutter 3.50 shaders | ✅ Done (1.17.1–1.17.4) | `GlassPageTransitionClip` superellipse transition clipping (#451) and single-exit `main()` HLSL/ANGLE/`impellerc` validation (#190809) |
 | Upstream migration PRs | ✅ Done | PR #1 ([#13162](https://github.com/flutter/packages/pull/13162)) and PR #2 ([#13163](https://github.com/flutter/packages/pull/13163)) staged in `flutter/packages` |
