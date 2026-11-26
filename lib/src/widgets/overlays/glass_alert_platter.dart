@@ -45,8 +45,17 @@ import '../../../widgets/effects/shared/glass_materialize_effect.dart';
 import '../../../widgets/shared/glass_focus_region.dart';
 import 'modal_theme_capture.dart';
 
-/// Native alert platter width on iOS 26 / iOS 27.
+/// Native alert platter width on iOS 26 / iOS 27 (unanchored centered).
 const double kGlassAlertPlatterWidth = 320;
+
+/// Native anchored confirmation dialog popover width on iOS 26 / iOS 27
+/// (measured from `_UIPopoverView` / `_UIAlertControllerPhoneTVMacView` on the
+/// iOS 27.2 simulator: 240.0 pt wide with 30 pt header inset and 16 pt action
+/// inset → 208 pt wide × 48 pt tall capsules).
+const double kGlassConfirmationPopoverWidth = 240;
+
+/// Native alert / confirmation dialog continuous corner radius on iOS 26 / 27.
+const double kGlassAlertPlatterCornerRadius = 34;
 
 /// The modal barrier behind a native alert / action sheet on iOS 26 / iOS 27.
 ///
@@ -129,15 +138,16 @@ class _GlassAlertTransitionState extends State<_GlassAlertTransition> {
   }
 }
 
-/// Pushes a [CupertinoDialogRoute] onto the root navigator using
+/// Pushes a [CupertinoDialogRoute] onto the navigator using
 /// [buildGlassAlertTransition] and a safe [CupertinoLocalizations] fallback.
 Future<T?> pushGlassAlertRoute<T>({
   required BuildContext context,
   required bool barrierDismissible,
   required Color barrierColor,
   required WidgetBuilder builder,
+  bool useRootNavigator = true,
 }) {
-  return Navigator.of(context, rootNavigator: true).push<T>(
+  return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
     CupertinoDialogRoute<T>(
       context: context,
       barrierDismissible: barrierDismissible,
@@ -349,9 +359,69 @@ class GlassAlertPlatterAction {
   final Widget? icon;
 }
 
-/// The `ios26` / `ios27` alert platter.
-class GlassAlertPlatter extends StatelessWidget {
-  const GlassAlertPlatter({
+/// Resolves the platter's glass settings for alerts and confirmation dialogs.
+///
+/// Shared between [GlassAlertPlatter] (centered) and anchored
+/// `showGlassConfirmationDialog` popovers so both render identical iOS 26/27
+/// material optics across `premium`, `standard`, and `minimal` quality tiers.
+LiquidGlassSettings resolveGlassAlertPlatterSettings(
+  BuildContext context, {
+  LiquidGlassSettings? explicit,
+  required GlassQuality effectiveQuality,
+}) {
+  final resolved = GlassThemeHelpers.resolveSettings(
+    context,
+    explicit: explicit,
+    isOverlayPlatter: true,
+  );
+  if (explicit != null) return resolved;
+
+  final style = GlassThemeHelpers.resolveStyle(context);
+  final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+
+  // On GlassQuality.standard, lightweight_glass.frag lacks Premium's odd-row
+  // frost cloud (frost: 14, frostOpacity: 1.0) and luminance-weighted frost
+  // (frostWeight: 0.5, frostClamp: -0.45/-0.49). Preserve the full frost
+  // sigma on standard alerts, and boost ambient darkening + tint floor on
+  // dark ios26 (2% alpha) and ios27 (12% alpha) when using unmodified tints.
+  if (effectiveQuality == GlassQuality.standard &&
+      style != GlassStyle.classic) {
+    if (isDark) {
+      final defaultDarkTint = style == GlassStyle.ios26
+          ? LiquidGlassSettings.ios26Dark.glassColor
+          : LiquidGlassSettings.ios27Dark.glassColor;
+      if (resolved.glassColor == defaultDarkTint) {
+        return resolved.copyWith(
+          blur: 18.0,
+          ambientStrength: 0.75,
+          glassColor: style == GlassStyle.ios26
+              ? const Color(0x18FFFFFF)
+              : const Color(0x22FFFFFF),
+        );
+      }
+    }
+    return resolved.copyWith(
+      blur: math.max(resolved.blur, resolved.frost),
+    );
+  }
+
+  if (style == GlassStyle.ios26 &&
+      isDark &&
+      resolved.glassColor == LiquidGlassSettings.ios26Dark.glassColor) {
+    return resolved.copyWith(glassColor: const Color(0x05FFFFFF));
+  }
+  return resolved;
+}
+
+/// The inner card of an iOS 26/27 alert or confirmation dialog platter:
+/// scrollable leading-aligned header (title/message/content) + 48 pt capsule
+/// actions + hardware Return-key default-action scope.
+///
+/// Set [wrapInGlassContainer] to `false` when embedding inside an outer
+/// morphing [GlassContainer] (such as an anchored confirmation dialog popover)
+/// so the surface never nests glass inside glass.
+class GlassAlertPlatterCard extends StatelessWidget {
+  const GlassAlertPlatterCard({
     required this.actions,
     super.key,
     this.title,
@@ -359,12 +429,11 @@ class GlassAlertPlatter extends StatelessWidget {
     this.content,
     this.settings,
     this.quality,
-    this.maxWidth,
     this.forceStacked = false,
-    this.semanticsRole = SemanticsRole.alertDialog,
     this.shape,
     this.actionShape,
     this.actionTextStyle,
+    this.wrapInGlassContainer = true,
   });
 
   final List<GlassAlertPlatterAction> actions;
@@ -373,223 +442,107 @@ class GlassAlertPlatter extends StatelessWidget {
   final Widget? content;
   final LiquidGlassSettings? settings;
   final GlassQuality? quality;
-  final double? maxWidth;
-
-  /// Stack the actions even when they would fit side by side (action sheets).
   final bool forceStacked;
-
-  /// The route's semantics role: [SemanticsRole.alertDialog] for an alert, and
-  /// [SemanticsRole.dialog] for an action sheet, as `CupertinoAlertDialog` and
-  /// `CupertinoActionSheet` report them.
-  final SemanticsRole semanticsRole;
-
-  /// The platter's shape; null keeps the native 34 pt continuous corners.
   final LiquidShape? shape;
-
-  /// The action capsules' shape; null keeps the native capsule (32 pt
-  /// corners for a label wrapped at an accessibility text size).
   final OutlinedBorder? actionShape;
-
-  /// Merged over the action labels' text style; the colour follows the role.
   final TextStyle? actionTextStyle;
-
-  /// The platter's glass settings.
-  ///
-  /// The shared overlay-platter preset is calibrated on menus and sheets. The
-  /// native iOS 26 dark alert is a much thinner tint than that preset (≈ +4
-  /// levels over its backdrop against ≈ +26), so when the app has not changed
-  /// the preset's tint, the alert uses the measured one. Measured on the
-  /// iOS 26 simulator at both `standard` and `premium` quality: premium's frost
-  /// does not remove the preset's tint.
-  LiquidGlassSettings _platterSettings(
-    BuildContext context,
-    GlassQuality effectiveQuality,
-  ) {
-    final resolved = GlassThemeHelpers.resolveSettings(
-      context,
-      explicit: settings,
-      isOverlayPlatter: true,
-    );
-    if (settings != null) return resolved;
-
-    final style = GlassThemeHelpers.resolveStyle(context);
-    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-
-    // On GlassQuality.standard, lightweight_glass.frag lacks Premium's odd-row
-    // frost cloud (frost: 14, frostOpacity: 1.0) and luminance-weighted frost
-    // (frostWeight: 0.5, frostClamp: -0.45/-0.49). Preserve the full frost
-    // sigma on standard alerts, and boost ambient darkening + tint floor on
-    // dark ios26 (2% alpha) and ios27 (12% alpha) when using unmodified tints.
-    if (effectiveQuality == GlassQuality.standard &&
-        style != GlassStyle.classic) {
-      if (isDark) {
-        final defaultDarkTint = style == GlassStyle.ios26
-            ? LiquidGlassSettings.ios26Dark.glassColor
-            : LiquidGlassSettings.ios27Dark.glassColor;
-        if (resolved.glassColor == defaultDarkTint) {
-          return resolved.copyWith(
-            blur: 18.0,
-            ambientStrength: 0.75,
-            glassColor: style == GlassStyle.ios26
-                ? const Color(0x18FFFFFF)
-                : const Color(0x22FFFFFF),
-          );
-        }
-      }
-      return resolved.copyWith(
-        blur: math.max(resolved.blur, resolved.frost),
-      );
-    }
-
-    if (style == GlassStyle.ios26 &&
-        isDark &&
-        resolved.glassColor == LiquidGlassSettings.ios26Dark.glassColor) {
-      return resolved.copyWith(glassColor: const Color(0x05FFFFFF));
-    }
-    return resolved;
-  }
+  final bool wrapInGlassContainer;
 
   @override
   Widget build(BuildContext context) {
-    return wrapGlassAlertSyncedBrightness(
-      context,
-      builder: _buildPlatter,
-    );
-  }
+    final hasHeader = title != null || message != null || content != null;
+    final messageColor = CupertinoColors.secondaryLabel.resolveFrom(context);
 
-  Widget _buildPlatter(BuildContext context) {
+    final Widget body = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Native scrolls the title and message together when they outgrow the
+        // screen, keeping the actions visible.
+        if (hasHeader)
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsetsDirectional.fromSTEB(30, 22, 30, 4.33),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        title!,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: CupertinoColors.label.resolveFrom(context),
+                        ),
+                      ),
+                    ),
+                  if (title != null && message != null)
+                    const SizedBox(height: 7.33),
+                  if (message != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        message!,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: messageColor,
+                        ),
+                      ),
+                    ),
+                  if (content != null) ...[
+                    if (title != null || message != null)
+                      const SizedBox(height: 8),
+                    // Plain text in custom content reads as message text.
+                    DefaultTextStyle.merge(
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: messageColor,
+                      ),
+                      child: content!,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, hasHeader ? 16 : 22, 16, 16),
+          child: LayoutBuilder(
+            builder: (context, constraints) =>
+                _buildActions(context, constraints.maxWidth),
+          ),
+        ),
+      ],
+    );
+
+    if (!wrapInGlassContainer) {
+      return body;
+    }
+
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: quality,
       fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
-    final platterSettings = _platterSettings(context, effectiveQuality);
-    final hasHeader = title != null || message != null || content != null;
+    final platterSettings = resolveGlassAlertPlatterSettings(
+      context,
+      explicit: settings,
+      effectiveQuality: effectiveQuality,
+    );
 
-    final messageColor = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final primaryActions = [
-      for (final action in actions)
-        if (action.isPrimary) action,
-    ];
-    final hasSinglePrimary = primaryActions.length == 1;
-    final primaryCallback =
-        hasSinglePrimary ? primaryActions.single.onPressed : null;
-
-    // Native centres the platter in the safe area (its centre sits at
-    // (safeTop + height - safeBottom) / 2, i.e. y = 451 on a 874 pt iPhone),
-    // and in the space above the keyboard while one is up.
-    return GlassDialogDefaultActionScope(
-      hasPrimaryAction: hasSinglePrimary,
-      onActivatePrimary: primaryCallback,
-      child: AnimatedPadding(
-        padding: MediaQuery.viewInsetsOf(context),
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.decelerate,
-        child: MediaQuery.removeViewInsets(
-          context: context,
-          removeLeft: true,
-          removeTop: true,
-          removeRight: true,
-          removeBottom: true,
-          child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                    maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
-                child: Semantics(
-                  role: semanticsRole,
-                  scopesRoute: true,
-                  namesRoute: true,
-                  explicitChildNodes: true,
-                  label:
-                      glassCupertinoLocalizationsOf(context).alertDialogLabel,
-                  // Replaces the host app's default text style, which under a
-                  // MaterialApp is the red, underlined error style.
-                  child: DefaultTextStyle(
-                    style: CupertinoTheme.of(context).textTheme.textStyle,
-                    child: GlassContainer.card(
-                      useOwnLayer: true,
-                      settings: platterSettings,
-                      quality: effectiveQuality,
-                      shape: shape ??
-                          const LiquidRoundedSuperellipse(borderRadius: 34),
-                      padding: EdgeInsets.zero,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Native scrolls the title and message together when
-                          // they outgrow the screen, keeping the actions visible.
-                          if (hasHeader)
-                            Flexible(
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    30, 22, 30, 4.33),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (title != null)
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: Text(
-                                          title!,
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w600,
-                                            color: CupertinoColors.label
-                                                .resolveFrom(context),
-                                          ),
-                                        ),
-                                      ),
-                                    if (title != null && message != null)
-                                      const SizedBox(height: 7.33),
-                                    if (message != null)
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: Text(
-                                          message!,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: messageColor,
-                                          ),
-                                        ),
-                                      ),
-                                    if (content != null) ...[
-                                      if (title != null || message != null)
-                                        const SizedBox(height: 8),
-                                      // Plain text in custom content reads as
-                                      // message text.
-                                      DefaultTextStyle.merge(
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          color: messageColor,
-                                        ),
-                                        child: content!,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                                16, hasHeader ? 16 : 22, 16, 16),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) =>
-                                  _buildActions(context, constraints.maxWidth),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+    return GlassContainer.card(
+      useOwnLayer: true,
+      settings: platterSettings,
+      quality: effectiveQuality,
+      shape: shape ??
+          const LiquidRoundedSuperellipse(
+            borderRadius: kGlassAlertPlatterCornerRadius,
           ),
-        ),
-      ),
+      padding: EdgeInsets.zero,
+      child: body,
     );
   }
 
@@ -650,6 +603,122 @@ class GlassAlertPlatter extends StatelessWidget {
       if (!fits) return false;
     }
     return true;
+  }
+}
+
+/// The `ios26` / `ios27` alert platter.
+class GlassAlertPlatter extends StatelessWidget {
+  const GlassAlertPlatter({
+    required this.actions,
+    super.key,
+    this.title,
+    this.message,
+    this.content,
+    this.settings,
+    this.quality,
+    this.maxWidth,
+    this.forceStacked = false,
+    this.semanticsRole = SemanticsRole.alertDialog,
+    this.shape,
+    this.actionShape,
+    this.actionTextStyle,
+  });
+
+  final List<GlassAlertPlatterAction> actions;
+  final String? title;
+  final String? message;
+  final Widget? content;
+  final LiquidGlassSettings? settings;
+  final GlassQuality? quality;
+  final double? maxWidth;
+
+  /// Stack the actions even when they would fit side by side (action sheets).
+  final bool forceStacked;
+
+  /// The route's semantics role: [SemanticsRole.alertDialog] for an alert, and
+  /// [SemanticsRole.dialog] for an action sheet, as `CupertinoAlertDialog` and
+  /// `CupertinoActionSheet` report them.
+  final SemanticsRole semanticsRole;
+
+  /// The platter's shape; null keeps the native 34 pt continuous corners.
+  final LiquidShape? shape;
+
+  /// The action capsules' shape; null keeps the native capsule (32 pt
+  /// corners for a label wrapped at an accessibility text size).
+  final OutlinedBorder? actionShape;
+
+  /// Merged over the action labels' text style; the colour follows the role.
+  final TextStyle? actionTextStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return wrapGlassAlertSyncedBrightness(
+      context,
+      builder: _buildPlatter,
+    );
+  }
+
+  Widget _buildPlatter(BuildContext context) {
+    final primaryActions = [
+      for (final action in actions)
+        if (action.isPrimary) action,
+    ];
+    final hasSinglePrimary = primaryActions.length == 1;
+    final primaryCallback =
+        hasSinglePrimary ? primaryActions.single.onPressed : null;
+
+    // Native centres the platter in the safe area (its centre sits at
+    // (safeTop + height - safeBottom) / 2, i.e. y = 451 on a 874 pt iPhone),
+    // and in the space above the keyboard while one is up.
+    return GlassDialogDefaultActionScope(
+      hasPrimaryAction: hasSinglePrimary,
+      onActivatePrimary: primaryCallback,
+      child: AnimatedPadding(
+        padding: MediaQuery.viewInsetsOf(context),
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.decelerate,
+        child: MediaQuery.removeViewInsets(
+          context: context,
+          removeLeft: true,
+          removeTop: true,
+          removeRight: true,
+          removeBottom: true,
+          child: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
+                child: Semantics(
+                  role: semanticsRole,
+                  scopesRoute: true,
+                  namesRoute: true,
+                  explicitChildNodes: true,
+                  label:
+                      glassCupertinoLocalizationsOf(context).alertDialogLabel,
+                  // Replaces the host app's default text style, which under a
+                  // MaterialApp is the red, underlined error style.
+                  child: DefaultTextStyle(
+                    style: CupertinoTheme.of(context).textTheme.textStyle,
+                    child: GlassAlertPlatterCard(
+                      title: title,
+                      message: message,
+                      content: content,
+                      actions: actions,
+                      settings: settings,
+                      quality: quality,
+                      forceStacked: forceStacked,
+                      shape: shape,
+                      actionShape: actionShape,
+                      actionTextStyle: actionTextStyle,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

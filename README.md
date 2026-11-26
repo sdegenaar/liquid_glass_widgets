@@ -194,7 +194,7 @@ GlassGroupedSection(
 `GlassProgressIndicator` · `GlassToast`
 
 ### Overlays
-`GlassDialog` · `GlassSheet` · `GlassModalSheet` · `showGlassActionSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover` · `GlassContextMenu` · `GlassFullScreenCover`
+`GlassDialog` · `showGlassConfirmationDialog` · `GlassSheet` · `GlassModalSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover` · `GlassContextMenu` · `GlassFullScreenCover`
 
 ### Surfaces & Navigation
 `GlassScaffold` · `GlassPage` · `GlassAppBar` · `GlassTabBar` (`.bottom` / `.inline` / `.searchable` / `.minimizable`) · `GlassTabBarTrailingButton` · `GlassToolbar` · `GlassNavigationShell` · `GlassNavigationStack` · `GlassNavigationLink` · `GlassPinnedBarChrome` · `GlassContentAwareScope` · `GlassContentAwareContent` · `GlassContentAwareBrightness`

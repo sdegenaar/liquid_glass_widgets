@@ -218,32 +218,29 @@ class _OverlaysPageState extends State<OverlaysPage> {
     );
   }
 
-  // ── Action Sheet methods ───────────────────────────────────────────────
+  // ── Confirmation Dialog methods ────────────────────────────────────────
 
-  void _showPhotoActionSheet() {
-    showGlassActionSheet(
+  void _showConfirmationDialog({GlassMorphAnchor? morphFrom}) {
+    showGlassConfirmationDialog<void>(
       context: context,
+      morphFrom: morphFrom,
       title: 'Photo Options',
+      message: 'Choose what to do with this photo.',
       actions: [
-        GlassActionSheetAction(
+        GlassConfirmationDialogAction(
           label: 'Save to Photos',
-          icon: Icon(CupertinoIcons.photo),
+          icon: const Icon(CupertinoIcons.photo),
           onPressed: () {},
         ),
-        GlassActionSheetAction(
+        GlassConfirmationDialogAction(
           label: 'Share',
-          icon: Icon(CupertinoIcons.share),
+          icon: const Icon(CupertinoIcons.share),
           onPressed: () {},
         ),
-        GlassActionSheetAction(
-          label: 'Copy',
-          icon: Icon(CupertinoIcons.doc_on_doc),
-          onPressed: () {},
-        ),
-        GlassActionSheetAction(
-          label: 'Delete',
-          icon: Icon(CupertinoIcons.trash),
-          style: GlassActionSheetStyle.destructive,
+        GlassConfirmationDialogAction(
+          label: 'Delete Photo',
+          icon: const Icon(CupertinoIcons.trash),
+          isDestructive: true,
           onPressed: () {},
         ),
       ],
@@ -733,13 +730,31 @@ class _OverlaysPageState extends State<OverlaysPage> {
 
                       SizedBox(height: 40),
 
-                      // ── GlassActionSheet ─────────────────────────────
-                      const _SectionTitle(title: 'GlassActionSheet'),
+                      // ── Confirmation Dialog (.confirmationDialog) ────
+                      const _SectionTitle(title: 'Confirmation Dialog'),
                       SizedBox(height: 16),
-                      _ActionButton(
-                        label: 'Photo Options',
-                        glowColor: CupertinoColors.systemPurple,
-                        onTap: _showPhotoActionSheet,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GlassMorphTrigger(
+                              builder: (context, anchor) => _ActionButton(
+                                label: 'Anchored (Morph)',
+                                glowColor: CupertinoColors.systemPurple,
+                                onTap: () => _showConfirmationDialog(
+                                  morphFrom: anchor,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ActionButton(
+                              label: 'Centered (Cancel)',
+                              glowColor: CupertinoColors.systemIndigo,
+                              onTap: _showConfirmationDialog,
+                            ),
+                          ),
+                        ],
                       ),
 
                       SizedBox(height: 40),

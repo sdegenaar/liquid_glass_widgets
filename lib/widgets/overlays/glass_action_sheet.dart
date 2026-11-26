@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use_from_same_package
 import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/cupertino.dart';
@@ -17,6 +18,13 @@ import '../shared/glass_focus_region.dart';
 import '../shared/glass_interaction_state_mixin.dart';
 
 /// Style of action sheet action.
+///
+/// > **Deprecated:** use [GlassConfirmationDialogAction] with
+/// > [showGlassConfirmationDialog] instead. Will be removed in 2.0.0.
+@Deprecated(
+  'Use showGlassConfirmationDialog and GlassConfirmationDialogAction instead. '
+  'Will be removed in 2.0.0.',
+)
 enum GlassActionSheetStyle {
   /// Default action style (white text)
   defaultStyle,
@@ -29,6 +37,13 @@ enum GlassActionSheetStyle {
 }
 
 /// An action that can be taken from a [showGlassActionSheet] call.
+///
+/// > **Deprecated:** use [GlassConfirmationDialogAction] with
+/// > [showGlassConfirmationDialog] instead. Will be removed in 2.0.0.
+@Deprecated(
+  'Use GlassConfirmationDialogAction with showGlassConfirmationDialog instead. '
+  'Will be removed in 2.0.0.',
+)
 class GlassActionSheetAction {
   /// Creates an action sheet action.
   const GlassActionSheetAction({
@@ -154,6 +169,13 @@ class GlassActionSheetAction {
 ///
 /// Use [showGlassActionSheet] when you need a simple action picker.
 /// Use [GlassSheet] when you need custom content or forms.
+///
+/// > **Deprecated:** use [showGlassConfirmationDialog] instead. It supports
+/// > native iOS 26/27 source-anchored Liquid Glass popover morphing (`morphFrom`)
+/// > as well as the centered 320 pt platter fallback. Will be removed in 2.0.0.
+@Deprecated(
+  'Use showGlassConfirmationDialog instead. Will be removed in 2.0.0.',
+)
 Future<T?> showGlassActionSheet<T>({
   required BuildContext context,
   String? title,
