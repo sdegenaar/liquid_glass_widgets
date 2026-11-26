@@ -57,6 +57,16 @@ uniform sampler2D uTexture;
 
 out vec4 fragColor;
 
+// Pure signed distance to the lens in its own space (negative inside),
+// skipping rim/ellipse normal math for source-mask checks.
+float lensSd(vec2 local) {
+    vec2 p = local - uLens.xy;
+    vec2 halfSize = max(uLens.zw, vec2(0.5));
+    float radius = min(uWarp.x, min(halfSize.x, halfSize.y));
+    vec2 q = abs(p) - halfSize + vec2(radius);
+    return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - radius;
+}
+
 // Signed distance to the lens in its own space (negative inside), and the
 // warp direction there: the outward rim normal bent toward the inscribed
 // ellipse's normal.
@@ -84,23 +94,20 @@ float lensDistance(vec2 local, out vec2 normal) {
     return sd;
 }
 
-// The warped content at a point of the lens' own space: read from further
-// in near the rim, and empty where that lands outside the lens.
-vec4 warpedContent(vec2 local, mat2 jelly, vec2 scale) {
-    vec2 normal;
-    float d = max(-lensDistance(local, normal), 0.0);
-    float t = clamp(1.0 - d / max(uWarp.z, 1e-3), 0.0, 1.0);
-    float profile = 1.0 - sqrt(max(0.0, 1.0 - t * t));
-    vec2 source = local + normal * (uWarp.y * profile);
-    vec2 unused;
-    float inside = step(lensDistance(source, unused), 0.0);
-    vec2 point = jelly * source + uJellyT;
-    vec2 uv = clamp(point * scale / uSize, vec2(0.0), vec2(1.0));
-    return texture(uTexture, uv) * inside;
+// Samples a warped lens-space point at its pre-projected texture UV, masked
+// cleanly to the lens interior using the branchless distance-only SDF.
+vec4 sampleLensUV(vec2 source, vec2 uv, float aaScale) {
+    float sourceMask = clamp(0.5 - lensSd(source) * aaScale, 0.0, 1.0);
+    if (sourceMask <= 0.0) {
+        return vec4(0.0);
+    }
+    return texture(uTexture, clamp(uv, vec2(0.0), vec2(1.0))) * sourceMask;
 }
 
 void main() {
+    vec2 invSize = 1.0 / max(uSize, vec2(1.0));
     vec2 scale = uSize / max(uLogicalSize, vec2(1.0));
+    vec2 uvScale = scale * invSize;
     float pxPerPoint = 0.5 * (scale.x + scale.y);
     vec2 point = FlutterFragCoord().xy / scale;
 
@@ -109,45 +116,88 @@ void main() {
     det = abs(det) < 1e-6 ? 1e-6 : det;
     mat2 inverseJelly = mat2(jelly[1][1], -jelly[0][1], -jelly[1][0], jelly[0][0]) / det;
     float jellyScale = min(length(jelly[0]), length(jelly[1]));
+    float aaScale = jellyScale * pxPerPoint;
 
     vec2 local = inverseJelly * (point - uJellyT);
     vec2 normal;
     float sd = lensDistance(local, normal);
-    float coverage = clamp(0.5 - sd * jellyScale * pxPerPoint, 0.0, 1.0);
+    float coverage = clamp(0.5 - sd * aaScale, 0.0, 1.0);
     if (coverage <= 0.0) {
         fragColor = vec4(0.0);
     } else {
-        vec4 color = warpedContent(local, jelly, scale);
-        float amount = uAberration.x
-                     * clamp(1.0 + sd / max(uAberration.y, 1e-3), 0.0, 1.0);
-        if (amount > 0.001) {
-            vec2 rel = (local - uLens.xy) / max(uLens.zw, vec2(0.5));
-            vec2 dir = vec2(rel.y, rel.x);
-            float dirLength = length(dir);
-            dir = dirLength > 1e-4 ? dir / dirLength : vec2(0.0);
-            // Five taps across the split, weighted toward red on one side and
-            // blue on the other, blend the fringe through the spectrum.
-            // 1.355 puts the red and blue centroids at +-amount; alpha follows
-            // green.
-            vec3 premultiplied = vec3(0.0);
-            vec3 coverage3 = vec3(0.0);
-            vec3 weights = vec3(0.0);
-            for (int i = 0; i < 5; i++) {
-                float t = float(i) * 0.5 - 1.0;
-                vec3 w = max(vec3(0.0),
-                             vec3(1.0) - abs(vec3(t) - vec3(1.0, 0.0, -1.0)) / 1.2);
-                vec4 tap = warpedContent(local + dir * (amount * 1.355 * t), jelly, scale);
-                premultiplied += tap.rgb * w;
-                coverage3 += vec3(tap.a) * w;
-                weights += w;
+        float d = max(-sd, 0.0);
+        // Preserve the outer glass hairline and glossy specular rim highlight
+        // painted by the lens layer beneath: gently reveal warped content
+        // inside the outer bezel as the lens lifts (scaled to 0 as lift -> 0
+        // so there is no pop when the filter activates). This also prevents
+        // the infinite-slope d -> 0 singularity from crushing glyphs into
+        // razor-thin lines directly on top of the outer hairline.
+        float liftFactor = clamp(abs(uWarp.y) / 4.0, 0.0, 1.0);
+        float rimReveal = mix(1.0, smoothstep(0.65, 2.0, d), liftFactor);
+        coverage *= rimReveal;
+        if (coverage <= 0.0) {
+            fragColor = vec4(0.0);
+        } else {
+            // Soften the infinite radial slope at t -> 1 (d -> 0) by easing the
+            // circular dome with a small regulariser, matching the rasterised
+            // SDF height map of UIKit's CASDFGlassDisplacementEffect.
+            float t = clamp(1.0 - d / max(uWarp.z, 1e-3), 0.0, 1.0);
+            float profile = (1.0198039 - sqrt(1.04 - t * t)) / 0.8198039;
+            vec2 source = local + normal * (uWarp.y * profile);
+            vec2 baseUV = (jelly * source + uJellyT) * uvScale;
+            vec4 center = sampleLensUV(source, baseUV, aaScale);
+            vec4 color = center;
+
+            float amount = uAberration.x
+                         * clamp(1.0 - d / max(uAberration.y, 1e-3), 0.0, 1.0);
+            if (amount > 0.001) {
+                vec2 rel = (local - uLens.xy) / max(uLens.zw, vec2(0.5));
+                vec2 dir = vec2(rel.y, rel.x);
+                float dirLength = length(dir);
+                dir = dirLength > 1e-4 ? dir / dirLength : vec2(0.0);
+                // Five overlapping spectral taps applied in warped source space
+                // keep adjacent taps ~1.1 pt apart (finer than a glyph stroke)
+                // so fringes blend continuously without discrete zebra stripes.
+                // Hoist the linear jelly UV step out of the loop and reuse the
+                // centre tap (i == 2, t == 0): 5 texture fetches total (down
+                // from 6) and 0 per-tap matrix multiplies or divisions.
+                vec2 sourceStep = dir * (amount * 0.85);
+                vec2 uvStep = (jelly * sourceStep) * uvScale;
+                vec3 premultiplied = vec3(0.0);
+                vec3 coverage3 = vec3(0.0);
+                for (int i = 0; i < 5; i++) {
+                    float st = float(i) * 0.5 - 1.0;
+                    vec3 w = max(vec3(0.0),
+                                 vec3(1.0) - abs(vec3(st) - vec3(1.0, 0.0, -1.0)) / 1.2);
+                    vec4 tap = (i == 2)
+                        ? center
+                        : sampleLensUV(
+                            source + sourceStep * st,
+                            baseUV + uvStep * st,
+                            aaScale
+                        );
+                    premultiplied += tap.rgb * w;
+                    coverage3 += vec3(tap.a) * w;
+                }
+                // Exact inverse weight sums for t in {-1, -0.5, 0, 0.5, 1} / 1.2:
+                // R = 21/12 (1.75), G = 30/12 (2.50), B = 21/12 (1.75).
+                const vec3 invWeights = vec3(0.57142857, 0.4, 0.57142857);
+                premultiplied *= invWeights;
+                coverage3 *= invWeights;
+                // On light pills (bright uBackdrop), composite missing channels
+                // over the backdrop so dark glyphs fringe cyan/orange instead
+                // of grey. On dark pills (low-luma uBackdrop), keep separated
+                // channels translucent over the live glass beneath instead of
+                // painting opaque dark grey over colourful dark-mode backdrops.
+                float backdropLuma = dot(uBackdrop, vec3(0.2126, 0.7152, 0.0722));
+                float backdropFill = smoothstep(0.25, 0.65, backdropLuma);
+                float maxCov = max(coverage3.r, max(coverage3.g, coverage3.b));
+                float meanCov = (coverage3.r + coverage3.g + coverage3.b) * (1.0 / 3.0);
+                float alpha = mix(meanCov, maxCov, backdropFill);
+                vec3 fill = (vec3(maxCov) - coverage3) * (uBackdrop * backdropFill);
+                color = vec4(min(premultiplied + fill, vec3(1.0)), alpha);
             }
-            premultiplied /= weights;
-            coverage3 /= weights;
-            // Composite each channel over the backdrop, then hand back a
-            // premultiplied colour whose alpha covers the widest channel.
-            float alpha = max(coverage3.r, max(coverage3.g, coverage3.b));
-            color = vec4(premultiplied + (vec3(alpha) - coverage3) * uBackdrop, alpha);
+            fragColor = color * coverage;
         }
-        fragColor = color * coverage;
     }
 }

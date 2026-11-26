@@ -274,6 +274,88 @@ void main() {
       );
       expect(find.byType(LensContentWarp), findsOneWidget);
     });
+
+    testWidgets(
+        'GlassTabBar.searchable uses the native lens when expanded, '
+        'omits it when collapsed, and respects IndicatorLensOptics.disabled',
+        (tester) async {
+      TabIndicator.debugNativeLensSupported = true;
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      Widget buildSearchable({
+        bool isSearchActive = false,
+        IndicatorLensOptics? indicatorLens,
+      }) =>
+          createTestApp(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: GlassTabBar.searchable(
+                tabs: _tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                isSearchActive: isSearchActive,
+                quality: GlassQuality.premium,
+                indicatorLens: indicatorLens,
+                searchConfig: GlassSearchBarConfig(
+                  onSearchToggle: (_) {},
+                  controller: controller,
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(buildSearchable());
+      await tester.pumpAndSettle();
+      expect(find.byType(LensContentWarp), findsOneWidget);
+
+      await tester.pumpWidget(buildSearchable(isSearchActive: true));
+      await tester.pumpAndSettle();
+      expect(find.byType(LensContentWarp), findsNothing);
+
+      await tester.pumpWidget(
+        buildSearchable(indicatorLens: IndicatorLensOptics.disabled),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LensContentWarp), findsNothing);
+    });
+
+    testWidgets('GlassTabBar.minimizable uses the native lens when expanded',
+        (tester) async {
+      TabIndicator.debugNativeLensSupported = true;
+      await tester.pumpWidget(
+        createTestApp(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: GlassTabBar.minimizable(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              quality: GlassQuality.premium,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LensContentWarp), findsOneWidget);
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: GlassTabBar.minimizable(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              minimized: true,
+              quality: GlassQuality.premium,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LensContentWarp), findsNothing);
+    });
   });
 
   group('JellyClipper.lensGeometry', () {

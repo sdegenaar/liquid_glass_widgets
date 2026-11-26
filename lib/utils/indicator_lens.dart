@@ -2,9 +2,10 @@ import 'package:flutter/foundation.dart';
 
 /// Optics of the lifted iOS 26/27 tab-bar selection lens.
 ///
-/// Pass it as `indicatorLens` on [GlassTabBar.bottom] or [GlassTabBar.inline]
-/// to change how the lens bends what is under it, or use
-/// [IndicatorLensOptics.disabled] to keep the single-pass glass refraction.
+/// Pass it as `indicatorLens` on [GlassTabBar.bottom], [GlassTabBar.inline],
+/// [GlassTabBar.searchable], or [GlassTabBar.minimizable] to change how the
+/// lens bends what is under it, or use [IndicatorLensOptics.disabled] to keep
+/// the single-pass glass refraction.
 ///
 /// The defaults were read from UIKit: a native `UITabBar` on the iOS 27.2
 /// simulator, held lifted through XCUITest while its `_UILiquidLensView`

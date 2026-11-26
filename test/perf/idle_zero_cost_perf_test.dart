@@ -5,6 +5,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_backdrop_group_boundary.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/lens_content_warp.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart';
 import 'package:liquid_glass_widgets/theme/glass_theme_helpers.dart';
 
 class _PaintCounterBox extends SingleChildRenderObjectWidget {
@@ -145,6 +147,123 @@ void main() {
               'of Clip.antiAliasWithSaveLayer.',
         );
         expect(tester.binding.hasScheduledFrame, isFalse);
+      },
+    );
+
+    testWidgets(
+      'GlassTabBar.bottom with native lens enabled avoids resting saveLayers, '
+      'resting 1/255 ColoredBox overdraw, and idle inner-shadow indicator',
+      (tester) async {
+        final prev = TabIndicator.debugNativeLensSupported;
+        TabIndicator.debugNativeLensSupported = true;
+        try {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: GlassTabBar.bottom(
+                    tabs: tabs,
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    quality: GlassQuality.premium,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(LensContentWarp), findsOneWidget);
+          expect(
+            _countSaveLayerClipPaths(tester),
+            0,
+            reason:
+                'Resting native-lens GlassTabBar.bottom must use 0 saveLayers.',
+          );
+          expect(
+            find.descendant(
+              of: find.byType(LensContentWarp),
+              matching: find.byWidgetPredicate(
+                (w) => w is ColoredBox && w.color == const Color(0x01000000),
+              ),
+            ),
+            findsNothing,
+            reason:
+                'LensContentWarp must not paint 1/255 alpha ColoredBox at rest.',
+          );
+          expect(
+            find.byType(AnimatedGlassIndicator),
+            findsNWidgets(2),
+            reason: 'The 3rd inner-shadow AnimatedGlassIndicator must stay '
+                'unmounted while thickness <= 0.05.',
+          );
+          expect(tester.binding.hasScheduledFrame, isFalse);
+
+          // Lifting the lens mounts the 3rd inner-shadow indicator; settling
+          // releases it cleanly back to 2.
+          final barCenter = tester.getCenter(find.byType(GlassTabBar));
+          final gesture = await tester.startGesture(barCenter);
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(find.byType(AnimatedGlassIndicator), findsNWidgets(3));
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(find.byType(AnimatedGlassIndicator), findsNWidgets(2));
+          expect(_countSaveLayerClipPaths(tester), 0);
+        } finally {
+          TabIndicator.debugNativeLensSupported = prev;
+        }
+      },
+    );
+
+    testWidgets(
+      'GlassTabBar.searchable with native lens enabled avoids resting '
+      'saveLayers, resting 1/255 ColoredBox overdraw, and idle inner-shadow',
+      (tester) async {
+        final prev = TabIndicator.debugNativeLensSupported;
+        final searchController = TextEditingController();
+        addTearDown(searchController.dispose);
+        TabIndicator.debugNativeLensSupported = true;
+        try {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: GlassTabBar.searchable(
+                    tabs: tabs,
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    quality: GlassQuality.premium,
+                    searchConfig: GlassSearchBarConfig(
+                      onSearchToggle: (_) {},
+                      controller: searchController,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(LensContentWarp), findsOneWidget);
+          expect(_countSaveLayerClipPaths(tester), 0);
+          expect(
+            find.descendant(
+              of: find.byType(LensContentWarp),
+              matching: find.byWidgetPredicate(
+                (w) => w is ColoredBox && w.color == const Color(0x01000000),
+              ),
+            ),
+            findsNothing,
+          );
+          expect(find.byType(AnimatedGlassIndicator), findsNWidgets(2));
+          expect(tester.binding.hasScheduledFrame, isFalse);
+        } finally {
+          TabIndicator.debugNativeLensSupported = prev;
+        }
       },
     );
   });

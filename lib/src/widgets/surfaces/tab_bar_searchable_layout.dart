@@ -14,6 +14,7 @@ import '../../renderer/liquid_glass_renderer.dart';
 import '../../types/glass_interaction_behavior.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/indicator_jelly.dart';
+import '../../../utils/indicator_lens.dart';
 import '../../../widgets/shared/adaptive_liquid_glass_layer.dart';
 import '../../../widgets/shared/glass_accessibility_scope.dart';
 import '../../../widgets/shared/glass_content_aware_scope.dart';
@@ -31,6 +32,7 @@ import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
         BottomBarTabItem,
+        TabIndicator,
         resolveActiveLensTabColors,
         resolveBarGlassSettings,
         resolveBarLabelColor;
@@ -85,6 +87,7 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
     this.indicatorJelly,
+    this.indicatorLens = IndicatorLensOptics.native,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.selectedLabelColor,
@@ -184,6 +187,12 @@ class TabBarSearchableLayout extends StatefulWidget {
   /// single values with [IndicatorJellyPhysics.copyWith], or pass
   /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
   final IndicatorJellyPhysics? indicatorJelly;
+
+  /// Optics of the lifted lens. The native lens runs where
+  /// [TabIndicator.supportsNativeLens] holds (and not in platform-view
+  /// passthrough mode); elsewhere the indicator keeps its single-pass
+  /// refraction.
+  final IndicatorLensOptics indicatorLens;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
   final Color? selectedLabelColor;
@@ -540,6 +549,13 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       isLight,
     );
     final searching = widget.isSearchActive;
+    final nativeLens = widget.indicatorLens.enabled &&
+        !widget.passthroughOverPlatformView &&
+        TabIndicator.supportsNativeLens(
+          quality: effectiveQuality,
+          platformViewBackdrop: widget.platformViewBackdrop,
+          maskingQuality: widget.maskingQuality,
+        );
 
     // RTL support.
     //
@@ -581,6 +597,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       curve: Curves.easeOut,
       builder: (context, animH, child) {
         return AdaptiveLiquidGlassLayer(
+          clipExpansion:
+              const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
           settings: effectiveSettings,
           quality: effectiveQuality,
           platformViewBackdrop: widget.platformViewBackdrop,
@@ -1022,6 +1040,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               indicatorPinchStrength:
                                   widget.indicatorPinchStrength,
                               indicatorJelly: widget.indicatorJelly,
+                              lensOptics:
+                                  nativeLens ? widget.indicatorLens : null,
                               backgroundKey: widget.backgroundKey,
                               platformViewBackdrop: widget.platformViewBackdrop,
                               passthroughOverPlatformView:
@@ -1083,6 +1103,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                     resolvedSelectedIconColor,
                                 resolvedUnselectedIconColor:
                                     resolvedUnselectedIconColor,
+                                uniformScale: nativeLens,
                               ),
                             ),
                           );
@@ -1322,6 +1343,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     required Color resolvedUnselectedIconColor,
     double intensity = 0,
     Alignment alignment = Alignment.center,
+    bool uniformScale = false,
   }) {
     if (selected) {
       final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
@@ -1351,7 +1373,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                 Expanded(
                   child: (i >= aStart && i <= aEnd)
                       ? Transform.scale(
-                          scale: _tabProximityScale(pillTabIndex, i, scale),
+                          scale: uniformScale
+                              ? scale
+                              : _tabProximityScale(pillTabIndex, i, scale),
                           child: BottomBarTabItem(
                             tab: tabs[i],
                             selected: true,

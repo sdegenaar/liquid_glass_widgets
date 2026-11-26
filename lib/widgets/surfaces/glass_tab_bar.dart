@@ -492,6 +492,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
     IndicatorJellyPhysics? indicatorJelly,
+    IndicatorLensOptics? indicatorLens,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -564,6 +565,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
           indicatorJelly: indicatorJelly,
+          indicatorLens: indicatorLens,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -698,6 +700,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
     IndicatorJellyPhysics? indicatorJelly,
+    IndicatorLensOptics? indicatorLens,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -771,6 +774,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
           indicatorJelly: indicatorJelly,
+          indicatorLens: indicatorLens,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -1008,7 +1012,8 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   /// Defaults to [IndicatorLensOptics.native], measured from UIKit. It runs
   /// on Impeller at [GlassQuality.premium]; elsewhere, or with
   /// [IndicatorLensOptics.disabled], the lens keeps its single-pass
-  /// refraction. Applies to [GlassTabBar.bottom] and [GlassTabBar.inline].
+  /// refraction. Applies to [GlassTabBar.bottom], [GlassTabBar.inline],
+  /// [GlassTabBar.searchable], and [GlassTabBar.minimizable].
   final IndicatorLensOptics? indicatorLens;
 
   /// Expansion padding applied to the active indicator pill during interaction.
@@ -1674,6 +1679,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
       indicatorJelly: widget.indicatorJelly,
+      indicatorLens: widget.indicatorLens ?? IndicatorLensOptics.native,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,

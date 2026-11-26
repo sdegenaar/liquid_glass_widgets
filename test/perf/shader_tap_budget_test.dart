@@ -31,6 +31,7 @@ void main() {
   final indicator =
       File('shaders/interactive_indicator.frag').readAsStringSync();
   final progBlur = File('shaders/progressive_blur.frag').readAsStringSync();
+  final lensWarp = File('shaders/lens_content_warp.frag').readAsStringSync();
 
   group('Wave 1.2 — liquid_glass_render.frag & render.glsl', () {
     test('frostAt is skipped on pure hairline pixels (hairline >= 0.999)', () {
@@ -264,6 +265,55 @@ void main() {
 
     test('progressive_blur breaks past 3*sigma', () {
       expect(progBlur, contains('if (d > 3.0 * sigma) break;'));
+    });
+  });
+
+  group('Native tab-bar lens optics & tap budget', () {
+    test('liquid_glass_render clamps nativeLens samples to the capsule spine',
+        () {
+      final clampUv = _body(render, 'vec2 nativeLensClampUV(');
+      expect(clampUv, contains('vec2 spine = clamp(rel, -seg, seg);'));
+      expect(clampUv, contains('if (dist > rIn)'));
+      expect(render, contains('if (!nativeLens) {'));
+    });
+
+    test(
+        'liquid_glass_render reuses greenSample at i == 2 and evaluates SDF once',
+        () {
+      final start = render.indexOf('} else if (nativeLens) {');
+      final end = render.indexOf('} else if (dot(normalXY', start);
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final branch = render.substring(start, end);
+      expect(
+        'nativeLensDistance('.allMatches(branch).length,
+        1,
+        reason: 'nativeLens branch must compute center SDF only once.',
+      );
+      expect(branch, contains('(i == 2)'));
+      expect(branch, contains('greenSample.rgb'));
+      expect(branch, contains('const vec3 invWeights'));
+    });
+
+    test(
+        'lens_content_warp preserves outer rim bevel, uses branchless lensSd, '
+        'reuses centre tap at i == 2, and gates backdrop fill on luminance',
+        () {
+      expect(lensWarp, contains('float lensSd(vec2 local)'));
+      expect(lensWarp, contains('smoothstep(0.65, 2.0, d)'));
+      expect(lensWarp, contains('(i == 2)'));
+      expect(lensWarp, contains('? center'));
+      expect(lensWarp, contains('const vec3 invWeights'));
+      expect(lensWarp, contains('smoothstep(0.25, 0.65, backdropLuma)'));
+    });
+
+    test('single-pass isBarIndicator fallback avoids binary step(0.35) cliff',
+        () {
+      expect(render, isNot(contains('1.0 - step(0.35, dot(refPlatter')));
+      expect(
+        render,
+        contains('1.0 - smoothstep(0.22, 0.48, dot(refPlatter, LUMA_WEIGHTS))'),
+      );
     });
   });
 }
