@@ -687,39 +687,41 @@ void main() {
       final logs = <String?>[];
       final originalDebugPrint = debugPrint;
       debugPrint = (String? message, {int? wrapWidth}) => logs.add(message);
-      addTearDown(() => debugPrint = originalDebugPrint);
-
-      await tester.pumpWidget(
-        wrapInTheme(
-          const GlassBadge(
-            count: 5,
-            surfaceStyle: GlassSurfaceStyle.solid,
-            quality: GlassQuality.premium,
-            child: Icon(CupertinoIcons.bell),
+      try {
+        await tester.pumpWidget(
+          wrapInTheme(
+            const GlassBadge(
+              count: 5,
+              surfaceStyle: GlassSurfaceStyle.solid,
+              quality: GlassQuality.premium,
+              child: Icon(CupertinoIcons.bell),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        logs.any((m) => m != null && m.contains('GlassBadge:')),
-        isTrue,
-      );
+        expect(
+          logs.any((m) => m != null && m.contains('GlassBadge:')),
+          isTrue,
+        );
 
-      logs.clear();
-      await tester.pumpWidget(
-        wrapInTheme(
-          const GlassBadge(
-            count: 5,
-            surfaceStyle: GlassSurfaceStyle.solid,
-            child: Icon(CupertinoIcons.bell),
+        logs.clear();
+        await tester.pumpWidget(
+          wrapInTheme(
+            const GlassBadge(
+              count: 5,
+              surfaceStyle: GlassSurfaceStyle.solid,
+              child: Icon(CupertinoIcons.bell),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        logs.any((m) => m != null && m.contains('GlassBadge:')),
-        isFalse,
-      );
+        expect(
+          logs.any((m) => m != null && m.contains('GlassBadge:')),
+          isFalse,
+        );
+      } finally {
+        debugPrint = originalDebugPrint;
+      }
     });
 
     testWidgets('preserves semantics in solid mode', (tester) async {
