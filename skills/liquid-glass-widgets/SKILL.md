@@ -41,7 +41,7 @@ Placing refractive glass widgets inside another refractive glass container is an
 ### Rule 5: Honor Quality Tiers
 - **`GlassQuality.premium`**: Multi-pass Impeller shader with chromatic dispersion, realistic refraction, and dynamic specular highlights. Default under `GlassStyle.ios27` (default) and `GlassStyle.ios26` for:
   - Persistent navigation chrome (`GlassAppBar`, `GlassTabBar`, `GlassToolbar`, `GlassScaffold.bodyOverlays` — automatically wrapped in `GlassIsolationScope(defaultQuality: GlassQuality.premium)`).
-  - Transient overlays (`GlassDialog`, `showGlassActionSheet`, `GlassMenu`, `GlassPopover`, `GlassToast`).
+  - Transient overlays (`GlassDialog`, `showGlassConfirmationDialog`, `GlassMenu`, `GlassPopover`, `GlassToast`).
   - Hero interactive lenses (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl` — where `GlassSwitch` and `GlassSlider` lazy-mount `LiquidGlass.withOwnLayer` only while pressed/dragged so resting list rows mount zero shader layers).
 - **`GlassQuality.standard`**: Highly optimized single-pass fragment shader. Default for cards, containers, standalone body buttons, input fields, and all widgets when `GlassThemeData(style: GlassStyle.classic)` is active.
 - **`GlassQuality.minimal`**: Lightweight shader-free fallback (`BackdropFilter` only). Use for ultra-dense scrolling lists or low-power modes.
@@ -202,7 +202,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). Forwards `autofillHints`, `autocorrect`, `enableSuggestions`, and `selectionControls` (e.g. `materialTextSelectionHandleControls` on Android); `GlassSearchBar` also supports `cancelButtonAlwaysVisible`. |
 | `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full, or fitted to its content) with spring physics, optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation, and `surfaceStyle: GlassSurfaceStyle.solid` for a sheet that is opaque at every detent. |
 | `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); `isPrimary: true` renders a solid accent capsule (`tintColor ?? CupertinoTheme.primaryColor`, auto-contrast white/black or explicit `foregroundColor`, hardware `Return`/`Enter` activation, reverting to neutral when disabled); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
-| `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
+| `showCupertinoModalPopup` / `CupertinoActionSheet` / `.confirmationDialog()` | `showGlassConfirmationDialog` | Native iOS 26/27 confirmation dialog (`GlassConfirmationDialogAction`): anchors and liquid-morphs as a `240 pt` floating popover platter from `morphFrom` (`GlassMorphTrigger`) or `morphFromRect` (omitting Cancel by default), or falls back to the centered `320 pt` platter with Cancel when unanchored. Supersedes deprecated `showGlassActionSheet`. |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
 
 ---
@@ -299,6 +299,39 @@ GlassDialog.show(
 - Set `isPrimary: true` (matching `UIAlertController.preferredAction` / SwiftUI `.keyboardShortcut(.defaultAction)`) to fill the action capsule with `tintColor ?? CupertinoTheme.of(context).primaryColor` (which automatically bridges `Theme.of(context).colorScheme.primary` in `MaterialApp`), render high-contrast `FontWeight.w600` text, and bind the hardware `Return`/`Enter` key when a single enabled primary action is present (at most one primary action per dialog). Pass `tintColor` (supporting `CupertinoDynamicColor`) and optional `foregroundColor` to override the accent or text color.
 - Destructive actions (`isDestructive: true`) keep the neutral capsule with `CupertinoColors.systemRed` text (even when `isPrimary: true`, matching native iOS 26/27) unless an explicit `tintColor` is supplied.
 - Pass `onPressed: null` on a `GlassDialogAction` to keep it in place as a disabled action (for example, while waiting on valid input); disabled primary/tinted actions revert to the neutral capsule wash with `CupertinoColors.tertiaryLabel` text.
+
+### showGlassConfirmationDialog
+Presents an iOS 26/27 confirmation dialog (`.confirmationDialog()`), superseding deprecated `showGlassActionSheet`:
+
+```dart
+// Source-anchored (recommended on iOS 26/27): 240 pt liquid-morphing popover,
+// omitting Cancel by default because tapping outside dismisses.
+GlassMorphTrigger(
+  builder: (context, anchor) => GlassIconButton(
+    icon: const Icon(CupertinoIcons.trash),
+    onPressed: () => showGlassConfirmationDialog<void>(
+      context: context,
+      morphFrom: anchor,
+      title: 'Delete Draft?',
+      message: 'This draft cannot be recovered once deleted.',
+      actions: [
+        GlassConfirmationDialogAction(
+          label: 'Save Draft',
+          onPressed: _saveDraft,
+        ),
+        GlassConfirmationDialogAction(
+          label: 'Delete Draft',
+          isDestructive: true,
+          onPressed: _deleteDraft,
+        ),
+      ],
+    ),
+  ),
+)
+```
+
+- Omit `morphFrom` / `morphFromRect` for an unanchored centered `320 pt` platter with a localized Cancel button included by default (`showCancelButton` overrides either default).
+- Actions auto-dismiss on tap by default (`dismissOnPress: true`) without double-popping if `onPressed` calls `Navigator.pop(context, value)`. Supports `isDestructive`, `isPrimary` (`Return`-key activation), `tintColor`, `foregroundColor`, and disabled (`onPressed: null`) actions.
 
 ### GlassMenu Submenus
 Give a `GlassMenuItem` a `submenu` list to open a native iOS-style card over the parent (the parent recedes and dims; tapping the card's header or the exposed parent collapses one level). Submenus nest. Works in `GlassMenu` and `GlassPullDownButton`:
@@ -525,3 +558,4 @@ GlassAppBar.pinned(
 - [ ] **Don't hand-roll `Dismissible`, `ExpansionTile`, `showDatePicker` or a `ReorderableListView` edit mode** — use `GlassSwipeActions`, `GlassDisclosureGroup`, `GlassDatePicker` and `GlassEditScope` + `GlassReorderableList`.
 - [ ] **`GlassReorderableList` items need a stable `key`**, and either `onReorder` or `onReorderItem` must be provided.
 - [ ] **`GlassCard` is deprecated.** Use `GlassContainer.card`.
+- [ ] **`showGlassActionSheet` is deprecated.** Use `showGlassConfirmationDialog` (with `morphFrom: anchor` from `GlassMorphTrigger` when anchored to a control, or unanchored for the centered `320 pt` platter with Cancel).

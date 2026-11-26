@@ -1,3 +1,6 @@
+// showGlassActionSheet is deprecated (use showGlassConfirmationDialog) but
+// stays covered here until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';

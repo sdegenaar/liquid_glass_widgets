@@ -115,6 +115,7 @@ export 'types/glass_button_style.dart';
 export 'widgets/feedback/glass_progress_indicator.dart';
 // Widgets - Overlays
 export 'widgets/overlays/glass_action_sheet.dart';
+export 'widgets/overlays/glass_confirmation_dialog.dart';
 export 'widgets/overlays/glass_context_menu.dart';
 export 'widgets/overlays/glass_dialog.dart';
 export 'widgets/overlays/glass_full_screen_cover.dart';

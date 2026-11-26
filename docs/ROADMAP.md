@@ -67,7 +67,7 @@ Features appearing in standard iOS system flows (e.g. stock Contacts app) priori
 
 ### Medium-Priority Gaps (1:1 SwiftUI & Apple HIG iOS 26/27)
 
-- [ ] **`showGlassConfirmationDialog` (`.confirmationDialog()`)** — modern iOS 26/27 confirmation dialog superseding legacy `showGlassActionSheet`. Anchors and morphs as a floating Liquid Glass popover platter directly from its source trigger (omitting the Cancel button when anchored, since outside tap dismisses), falling back to the centered 320 pt platter with Cancel (`1.17.0`) when unanchored.
+- [x] **`showGlassConfirmationDialog` (`.confirmationDialog()`)** — modern iOS 26/27 confirmation dialog superseding legacy `showGlassActionSheet`. Anchors and morphs as a calibrated `240 pt` floating Liquid Glass popover platter directly from its source trigger (`morphFrom` / `morphFromRect`, omitting the Cancel button by default since outside tap dismisses), falling back to the centered `320 pt` platter with Cancel (`1.17.0`) when unanchored. `showGlassActionSheet` is now `@Deprecated`.
 - [ ] **`GlassToggle.button` (`Toggle(.button)`)** — pressed/unpressed Liquid Glass capsule toggle button. Native SwiftUI primitive superseding Material-style `GlassChip` and horizontal filter strips.
 - [ ] **`GlassWheelPicker` (`Picker(.wheel)`)** — iOS-style rotating drum / wheel picker in glass.
 - [ ] **`GlassInlinePicker` (`Picker(.inline)`)** — inline embedded picker (e.g. wheel or checkmark rows directly inside a form section).
@@ -174,9 +174,9 @@ Ideas under consideration. None committed.
 Before cutting `2.0.0`, ship a bridge `1.x` minor so every retiring API has its 1:1 Apple replacement and `@Deprecated` analyzer guidance in place:
 
 - [x] Ship **`GlassBarItem` text / `.prominent`** item styles (unblocks `GlassAppBar.pinned` becoming default `GlassAppBar`).
-- [ ] Ship **`GlassToggle.button`** (native SwiftUI replacement before deprecating `GlassChip` and `GlassTabBar(isScrollable: true)`).
-- [ ] Ship **`showGlassConfirmationDialog`** with source-anchor popover support (native iOS 26/27 replacement before deprecating `showGlassActionSheet`).
-- [ ] Add `@Deprecated('... Will be removed in 2.0.0.')` annotations across `GlassSheet`, `GlassToast`, `GlassChip`, `showGlassActionSheet`, `GlassTabBar(isScrollable: true)`, and `GlassStyle.classic` (+ `classic*` theme/settings presets). (`GlassCard` and `GlassNavBarRegistration.presentSheet` are already `@Deprecated` in `1.x`.)
+- [x] Ship **`showGlassConfirmationDialog`** with source-anchor popover support and mark `showGlassActionSheet` `@Deprecated`.
+- [ ] Ship **`GlassToggle.button`** (native SwiftUI replacement before deprecating `GlassChip`).
+- [ ] Add remaining `@Deprecated('... Will be removed in 2.0.0.')` annotations across `GlassSheet`, `GlassChip`, `GlassToast`, and `GlassStyle.classic` (+ `classic*` theme/settings presets) ahead of `2.0.0`. (`GlassCard`, `GlassNavBarRegistration.presentSheet`, and `showGlassActionSheet` are already `@Deprecated` in `1.x`; `GlassTabBar(isScrollable: true)` was already removed in `1.0.0`.)
 
 ### Deprecations & Consolidations Scheduled for 2.0.0
 
@@ -185,7 +185,7 @@ The following symbols and patterns are scheduled for removal or consolidation in
 - `GlassCard` — **already `@Deprecated` in 1.x** in favour of `GlassContainer.card(...)`; `2.0.0` removes the standalone `GlassCard` class (`GlassContainer` is the single surface primitive).
 - `GlassNavBarRegistration.presentSheet` — **already `@Deprecated` in 1.x** (hoisted sheet items present directly out of the hoisted capsule); removed in `2.0.0`.
 - `GlassSheet` — superseded by `GlassModalSheet` (`GlassSheetMode.dismissible` / `GlassSheetMode.persistent` + `GlassModalSheetScaffold`), matching SwiftUI's single `.sheet()` API.
-- `showGlassActionSheet` — legacy ActionSheet API; superseded by source-anchored `showGlassConfirmationDialog` (`.confirmationDialog()`).
+- `showGlassActionSheet` — **already `@Deprecated` in 1.x**; legacy ActionSheet API superseded by source-anchored `showGlassConfirmationDialog` (`.confirmationDialog()`). Removed in `2.0.0`.
 - `GlassChip` — Material-ism with no UIKit/SwiftUI counterpart; superseded by `GlassToggle.button` (`Toggle(.button)`) and capsule-style `GlassButton`. *(Note: `GlassChip` already inherits `InheritedGlassSurfaceStyle` as of `1.17.2` for `1.x` apps until removal.)*
 - `GlassTabBar(isScrollable: true)` — native `UITabBar` / `TabView` is never horizontally scrollable; superseded by composing `GlassToggle.button` / capsule `GlassButton` in a horizontal `ScrollView`.
 - `GlassToast` — non-standard Android/Material pattern; not part of native Apple HIG (which uses Dynamic Island, banners, or alerts).

@@ -74,7 +74,7 @@ First-party rendering extensions developed specifically for `liquid_glass_widget
 100% first-party Cupertino design system:
 * **Interactive Controls**: `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`, `GlassPullDownButton`, `GlassButtonGroup`.
 * **Surfaces & Layouts**: `GlassScaffold`, `GlassAppBar`, `GlassTabBar` (bottom, inline, searchable, minimizable), `GlassNavigationShell`, `GlassPinnedBarChrome`.
-* **Modals & Overlays**: `GlassDialog`, `GlassSheet`, `GlassModalSheet`, `GlassMenu`, `GlassPopover`.
+* **Modals & Overlays**: `GlassDialog`, `showGlassConfirmationDialog`, `GlassSheet`, `GlassModalSheet`, `GlassMenu`, `GlassPopover`.
 * **Form Inputs**: `GlassTextField`, `GlassTextArea`, `GlassPasswordField`, `GlassSearchBar`, `GlassPicker`, `GlassFormField`.
 
 ---

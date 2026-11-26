@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use_from_same_package
 /// Tests that verify widgets resolve brightness-aware colors correctly
 /// in both light and dark modes.
 ///

@@ -73,9 +73,16 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   final GlobalKey _tabBarKey = GlobalKey();
   final GlobalKey _bodyKey = GlobalKey();
   final ScrollController _bodyScroll = ScrollController();
-  final GlobalKey _pullDownKey = GlobalKey();
-  final GlobalKey _contextMenuBtnKey = GlobalKey();
+  final GlobalKey _pullDownTopKey = GlobalKey();
+  final GlobalKey _pullDownBottomKey = GlobalKey();
+  final GlobalKey _contextMenuTopKey = GlobalKey();
+  final GlobalKey _contextMenuBottomKey = GlobalKey();
+  GlobalKey get _activePullDownKey =>
+      _selectedTab == 1 ? _pullDownTopKey : _pullDownBottomKey;
+  GlobalKey get _activeContextMenuBtnKey =>
+      _selectedTab == 1 ? _contextMenuTopKey : _contextMenuBottomKey;
   GlassMorphAnchor? _morphSheetAnchor;
+  GlassMorphAnchor? _confirmMidAnchor;
   VoidCallback? _toastDismiss;
   Timer? _cmdTimer;
   final List<int> _activePointers = [];
@@ -235,7 +242,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         }
       case 'pulldown':
         final box =
-            _pullDownKey.currentContext?.findRenderObject() as RenderBox?;
+            _activePullDownKey.currentContext?.findRenderObject() as RenderBox?;
         if (box != null && box.hasSize) {
           final pos = box.localToGlobal(
             Offset(box.size.width * 0.5, box.size.height * 0.5),
@@ -268,6 +275,10 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         if (innerCtx != null) _presentDialog(innerCtx, threeActions: true);
       case 'action_sheet':
         if (innerCtx != null) _presentActionSheet(innerCtx);
+      case 'confirm_top':
+        if (innerCtx != null) _presentConfirmationDialog(innerCtx, top: true);
+      case 'confirm_mid':
+        if (innerCtx != null) _presentConfirmationDialog(innerCtx, top: false);
       case 'toast':
         if (innerCtx != null) {
           _toastDismiss?.call();
@@ -320,15 +331,19 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   }
 
   void _presentActionSheet(BuildContext innerCtx) {
+    // ignore: deprecated_member_use
     showGlassActionSheet<void>(
       context: innerCtx,
       quality: _quality,
       title: 'Choose Action',
       message: 'Pick what to do with this item',
       actions: [
+        // ignore: deprecated_member_use
         GlassActionSheetAction(label: 'Share', onPressed: () {}),
+        // ignore: deprecated_member_use
         GlassActionSheetAction(
           label: 'Delete',
+          // ignore: deprecated_member_use
           style: GlassActionSheetStyle.destructive,
           onPressed: () {},
         ),
@@ -336,9 +351,34 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     );
   }
 
+  void _presentConfirmationDialog(
+    BuildContext innerCtx, {
+    bool top = false,
+    bool centered = false,
+    GlassMorphAnchor? anchor,
+  }) {
+    showGlassConfirmationDialog<void>(
+      context: innerCtx,
+      quality: _quality,
+      morphFrom: centered ? null : (anchor ?? (top ? null : _confirmMidAnchor)),
+      morphFromRect:
+          (!centered && top) ? const Rect.fromLTWH(342, 62, 44, 44) : null,
+      title: 'Delete Draft?',
+      message: 'This draft cannot be recovered once deleted.',
+      actions: [
+        GlassConfirmationDialogAction(label: 'Save Draft', onPressed: () {}),
+        GlassConfirmationDialogAction(
+          label: 'Delete Draft',
+          isDestructive: true,
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
   void _presentContextMenu(BuildContext innerCtx) {
-    final box =
-        _contextMenuBtnKey.currentContext?.findRenderObject() as RenderBox?;
+    final box = _activeContextMenuBtnKey.currentContext?.findRenderObject()
+        as RenderBox?;
     final rect = box != null && box.hasSize
         ? (box.localToGlobal(Offset.zero) & box.size)
         : const Rect.fromLTWH(160, 260, 132, 36);
@@ -1039,45 +1079,53 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            GlassButton.custom(
-                              width: 102,
-                              height: 34.5,
-                              shape: const LiquidRoundedSuperellipse(
-                                borderRadius: 18,
-                              ),
-                              useOwnLayer: true,
-                              settings: (themeData.settingsFor(context) ??
-                                      const GlassThemeSettings())
-                                  .applyTo(const LiquidGlassSettings())
-                                  .copyWith(
-                                    bodyMode: GlassBodyMode.clear,
-                                    frost: 0,
-                                    saturation: 1.0,
-                                    ambientStrength: 0.0,
-                                    lightIntensity: 0.25,
-                                    glassColor: const Color(0xFF0088FF),
-                                  ),
-                              quality: effectiveButtonQuality,
-                              onTap: () {},
-                              child: DecoratedBox(
-                                decoration: const ShapeDecoration(
-                                  color: Color(0xFF0088FF),
-                                  shape: LiquidRoundedSuperellipse(
+                            GlassMorphTrigger(
+                              builder: (ctx, anchor) {
+                                _confirmMidAnchor = anchor;
+                                return GlassButton.custom(
+                                  width: 102,
+                                  height: 34.5,
+                                  shape: const LiquidRoundedSuperellipse(
                                     borderRadius: 18,
                                   ),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Prominent',
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w400,
-                                      letterSpacing: -0.41,
-                                      color: CupertinoColors.white,
+                                  useOwnLayer: true,
+                                  settings: (themeData.settingsFor(context) ??
+                                          const GlassThemeSettings())
+                                      .applyTo(const LiquidGlassSettings())
+                                      .copyWith(
+                                        bodyMode: GlassBodyMode.clear,
+                                        frost: 0,
+                                        saturation: 1.0,
+                                        ambientStrength: 0.0,
+                                        lightIntensity: 0.25,
+                                        glassColor: const Color(0xFF0088FF),
+                                      ),
+                                  quality: effectiveButtonQuality,
+                                  onTap: () => _presentConfirmationDialog(
+                                    ctx,
+                                    top: false,
+                                  ),
+                                  child: DecoratedBox(
+                                    decoration: const ShapeDecoration(
+                                      color: Color(0xFF0088FF),
+                                      shape: LiquidRoundedSuperellipse(
+                                        borderRadius: 18,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Prominent',
+                                        style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w400,
+                                          letterSpacing: -0.41,
+                                          color: CupertinoColors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1141,7 +1189,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                 child: Row(
                   children: [
                     GlassPullDownButton(
-                      key: _pullDownKey,
+                      key: _activePullDownKey,
                       label: 'Pull-Down',
                       buttonWidth: 122,
                       buttonHeight: 34.5,
@@ -1226,7 +1274,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                     ),
                     const SizedBox(width: 12),
                     GlassButton.custom(
-                      key: _contextMenuBtnKey,
+                      key: _activeContextMenuBtnKey,
                       width: 131,
                       height: 34.5,
                       shape: const LiquidRoundedSuperellipse(
@@ -1333,6 +1381,95 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                             ),
                           );
                         },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          GlassGroupedSection(
+            header: _buildSectionHeader(
+              'CONFIRMATION DIALOG (.CONFIRMATIONDIALOG)',
+              secondaryColor,
+            ),
+            margin: EdgeInsets.zero,
+            surfaceStyle: surfaceStyle,
+            quality: _quality,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GlassMorphTrigger(
+                        builder: (ctx, anchor) => GlassButton.custom(
+                          height: 34.5,
+                          shape: const LiquidRoundedSuperellipse(
+                            borderRadius: 18,
+                          ),
+                          useOwnLayer: true,
+                          quality: buttonQuality,
+                          onTap: () => _presentConfirmationDialog(
+                            innerCtx,
+                            anchor: anchor,
+                          ),
+                          child: Text(
+                            'Anchored',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: -0.32,
+                              color: labelColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GlassButton.custom(
+                        height: 34.5,
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 18,
+                        ),
+                        useOwnLayer: true,
+                        quality: buttonQuality,
+                        onTap: () => _presentConfirmationDialog(
+                          innerCtx,
+                          centered: true,
+                        ),
+                        child: Text(
+                          'Centered',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.32,
+                            color: labelColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GlassButton.custom(
+                        height: 34.5,
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 18,
+                        ),
+                        useOwnLayer: true,
+                        quality: buttonQuality,
+                        onTap: () => _presentDialog(innerCtx),
+                        child: Text(
+                          'Alert',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.32,
+                            color: labelColor,
+                          ),
+                        ),
                       ),
                     ),
                   ],

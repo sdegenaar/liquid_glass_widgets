@@ -21,6 +21,7 @@ import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/inherited_liquid_glass.dart';
 import '../../types/interaction_notification.dart';
+import '../../src/widgets/overlays/glass_morph_anchor.dart';
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
 import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
@@ -29,6 +30,9 @@ import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_isolation_scope.dart';
 import '../shared/glass_solid_surface.dart';
 import '../surfaces/glass_vertical_bar.dart';
+
+export '../../src/widgets/overlays/glass_morph_anchor.dart'
+    show GlassMorphTrigger, GlassMorphAnchor;
 
 part 'shared/glass_modal_sheet_mechanics.dart';
 part 'shared/glass_modal_sheet_internal.dart';
@@ -779,19 +783,12 @@ class GlassModalSheet extends StatefulWidget {
   static Rect? _resolveMorphTriggerRect(
     GlassMorphAnchor? morphFrom,
     Rect? morphFromRect,
-  ) {
-    if (morphFromRect != null) return morphFromRect;
-    if (morphFrom == null) return null;
-
-    final rect = morphFrom._rect;
-    assert(
-        rect != null,
-        'GlassModalSheet.show(morphFrom:) needs a GlassMorphAnchor whose '
-        'GlassMorphTrigger is mounted and laid out. It was not on screen when '
-        'show() was called — pass morphFromRect if the trigger has no render '
-        'box of its own.');
-    return rect;
-  }
+  ) =>
+      resolveMorphTriggerRect(
+        morphFrom,
+        morphFromRect,
+        callerName: 'GlassModalSheet.show',
+      );
 
   /// Whether the current render path can draw the morph.
   ///
