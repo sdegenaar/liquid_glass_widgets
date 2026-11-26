@@ -814,29 +814,62 @@ class _InteractivePageState extends State<InteractivePage> {
 
                       SizedBox(height: 40),
 
-                      // ── GlassChip ────────────────────────────────────────
-                      const _SectionTitle(title: 'GlassChip'),
+                      // ── GlassToggle.button ───────────────────────────────
+                      const _SectionTitle(title: 'GlassToggle.button'),
                       SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          GlassChip(
+                          GlassToggle.button(
+                            value: _selectedFilters.contains('Favorite'),
                             label: 'Favorite',
-                            icon: Icon(CupertinoIcons.heart_fill),
-                            iconColor: Colors.pink,
-                            onTap: () {},
+                            icon: Icon(
+                              _selectedFilters.contains('Favorite')
+                                  ? CupertinoIcons.heart_fill
+                                  : CupertinoIcons.heart,
+                            ),
+                            activeColor: CupertinoColors.systemPink,
+                            onChanged: (next) => setState(() {
+                              if (next) {
+                                _selectedFilters.add('Favorite');
+                              } else {
+                                _selectedFilters.remove('Favorite');
+                              }
+                            }),
                           ),
-                          GlassChip(
-                            label: 'Share',
-                            icon: Icon(CupertinoIcons.share),
-                            onTap: () {},
-                          ),
-                          GlassChip(
+                          GlassToggle.button(
+                            value: _selectedFilters.contains('Star'),
                             label: 'Star',
-                            icon: Icon(CupertinoIcons.star_fill),
-                            iconColor: Colors.yellow,
-                            onTap: () {},
+                            icon: Icon(
+                              _selectedFilters.contains('Star')
+                                  ? CupertinoIcons.star_fill
+                                  : CupertinoIcons.star,
+                            ),
+                            activeColor: CupertinoColors.systemOrange,
+                            onChanged: (next) => setState(() {
+                              if (next) {
+                                _selectedFilters.add('Star');
+                              } else {
+                                _selectedFilters.remove('Star');
+                              }
+                            }),
+                          ),
+                          GlassToggle.button(
+                            value: _selectedFilters.contains('Mute'),
+                            icon: Icon(
+                              _selectedFilters.contains('Mute')
+                                  ? CupertinoIcons.speaker_slash_fill
+                                  : CupertinoIcons.speaker_2,
+                            ),
+                            semanticLabel: 'Mute',
+                            onChanged: (next) => setState(() {
+                              if (next) {
+                                _selectedFilters.add('Mute');
+                              } else {
+                                _selectedFilters.remove('Mute');
+                              }
+                            }),
                           ),
                         ],
                       ),
@@ -847,17 +880,15 @@ class _InteractivePageState extends State<InteractivePage> {
                         children:
                             ['Flutter', 'Dart', 'iOS', 'Android'].map((filter) {
                           final isSelected = _selectedFilters.contains(filter);
-                          return GlassChip(
+                          return GlassToggle.button(
                             label: filter,
-                            selected: isSelected,
-                            selectedColor: CupertinoColors.activeBlue
-                                .withValues(alpha: 0.4),
-                            onTap: () {
+                            value: isSelected,
+                            onChanged: (next) {
                               setState(() {
-                                if (isSelected) {
-                                  _selectedFilters.remove(filter);
-                                } else {
+                                if (next) {
                                   _selectedFilters.add(filter);
+                                } else {
+                                  _selectedFilters.remove(filter);
                                 }
                               });
                             },

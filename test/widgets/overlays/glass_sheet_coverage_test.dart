@@ -1,3 +1,6 @@
+// GlassSheet is deprecated (use GlassModalSheet) but stays covered here
+// until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package
 // Coverage for GlassSheet widget uncovered branches:
 //   L381-404: _handlePointerDown (suppressed interaction + enableInteractionGlow=false)
 //   L454-471: isScrollable=false path

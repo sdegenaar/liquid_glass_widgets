@@ -26,6 +26,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
   double _sliderValue = 0.5;
   int _segmentedValue = 0;
   double _stepperValue = 1.0;
+  bool _toggleButtonValue = true;
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +198,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                     ),
                   ),
                   _buildSection(
-                    'Steppers & Chips',
+                    'Steppers & Toggle Buttons',
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -205,9 +206,16 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                           value: _stepperValue,
                           onChanged: (v) => setState(() => _stepperValue = v),
                         ),
-                        GlassChip(
-                          label: 'Dismissible',
-                          onDeleted: () {},
+                        GlassToggle.button(
+                          value: _toggleButtonValue,
+                          icon: Icon(
+                            _toggleButtonValue
+                                ? CupertinoIcons.star_fill
+                                : CupertinoIcons.star,
+                          ),
+                          label: 'Starred',
+                          onChanged: (v) =>
+                              setState(() => _toggleButtonValue = v),
                         ),
                       ],
                     ),

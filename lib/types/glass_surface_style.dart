@@ -4,8 +4,8 @@
 /// `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`,
 /// `GlassDatePicker`, `GlassMultiDatePicker`, `GlassTextField`,
 /// `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`,
-/// `GlassChip`, `GlassButton` (and `GlassButton.custom`), `GlassIconButton`,
-/// and `GlassModalSheet` (and `GlassModalSheetScaffold` and
+/// `GlassToggle.button`, `GlassChip`, `GlassButton` (and `GlassButton.custom`),
+/// `GlassIconButton`, and `GlassModalSheet` (and `GlassModalSheetScaffold` and
 /// `GlassModalSheet.show`) via their `surfaceStyle` parameter.
 enum GlassSurfaceStyle {
   /// A liquid glass surface (blur, refraction, rim light).

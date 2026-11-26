@@ -1,3 +1,6 @@
+// GlassSheet is deprecated (use GlassModalSheet) but stays covered here
+// until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package
 import 'package:liquid_glass_widgets/widgets/overlays/glass_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';

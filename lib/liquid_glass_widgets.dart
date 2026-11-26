@@ -60,6 +60,7 @@ export 'widgets/shared/glass_motion_scope.dart';
 export 'widgets/shared/glass_scroll_edge_effect.dart';
 export 'widgets/shared/glass_swipe_action_scope.dart';
 export 'widgets/shared/glass_edit_scope.dart';
+export 'widgets/shared/glass_interaction_silence.dart';
 export 'widgets/shared/inherited_liquid_glass.dart';
 export 'widgets/shared/glass_solid_surface.dart';
 export 'widgets/shared/lightweight_liquid_glass.dart';
@@ -108,6 +109,7 @@ export 'widgets/interactive/liquid_glass_scope.dart'
     show LiquidGlassScope, GlassBackgroundSource;
 export 'widgets/interactive/glass_slider.dart';
 export 'widgets/interactive/glass_switch.dart';
+export 'widgets/interactive/glass_toggle.dart';
 export 'widgets/interactive/glass_pull_down_button.dart';
 export 'widgets/interactive/glass_button_group.dart';
 export 'types/glass_button_style.dart';

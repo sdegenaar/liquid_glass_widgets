@@ -161,9 +161,9 @@ In iOS 26 and iOS 27, **glass is reserved for the floating navigation and contro
 
 ### Glass Composition Rule: Glass is a Platter, Not a Wrapper
 
-`GlassContainer.card`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — do not nest persistently refractive glass widgets (`GlassButton`, `GlassIconButton`, `GlassChip`) inside a `glass`-mode container (nested glass sets `avoidsRefraction: true` to prevent double-refraction artifacts).
+`GlassContainer.card`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — do not nest persistently refractive glass widgets (`GlassButton`, `GlassIconButton`, `GlassToggle.button`) inside a `glass`-mode container (nested glass sets `avoidsRefraction: true` to prevent double-refraction artifacts).
 
-For Settings screens and scrolling lists, pass `surfaceStyle: GlassSurfaceStyle.solid` to render a flat white (`#FFFFFF`) / dark (`#1C1C1E`) card with 26 pt continuous corners and zero shader cost (`glass` is the 1.x default; `solid` becomes the default in `2.0.0`). Buttons, chips, and form inputs (`GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`) **automatically inherit `GlassSurfaceStyle.solid`** when placed inside a solid section or card (while standalone floating `GlassButton` and `GlassIconButton` stay refractive glass and support `tintColor`), and `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` keep their full `premium` lifted lens when touched:
+For Settings screens and scrolling lists, pass `surfaceStyle: GlassSurfaceStyle.solid` to render a flat white (`#FFFFFF`) / dark (`#1C1C1E`) card with 26 pt continuous corners and zero shader cost (`glass` is the 1.x default; `solid` becomes the default in `2.0.0`). Buttons, toggle buttons, and form inputs (`GlassButton`, `GlassIconButton`, `GlassToggle.button`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`) **automatically inherit `GlassSurfaceStyle.solid`** when placed inside a solid section or card (while standalone floating `GlassButton`, `GlassIconButton`, and `GlassToggle.button` stay refractive glass and support `tintColor` / `activeColor`), and `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` keep their full `premium` lifted lens when touched:
 
 ```dart
 GlassGroupedSection(
@@ -185,7 +185,7 @@ GlassGroupedSection(
 `GlassContainer.card` · `GlassContainer` · `GlassDivider` · `GlassGroupedSection` · `GlassListTile` · `GlassStepper` · `GlassSwipeActions` · `GlassDisclosureGroup` · `GlassReorderableList`
 
 ### Interactive
-`GlassButton` · `GlassIconButton` · `GlassChip` · `GlassSwitch` · `GlassSlider` · `GlassSegmentedControl` · `GlassPullDownButton` · `GlassButtonGroup` · `GlassBadge` · `GlassPageControl` · `GlassEditButton`
+`GlassButton` · `GlassIconButton` · `GlassToggle.button` · `GlassSwitch` · `GlassSlider` · `GlassSegmentedControl` · `GlassPullDownButton` · `GlassButtonGroup` · `GlassBadge` · `GlassPageControl` · `GlassEditButton`
 
 ### Input
 `GlassTextField` · `GlassTextArea` · `GlassPasswordField` · `GlassSearchBar` · `GlassPicker` · `GlassFormField` · `GlassDatePicker` (`.compact` / `.graphical` / `.wheel`) · `GlassMultiDatePicker`
@@ -194,7 +194,7 @@ GlassGroupedSection(
 `GlassProgressIndicator` · `GlassToast`
 
 ### Overlays
-`GlassDialog` · `showGlassConfirmationDialog` · `GlassSheet` · `GlassModalSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover` · `GlassContextMenu` · `GlassFullScreenCover`
+`GlassDialog` · `showGlassConfirmationDialog` · `GlassModalSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover` · `GlassContextMenu` · `GlassFullScreenCover`
 
 ### Surfaces & Navigation
 `GlassScaffold` · `GlassPage` · `GlassAppBar` · `GlassTabBar` (`.bottom` / `.inline` / `.searchable` / `.minimizable`) · `GlassTabBarTrailingButton` · `GlassToolbar` · `GlassNavigationShell` · `GlassNavigationStack` · `GlassNavigationLink` · `GlassPinnedBarChrome` · `GlassContentAwareScope` · `GlassContentAwareContent` · `GlassContentAwareBrightness`

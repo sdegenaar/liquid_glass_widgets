@@ -16,7 +16,7 @@ graph TD
     classDef l1 fill:#744210,stroke:#d69e2e,stroke-width:2px,color:#fff;
     classDef l0 fill:#4a154b,stroke:#b83280,stroke-width:2px,color:#fff;
 
-    L4["<b>Layer 4: Cupertino Component Library (lib/widgets/)</b><br/>60+ iOS 26 Widgets: GlassButton, GlassSheet, GlassTabBar, GlassScaffold, GlassMenu..."]:::l4
+    L4["<b>Layer 4: Cupertino Component Library (lib/widgets/)</b><br/>60+ iOS 26/27 Widgets: GlassButton, GlassToggle, GlassModalSheet, GlassTabBar, GlassScaffold, GlassMenu..."]:::l4
     L3["<b>Layer 3: Theming, Accessibility & Quality (lib/theme/, lib/types/)</b><br/>GlassThemeData, GlassQuality auto-degradation, GlassAccessibilityScope, Content-Aware Luminance"]:::l3
     L2["<b>Layer 2: Engine Scopes & Dissolution (lib/src/renderer/)</b><br/>GlassMaterializeScope, LiquidGlassSelfScaleScope, UniformValues, InteractionNotification"]:::l2
     L1["<b>Layer 1: Foundational Rendering Engine (lib/src/engine/)</b><br/>LiquidGlassLayer, RenderLiquidGlassGeometry, LiquidGlassBlendGroup, LiquidGlassSettings, Stretch"]:::l1
@@ -72,9 +72,9 @@ First-party rendering extensions developed specifically for `liquid_glass_widget
 
 ### Layer 4: 60+ iOS 26 Cupertino Glass Components (`lib/widgets/`)
 100% first-party Cupertino design system:
-* **Interactive Controls**: `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`, `GlassPullDownButton`, `GlassButtonGroup`.
+* **Interactive Controls**: `GlassButton`, `GlassIconButton`, `GlassToggle.button`, `GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`, `GlassPullDownButton`, `GlassButtonGroup`.
 * **Surfaces & Layouts**: `GlassScaffold`, `GlassAppBar`, `GlassTabBar` (bottom, inline, searchable, minimizable), `GlassNavigationShell`, `GlassPinnedBarChrome`.
-* **Modals & Overlays**: `GlassDialog`, `showGlassConfirmationDialog`, `GlassSheet`, `GlassModalSheet`, `GlassMenu`, `GlassPopover`.
+* **Modals & Overlays**: `GlassDialog`, `showGlassConfirmationDialog`, `GlassModalSheet`, `GlassMenu`, `GlassPopover`.
 * **Form Inputs**: `GlassTextField`, `GlassTextArea`, `GlassPasswordField`, `GlassSearchBar`, `GlassPicker`, `GlassFormField`.
 
 ---

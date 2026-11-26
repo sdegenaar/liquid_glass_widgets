@@ -1,3 +1,6 @@
+// GlassSheet is deprecated (use GlassModalSheet) but stays covered here
+// until its removal in 2.0.0.
+// ignore_for_file: deprecated_member_use_from_same_package
 // A content-sized GlassSheet.show stops below the top safe area and scrolls
 // its content, with or without `useSafeArea`.
 import 'package:flutter/material.dart';

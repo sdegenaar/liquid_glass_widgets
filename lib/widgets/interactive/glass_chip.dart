@@ -11,6 +11,10 @@ import 'glass_button.dart';
 
 /// A glass morphism chip following Apple's iOS 26 design patterns.
 ///
+/// > **Deprecated:** use [GlassToggle.button] for selectable/filter toggles or
+/// > a capsule-shaped [GlassButton.custom] for pill actions. `GlassChip` will
+/// > be removed in 2.0.0.
+///
 /// [GlassChip] provides a compact, pill-shaped chip with glass effect, perfect
 /// for tags, filters, selections, and dismissible elements. It composes
 /// [GlassButton] internally for consistent interaction behavior.
@@ -90,6 +94,10 @@ import 'glass_button.dart';
 ///   ),
 /// )
 /// ```
+@Deprecated(
+  'Use GlassToggle.button for selectable/filter toggles or capsule '
+  'GlassButton.custom for pill actions. Will be removed in 2.0.0.',
+)
 class GlassChip extends StatelessWidget {
   /// Creates a glass chip.
   const GlassChip({

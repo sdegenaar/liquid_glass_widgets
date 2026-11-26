@@ -176,6 +176,7 @@ class GlassButton extends StatefulWidget {
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
     this.isSelected,
+    this.isToggled,
     this.isStationary = false,
   }) : child = null;
 
@@ -243,6 +244,7 @@ class GlassButton extends StatefulWidget {
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
     this.isSelected,
+    this.isToggled,
     this.isStationary = false,
   })  : icon = null,
         iconSize = 24.0,
@@ -304,6 +306,14 @@ class GlassButton extends StatefulWidget {
   /// action buttons do not announce `"not selected"`. When `true` or `false`,
   /// the button participates in selection semantics (`Semantics.selected`).
   final bool? isSelected;
+
+  /// Optional toggle state reported to assistive technology (VoiceOver,
+  /// TalkBack).
+  ///
+  /// When `null` (the default), the button omits toggled semantics. When `true`
+  /// or `false` (for example in `GlassToggle.button`), the button exposes
+  /// toggle semantics (`Semantics.toggled`) on its single accessibility node.
+  final bool? isToggled;
 
   /// Semantic label for accessibility.
   ///
@@ -962,7 +972,7 @@ class _GlassButtonState extends State<GlassButton>
       );
     }
 
-    final contentWidget = SizedBox(
+    final rawContentWidget = SizedBox(
       height: widget.height,
       width: widget.width,
       child: Align(
@@ -972,6 +982,13 @@ class _GlassButtonState extends State<GlassButton>
         child: resolvedChild,
       ),
     );
+
+    // In glass mode, dim interior content rather than wrapping AdaptiveGlass in
+    // an ancestor Opacity saveLayer — on Impeller Metal, a fractional Opacity
+    // saveLayer isolates the backdrop and causes the glass shader to disappear.
+    final contentWidget = (!isSolid && !widget.enabled)
+        ? Opacity(opacity: 0.5, child: rawContentWidget)
+        : rawContentWidget;
 
     // 2. Build the inner content (Ambient base + Glow/Solid + Icon/Child)
     //
@@ -1260,8 +1277,10 @@ class _GlassButtonState extends State<GlassButton>
     final stretchWidget =
         skipBoundary ? stretchContent : RepaintBoundary(child: stretchContent);
 
-    // Apply opacity when disabled
-    final innerWidget = widget.enabled
+    // Apply group opacity when disabled in solid mode (no backdrop shader).
+    // Glass mode dims interior content inside AdaptiveGlass above so Impeller's
+    // glass shader never renders beneath a fractional Opacity saveLayer.
+    final innerWidget = (widget.enabled || !isSolid)
         ? stretchWidget
         : Opacity(
             opacity: 0.5,
@@ -1285,6 +1304,7 @@ class _GlassButtonState extends State<GlassButton>
       tracksSelection:
           !widget.excludeFromSemantics && widget.isSelected != null,
       isSelected: widget.isSelected ?? false,
+      toggled: !widget.excludeFromSemantics ? widget.isToggled : null,
       // Route the tap through the Semantics node that carries the label so
       // that label, button role, and tap action all live on the same node.
       // The GestureDetectors below are excluded from semantics to prevent
