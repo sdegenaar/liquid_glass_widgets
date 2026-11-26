@@ -1,3 +1,13 @@
+# Unreleased
+
+## Features
+
+- **Native iOS 26 / 27 tab-bar lens optics for `GlassTabBar.bottom` and `GlassTabBar.inline` (`indicatorLens`, `IndicatorLensOptics`):** While the lens is lifted it now bends what is under it the way `UITabBar`'s `_UILiquidLensView` does, with values read from UIKit (the archived lens layer tree, and its displacement maps rendered over a position-encoded ramp). The selected items, each magnified on its own centre, are drawn inside the lens through a warp of their own, so an icon or label crossing the rim folds back into a mirrored, compressed band instead of being bent by the glass. The bar and the page behind the lens get a separate, gentler outward warp whose samples past the lens repeat its edge, smearing what sits just outside across the rim, and the glass splits red from blue across the outer 14 pt of the result, turning both into spectral fringes. Needs Impeller and `GlassQuality.premium`; elsewhere the lens keeps its single-pass refraction. Every value is tunable through `IndicatorLensOptics`, and `IndicatorLensOptics.disabled` opts out.
+
+## Changes
+
+- **`GlassTabBar.magnification` defaults to `1.16`** (was `1.15`), the scale UIKit gives every selected item while the lens is lifted.
+
 # 1.21.0
 
 ## Features

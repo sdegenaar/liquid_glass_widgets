@@ -14,6 +14,17 @@ import '../../theme/glass_theme.dart';
 import '../../types/glass_specular_sharpness.dart';
 import 'liquid_glass_render_scope.dart';
 
+/// Internal shader transport for the backdrop warp of the native tab-bar lens
+/// (see `IndicatorLensOptics`). Lengths are logical pixels; [displacement]
+/// and [aberration] are already scaled by the lift.
+typedef GlassLensWarp = ({
+  double displacement,
+  double bevel,
+  double ovalization,
+  double aberration,
+  double aberrationBand,
+});
+
 /// How a glass surface resolves the parts of its body that had nothing to
 /// sample.
 ///
@@ -132,7 +143,8 @@ class LiquidGlassSettings {
     this.platformViewFallbackColor,
     this.platformViewMode = PlatformViewGlassMode.fallbackColor,
     this.bodyMode = GlassBodyMode.adaptive,
-  }) : pinchStrength = 0.0;
+  })  : pinchStrength = 0.0,
+        lensWarp = null;
 
   /// Private constructor used exclusively by [copyWithPinch].
   ///
@@ -175,6 +187,7 @@ class LiquidGlassSettings {
     this.platformViewMode = PlatformViewGlassMode.fallbackColor,
     this.bodyMode = GlassBodyMode.adaptive,
     required this.pinchStrength,
+    this.lensWarp,
   });
 
   /// Creates [LiquidGlassSettings] using Figma-inspired parameter names.
@@ -912,6 +925,57 @@ class LiquidGlassSettings {
   /// Configure from outside via the hosting widget's `indicatorPinchStrength`.
   final double pinchStrength;
 
+  /// Internal shader transport — the backdrop warp of the native tab-bar lens
+  /// (see `IndicatorLensOptics`), in logical pixels and already scaled by the
+  /// lift.
+  ///
+  /// Always `null` on instances created via the public constructor. Only set
+  /// by [AnimatedGlassIndicator] via [copyWithLensWarp].
+  final GlassLensWarp? lensWarp;
+
+  /// Returns a copy of these settings with [lensWarp] set to [value].
+  ///
+  /// **Internal use only** — called exclusively by [AnimatedGlassIndicator].
+  LiquidGlassSettings copyWithLensWarp(GlassLensWarp? value) =>
+      LiquidGlassSettings._withPinch(
+        visibility: visibility,
+        glassColor: glassColor,
+        thickness: thickness,
+        blur: blur,
+        frost: frost,
+        frostOpacity: frostOpacity,
+        frostClamp: frostClamp,
+        frostWeight: frostWeight,
+        blurWeight: blurWeight,
+        chromaticAberration: chromaticAberration,
+        lightAngle: lightAngle,
+        lightIntensity: lightIntensity,
+        ambientStrength: ambientStrength,
+        ambientRim: ambientRim,
+        fresnelStrength: fresnelStrength,
+        refractiveIndex: refractiveIndex,
+        saturation: saturation,
+        glowIntensity: glowIntensity,
+        specularSharpness: specularSharpness,
+        standardOpacityMultiplier: standardOpacityMultiplier,
+        shadowElevation: shadowElevation,
+        shadow: shadow,
+        whitenStrength: whitenStrength,
+        whitenGated: whitenGated,
+        edgeAbsorption: edgeAbsorption,
+        rimShade: rimShade,
+        rimShadeEnds: rimShadeEnds,
+        rimLight: rimLight,
+        bodyShade: bodyShade,
+        lensModel: lensModel,
+        backerColor: backerColor,
+        platformViewFallbackColor: platformViewFallbackColor,
+        platformViewMode: platformViewMode,
+        bodyMode: bodyMode,
+        pinchStrength: pinchStrength,
+        lensWarp: value,
+      );
+
   /// Returns a copy of these settings with [pinchStrength] set to [value].
   ///
   /// **Internal use only** — called exclusively by [AnimatedGlassIndicator]
@@ -955,6 +1019,7 @@ class LiquidGlassSettings {
         platformViewMode: platformViewMode,
         bodyMode: bodyMode,
         pinchStrength: value,
+        lensWarp: lensWarp,
       );
 
   /// Optional dimming "backer" painted directly behind the glass.
@@ -1080,7 +1145,8 @@ class LiquidGlassSettings {
         bodyMode: t < 0.5 ? a.bodyMode : b.bodyMode,
         // pinchStrength is interaction state — lerp it so transitions are smooth
         // when the indicator fades between active/resting states.
-        pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!);
+        pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!,
+        lensWarp: t < 0.5 ? a.lensWarp : b.lensWarp);
   }
 
   /// Helper for linear interpolation of doubles.
@@ -1167,6 +1233,7 @@ class LiquidGlassSettings {
         platformViewMode: platformViewMode ?? this.platformViewMode,
         bodyMode: bodyMode ?? this.bodyMode,
         pinchStrength: pinchStrength,
+        lensWarp: lensWarp,
       );
 
   @override
@@ -1208,7 +1275,8 @@ class LiquidGlassSettings {
         other.platformViewFallbackColor == platformViewFallbackColor &&
         other.platformViewMode == platformViewMode &&
         other.bodyMode == bodyMode &&
-        other.pinchStrength == pinchStrength;
+        other.pinchStrength == pinchStrength &&
+        other.lensWarp == lensWarp;
   }
 
   @override
@@ -1248,5 +1316,6 @@ class LiquidGlassSettings {
         platformViewMode,
         bodyMode,
         pinchStrength,
+        lensWarp,
       ]);
 }

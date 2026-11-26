@@ -629,6 +629,8 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               max(settings.blurWeight, 0.0),
               // Slot 45: uBodyShade.
               settings.effectiveBodyShade.clamp(0.0, 1.0),
+              // Slots 46-53: uNativeLens + uNativeAberration.
+              ...lensWarpUniforms(settings.lensWarp, dpr),
             ]);
           })
           ..setImageSampler(
@@ -739,6 +741,24 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           ..setOffset(_touchPosition * dpr - passPhysical.topLeft)
           ..setFloat(_touchIntensity.clamp(0.0, 1.0));
       });
+  }
+
+  /// Slots 46-53 of the render shader: the native tab-bar lens backdrop warp
+  /// (`uNativeLens`: displacement, bevel, ovalization, on) and its channel
+  /// split (`uNativeAberration`: amount, band), in physical pixels.
+  @visibleForTesting
+  static List<double> lensWarpUniforms(GlassLensWarp? warp, double dpr) {
+    if (warp == null) return const [0, 0, 0, 0, 0, 0, 0, 0];
+    return [
+      warp.displacement * dpr,
+      warp.bevel * dpr,
+      warp.ovalization,
+      1.0,
+      warp.aberration * dpr,
+      warp.aberrationBand * dpr,
+      0.0,
+      0.0,
+    ];
   }
 
   void _clearGeometryImage() {
@@ -897,6 +917,8 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           0.0, 0.0, 0.0, 1.0,
           // Slot 45: uBodyShade.
           settings.effectiveBodyShade.clamp(0.0, 1.0),
+          // Slots 46-53: uNativeLens + uNativeAberration.
+          ...lensWarpUniforms(settings.lensWarp, dpr),
         ]);
       })
       // Slot 0: captured background image (replaces the BackdropFilter read).

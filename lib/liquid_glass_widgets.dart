@@ -74,6 +74,7 @@ export 'utils/glass_morph_controller.dart'
         MorphPhase;
 export 'utils/glass_spring.dart';
 export 'utils/indicator_jelly.dart' show IndicatorJelly, IndicatorJellyPhysics;
+export 'utils/indicator_lens.dart' show IndicatorLensOptics;
 export 'utils/glass_performance_monitor.dart'
     show GlassPerformanceMonitor; // PremiumGlassTracker is internal
 

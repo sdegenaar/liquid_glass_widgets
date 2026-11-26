@@ -147,6 +147,18 @@ uniform vec4 uFrost;
 // LiquidGlassSettings.bodyShade.
 uniform float uBodyShade;
 
+// Slots 46-49: uNativeLens — backdrop warp of the native iOS 26/27 tab-bar
+// lens (IndicatorLensOptics), all in physical pixels: x: displacement at the
+// rim (positive = outward, already scaled by the lift), y: bevel width,
+// z: ovalization [0, 1], w: 1 = on. When on, it replaces the lens refraction
+// and the bar-indicator pinch below, as UIKit's BackdropView displacement map
+// (CASDFGlassDisplacementEffect height 36, inputAmount 9) does.
+uniform vec4 uNativeLens;
+
+// Slots 50-53: uNativeAberration — x: red/blue split at the rim, y: band
+// width (physical pixels), zw: unused.
+uniform vec4 uNativeAberration;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -417,6 +429,56 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
     return mix(held, cloud, clamp(uFrost.x, 0.0, 1.0));
 }
 
+// Native tab-bar lens (uNativeLens): signed distance to the lens in pass
+// pixels (negative inside) at a pass-pixel position, and the warp direction
+// there: the outward rim normal bent toward the inscribed ellipse's normal.
+// The matte is the shape inflated by 2 logical pixels.
+float nativeLensDistance(vec2 frag, out vec2 normal) {
+    float px = 3.0 * max(0.1, uEdgeConfig.z);
+    vec2 halfSize = max(0.5 * uGeometrySize - vec2(2.0 * px), vec2(1.0));
+    vec2 p = frag - (uGeometryOffset + 0.5 * uGeometrySize);
+    float radius = min(halfSize.x, halfSize.y);
+    vec2 q = abs(p) - halfSize + vec2(radius);
+    float sd = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - radius;
+    vec2 s = vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
+    vec2 rimNormal;
+    if (q.x > 0.0 && q.y > 0.0) {
+        rimNormal = normalize(q) * s;
+    } else if (q.x > q.y) {
+        rimNormal = vec2(s.x, 0.0);
+    } else {
+        rimNormal = vec2(0.0, s.y);
+    }
+    vec2 ellipseNormal = p / (halfSize * halfSize);
+    float ellipseLength = length(ellipseNormal);
+    ellipseNormal = ellipseLength > 1e-6 ? ellipseNormal / ellipseLength : rimNormal;
+    vec2 n = mix(rimNormal, ellipseNormal, uNativeLens.z);
+    float nLength = length(n);
+    normal = nLength > 1e-6 ? n / nLength : rimNormal;
+    return sd;
+}
+
+// The backdrop UV the native lens shows at a pass-pixel position: displaced
+// along the warp direction by displacement * (1 - sqrt(1 - t^2)),
+// t = 1 - d / bevel, then held inside the lens' bounds. UIKit captures this
+// backdrop with no margin, so a sample pushed out past the lens repeats the
+// lens' own edge: what sits right outside is smeared across the rim.
+vec2 nativeLensUV(vec2 frag) {
+    vec2 normal;
+    float d = max(-nativeLensDistance(frag, normal), 0.0);
+    float t = clamp(1.0 - d / max(uNativeLens.y, 1.0), 0.0, 1.0);
+    float profile = 1.0 - sqrt(max(0.0, 1.0 - t * t));
+    vec2 point = frag + normal * (uNativeLens.x * profile);
+    float inset = 2.0 * 3.0 * max(0.1, uEdgeConfig.z) + 0.5;
+    point = clamp(point, uGeometryOffset + vec2(inset),
+                  uGeometryOffset + uGeometrySize - vec2(inset));
+    vec2 uv = (point + uCaptureOffset) / uSize;
+    #ifdef LGR_GLES_FLIP_SAMPLE_Y
+        uv.y = 1.0 - uv.y;
+    #endif
+    return uv;
+}
+
 void main() {
     // Unpacked here rather than at global scope: global non-constant initialisers
     // (e.g. float x = uniform.y) are valid in desktop GLSL 4.6 but rejected by
@@ -545,6 +607,11 @@ void main() {
         displacement *= maxReach / reach;
     }
 
+    // The native tab-bar lens replaces the lens refraction and the
+    // bar-indicator pinch with its own warp (nativeLensUV), sampled below.
+    bool nativeLens = uNativeLens.w > 0.5;
+    float pinch = nativeLens ? 0.0 : uPinchStrength;
+
     float dprScale = max(0.1, uEdgeConfig.z);
     // dprScale is (devicePixelRatio / 3.0), so 1 logical point = 3.0 * dprScale
     // physical pixels. Convert rimDist to logical points (rimPt):
@@ -568,13 +635,13 @@ void main() {
     );
     vec2 barCaDisp = vec2(0.0);
     float barIconGate = 0.0;
-    if (uLensModel > 0.5 && uPinchStrength > 0.001) {
+    if (uLensModel > 0.5 && pinch > 0.001) {
         if (isBarIndicator < 0.5) {
             float meniscusBand = smoothstep(0.35, 0.75, rimPt)
                                * (1.0 - smoothstep(1.15, 1.75, rimPt));
             vec2 inwardUnit = -normalXY / max(length(normalXY), 1e-4);
             vec2 meniscusDisp = inwardUnit * (4.8 * pxPerPt) * meniscusBand;
-            displacement = mix(displacement, meniscusDisp, clamp(uPinchStrength, 0.0, 1.0));
+            displacement = mix(displacement, meniscusDisp, clamp(pinch, 0.0, 1.0));
         } else {
             // On tall bar indicator lenses (GlassTabBar):
             // 1. Outer meniscus ring (rimPt = 0.22..1.35 pt) on the left/right
@@ -586,7 +653,7 @@ void main() {
             //    the bar when run off the end), while barCaDisp (matching Apple's
             //    contentWrapper inputAmount = -17.5, height = 11.2) magnifies and
             //    fans foreground tab icons/labels outward across the bevel.
-            float barLift = clamp(uPinchStrength / 0.35, 0.0, 1.0);
+            float barLift = clamp(pinch / 0.35, 0.0, 1.0);
             vec2 barCentered = geometryUV - vec2(0.5);
             vec2 barAbs = abs(barCentered) * 2.0;
             float tipDistPx = (0.5 - abs(barCentered.x)) * uGeometrySize.x;
@@ -643,7 +710,7 @@ void main() {
         // the pill already overhangs the bar platter by 4–7 pt, so keep the
         // hairline at the pill's own rim without pushing 2.5 px into an
         // adjacent SearchPill.
-        if (isBarIndicator < 0.5 || uPinchStrength <= 0.001) {
+        if (isBarIndicator < 0.5 || pinch <= 0.001) {
             vec2 outward = normalXY / max(length(normalXY), 1e-4)
                          * (2.5 * dprScale);
             displacement = mix(displacement, outward, hairline);
@@ -675,7 +742,7 @@ void main() {
     //
     // ── iOS 26 Concave Lens Pinch ─────────────────────────────────────────────
     vec2 baseScreenUV = screenUV;
-    if (uPinchStrength > 0.001) {
+    if (pinch > 0.001) {
         // We cannot use normalXY because it is 0.0 in the flat interior of the pill,
         // which prevents the background from being pinched at all.
         // We also cannot use a circular distance field, because a circle mapped to a
@@ -728,7 +795,7 @@ void main() {
             float barPinchPx = mix(0.245, 0.38, isSegmentLens) * uGeometrySize.y;
             pinchShift = vec2(
                 0.0,
-                centered.y * barPinchHoriz * barPinchVert * uPinchStrength * (barPinchPx * invTexSize.y)
+                centered.y * barPinchHoriz * barPinchVert * pinch * (barPinchPx * invTexSize.y)
             );
             pinchShift *= (1.0 - hairline);
         } else if (uLensModel > 0.5) {
@@ -739,10 +806,10 @@ void main() {
             // moat ends in a smooth rounded crescent.
             float endYScale = 1.0 - 0.32 * smoothstep(0.55, 0.92, absCentered.x);
             vec2 pinchDir = vec2(centered.x, centered.y * endYScale);
-            pinchShift = pinchDir * pinchRamp * pinchRimGate * uPinchStrength * (pinchPx * invTexSize);
+            pinchShift = pinchDir * pinchRamp * pinchRimGate * pinch * (pinchPx * invTexSize);
             pinchShift *= geometryData.a * (1.0 - hairline);
         } else {
-            pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
+            pinchShift = centered * pinchRamp * pinch * 0.025;
             pinchShift *= geometryData.a * (1.0 - hairline);
         }
 
@@ -765,7 +832,7 @@ void main() {
     // zero-displacement sample at any display resolution.
     float effectiveCA = max(
         uChromaticAberration,
-        (uLensModel > 0.5) ? isBarIndicator * clamp(uPinchStrength * 0.9, 0.0, 0.36) : 0.0
+        (uLensModel > 0.5) ? isBarIndicator * clamp(pinch * 0.9, 0.0, 0.36) : 0.0
     );
     vec4 refractColor;
     if (uFrost.x > 0.0 && hairline <= 0.0) {
@@ -778,11 +845,46 @@ void main() {
             a += uBackgroundFallback.a * (1.0 - a);
         }
         refractColor = vec4(0.0, 0.0, 0.0, a);
+    } else if (nativeLens) {
+        vec4 greenSample = textureBilinear(nativeLensUV(fragCoord), physTexSize, invTexSize);
+        refractColor = greenSample;
+        if (uNativeAberration.x > 0.0) {
+            // UIKit's glassForeground splits red and blue across the outer
+            // band of the already-warped image, along the position's
+            // normalised (y, x): along the rim at the ends and the middle of
+            // each side, across it on the diagonals.
+            vec2 unused;
+            float d = max(-nativeLensDistance(fragCoord, unused), 0.0);
+            float amount = uNativeAberration.x
+                         * clamp(1.0 - d / max(uNativeAberration.y, 1.0), 0.0, 1.0);
+            if (amount > 0.01) {
+                float px = 3.0 * max(0.1, uEdgeConfig.z);
+                vec2 halfSize = max(0.5 * uGeometrySize - vec2(2.0 * px), vec2(1.0));
+                vec2 rel = (fragCoord - (uGeometryOffset + 0.5 * uGeometrySize)) / halfSize;
+                vec2 dir = vec2(rel.y, rel.x);
+                float dirLength = length(dir);
+                dir = dirLength > 1e-4 ? dir / dirLength : vec2(0.0);
+                // Five taps across the split, weighted toward red on one side
+                // and blue on the other, blend the fringe through the
+                // spectrum. 1.355 puts the red and blue centroids at +-amount.
+                vec3 sum = vec3(0.0);
+                vec3 weights = vec3(0.0);
+                for (int i = 0; i < 5; i++) {
+                    float t = float(i) * 0.5 - 1.0;
+                    vec3 w = max(vec3(0.0),
+                                 vec3(1.0) - abs(vec3(t) - vec3(1.0, 0.0, -1.0)) / 1.2);
+                    vec2 uv = nativeLensUV(fragCoord + dir * (amount * 1.355 * t));
+                    sum += textureBilinear(uv, physTexSize, invTexSize).rgb * w;
+                    weights += w;
+                }
+                refractColor.rgb = sum / weights;
+            }
+        }
     } else if (dot(normalXY, normalXY) < 1e-4 && dot(displacement, displacement) < 1e-4) {
         // Flat interior — zero displacement. On the live BackdropFilter path
         // (uCaptureOffset == 0, uPinchStrength == 0), screenUV lands on exact
         // texel centers so 1 texture() is bit-exact with 4-tap textureBilinear.
-        if (uPinchStrength <= 0.001 && dot(uCaptureOffset, uCaptureOffset) < 1e-6) {
+        if (pinch <= 0.001 && dot(uCaptureOffset, uCaptureOffset) < 1e-6) {
             vec4 bg = texture(uBackgroundTexture, screenUV);
             if (uBackgroundFallback.a > 0.0) {
                 bg.rgb += uBackgroundFallback.rgb * uBackgroundFallback.a * (1.0 - bg.a);
@@ -805,7 +907,7 @@ void main() {
                       + textureBilinear(refractedUV - tangent, physTexSize, invTexSize);
             refractColor = mix(refractColor, (refractColor + side) / 3.0, hairline);
         }
-    } else if (isBarIndicator > 0.5 && uLensModel > 0.5 && uPinchStrength > 0.001) {
+    } else if (isBarIndicator > 0.5 && uLensModel > 0.5 && pinch > 0.001) {
         // iOS 27 GlassTabBar two-layer optical model (_UILiquidLensView):
         // 1. Platter backdrop (BackdropView, inputAmount = +9): pinched inward
         //    around all 4 sides with zero chromatic dispersion so the outer edge

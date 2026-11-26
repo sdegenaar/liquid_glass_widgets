@@ -13,6 +13,7 @@ import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../../utils/indicator_jelly.dart';
+import '../../utils/indicator_lens.dart';
 import 'glass_effect.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
@@ -155,6 +156,17 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// the bar's edge but never grow past it. Used with the native [jelly].
   final bool clampExpansionToTrack;
 
+  /// Native lens optics. When enabled, the glass bends its backdrop with the
+  /// native backdrop warp instead of its own refraction (see
+  /// [IndicatorLensOptics]); the selected content is warped separately by the
+  /// host. Premium quality only.
+  final IndicatorLensOptics? lensOptics;
+
+  /// Whether to paint the lens' inner shadow. Defaults to [paintGlass]. A host
+  /// that draws content over the glass paints the shadow in a pass of its own
+  /// on top, as the native lens does.
+  final bool? paintInnerShadow;
+
   /// Creates a new [AnimatedGlassIndicator].
   const AnimatedGlassIndicator({
     super.key,
@@ -180,6 +192,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.direction = Axis.horizontal,
     this.jelly,
     this.clampExpansionToTrack = false,
+    this.lensOptics,
+    this.paintInnerShadow,
   });
 
   /// The iOS 27-calibrated default glass settings for all indicator pills.
@@ -480,9 +494,21 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // so glass opacity still tracks the spring naturally — only the UV
     // distortion is stabilised.
     final stablePinchFade = 1.0 - (1.0 - fade) * (1.0 - fade);
+    final optics = lensOptics;
     final effectiveSettings = base
         .copyWith(visibility: fade)
-        .copyWithPinch(stablePinchFade * pinchStrength);
+        .copyWithPinch(stablePinchFade * pinchStrength)
+        .copyWithLensWarp(
+          optics != null && optics.enabled
+              ? (
+                  displacement: optics.backdropDisplacement * fade,
+                  bevel: optics.backdropBevel,
+                  ovalization: optics.ovalization,
+                  aberration: optics.aberration * fade,
+                  aberrationBand: optics.aberrationBand,
+                )
+              : null,
+        );
 
     final glassWidget = GlassEffect(
       shape: shape,
@@ -578,7 +604,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
         // 0.06 on iOS 27 paraxial lens, 0.12 on iOS 26 / classic lens),
         // painted over the lens in both Standard and Premium modes so it reads
         // as the soft darkening along the top of the glass and lifted drop shadow.
-        if (paintGlass && quality != GlassQuality.minimal && fade > 0.05)
+        if ((paintInnerShadow ?? paintGlass) &&
+            quality != GlassQuality.minimal &&
+            fade > 0.05)
           IgnorePointer(
             child: CustomPaint(
               painter: LensInnerShadowPainter(
