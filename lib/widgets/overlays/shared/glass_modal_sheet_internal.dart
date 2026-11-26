@@ -52,6 +52,11 @@ class _SheetLayout extends StatelessWidget {
   final VoidCallback? onDismiss;
   final GlobalKey contentZoneKey;
 
+  /// Whether the sheet is [GlassSurfaceStyle.solid]: the glass surface goes
+  /// dormant under the opaque fill, the touch glow and pulse stay off, and
+  /// the content is told it sits on a solid surface.
+  final bool solidSurface;
+
   /// How the content fits a [GlassSheetDetent.fitted] sheet, or null to
   /// fill the sheet.
   final _SheetContentFit? contentFit;
@@ -101,6 +106,7 @@ class _SheetLayout extends StatelessWidget {
     required this.enableSaturationGlow,
     required this.suppressInteractionOnChildren,
     required this.contentZoneKey,
+    this.solidSurface = false,
     this.onDismiss,
     this.contentFit,
   });
@@ -204,9 +210,25 @@ class _SheetLayout extends StatelessWidget {
               rimShade: contentSettings.rimShade * glassVisibility,
               bodyShade: contentSettings.bodyShade * glassVisibility,
             );
-            final surfaceSettings = inMorph
-                ? SheetMorphGeometry.dormantSurface(currentSettings)
-                : currentSettings;
+            // A solid sheet's opaque fill covers its whole shape, so its glass
+            // goes dormant as it does in the morph. Dormant settings keep the
+            // same widget tree, so the content stays mounted. The glass fades
+            // its child with `visibility`, fill included, so an opaque sheet
+            // keeps it at 1 whatever the settings say. Outside the morph it
+            // also keeps its drop shadow, as the opaque large detent does and
+            // as the morph droplet that lands on it does.
+            final LiquidGlassSettings surfaceSettings;
+            if (solidSurface) {
+              final opaque = currentSettings.copyWith(visibility: 1.0);
+              final dormant = SheetMorphGeometry.dormantSurface(opaque);
+              surfaceSettings = inMorph
+                  ? dormant
+                  : dormant.copyWith(shadow: opaque.effectiveShadow);
+            } else {
+              surfaceSettings = inMorph
+                  ? SheetMorphGeometry.dormantSurface(currentSettings)
+                  : currentSettings;
+            }
             final childSettings =
                 (maintainContentGlass && expandProgressValue > 0.9)
                     ? (fullStateContentSettings ?? effectiveSettings)
@@ -315,6 +337,7 @@ class _SheetLayout extends StatelessWidget {
                                   glowRadius: glowRadius,
                                   hitTestBehavior: HitTestBehavior.translucent,
                                   pulse: (!inMorph &&
+                                          !solidSurface &&
                                           enableSaturationGlow &&
                                           expandProgress < 0.9)
                                       ? saturationAnimation.value
@@ -390,7 +413,21 @@ class _SheetLayout extends StatelessWidget {
   }
 
   Widget _applyTopFade(Widget content) {
-    final keyed = KeyedSubtree(key: contentZoneKey, child: content);
+    Widget keyed = KeyedSubtree(key: contentZoneKey, child: content);
+    // Only a solid sheet wraps its content in InheritedGlassSurfaceStyle. A
+    // glass sheet adds no wrapper, because a `glass` value there would
+    // override widgets such as GlassReorderableList, which use the inherited
+    // style in preference to their own `surfaceStyle`.
+    //
+    // The wrapper comes and goes when `surfaceStyle` changes at runtime.
+    // contentZoneKey is a GlobalKey, so Flutter moves the mounted content
+    // under its new parent and the content keeps its State.
+    if (solidSurface) {
+      keyed = InheritedGlassSurfaceStyle(
+        surfaceStyle: GlassSurfaceStyle.solid,
+        child: keyed,
+      );
+    }
     if (!enableTopFade) return keyed;
 
     final fadeT = ((expandProgressValue - 0.8) / 0.2).clamp(0.0, 1.0);
@@ -909,11 +946,16 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Glass morphism effect settings (blur, thickness, lighting).
   final LiquidGlassSettings? settings;
 
-  /// Background color used when the sheet is fully expanded and opaque.
+  /// Background color used when the sheet is fully expanded and opaque, and
+  /// at every detent when [surfaceStyle] is [GlassSurfaceStyle.solid].
   final Color? expandedColor;
 
   /// [expandedColor] while the glass brightness is dark.
   final Color? expandedDarkColor;
+
+  /// Whether the sheet's surface is glass or opaque. Forwarded to the sheet;
+  /// see [GlassModalSheet.surfaceStyle].
+  final GlassSurfaceStyle surfaceStyle;
 
   /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
   final GlassQuality? quality;
@@ -1008,7 +1050,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
   final LiquidGlassSettings? fullStateContentSettings;
 
   /// The resting detents offered (small = peek floor, medium = half glass,
-  /// large = full opaque, fitted = the content's height).
+  /// large = full opaque, fitted = the content's height). A
+  /// [GlassSurfaceStyle.solid] sheet is opaque at each of them.
   /// Must be non-empty, and [GlassSheetDetent.fitted] must be the only
   /// detent. Forwarded to the sheet; see [GlassModalSheet.detents].
   final Set<GlassSheetDetent> detents;
@@ -1060,6 +1103,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.settings,
     this.expandedColor,
     this.expandedDarkColor,
+    this.surfaceStyle = GlassSurfaceStyle.glass,
     this.controller,
     this.onStateChanged,
     this.mode = GlassSheetMode.dismissible,
@@ -1142,6 +1186,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           settings: settings,
           expandedColor: expandedColor,
           expandedDarkColor: expandedDarkColor,
+          surfaceStyle: surfaceStyle,
           controller: controller,
           onStateChanged: onStateChanged,
           mode: mode,

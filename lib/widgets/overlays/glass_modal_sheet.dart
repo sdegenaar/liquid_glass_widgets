@@ -14,6 +14,7 @@ import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
+import '../../types/glass_surface_style.dart';
 import '../../utils/glass_morph_controller.dart';
 import '../../utils/liquid_morph_physics.dart';
 import '../shared/adaptive_glass.dart';
@@ -26,6 +27,7 @@ import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../constants/glass_defaults.dart';
 import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_isolation_scope.dart';
+import '../shared/glass_solid_surface.dart';
 import '../surfaces/glass_vertical_bar.dart';
 
 part 'shared/glass_modal_sheet_mechanics.dart';
@@ -141,7 +143,8 @@ class GlassModalSheet extends StatefulWidget {
   /// Glass morphism effect settings (blur, thickness, lighting).
   final LiquidGlassSettings? settings;
 
-  /// Background color used when the sheet is fully expanded and opaque.
+  /// Background color used when the sheet is fully expanded and opaque, and
+  /// at every detent when [surfaceStyle] is [GlassSurfaceStyle.solid].
   final Color? expandedColor;
 
   /// [expandedColor] while [GlassTheme.brightnessOf] is dark.
@@ -149,6 +152,31 @@ class GlassModalSheet extends StatefulWidget {
   /// Picked on every build, so an open sheet follows a light/dark switch.
   /// Falls back to [expandedColor].
   final Color? expandedDarkColor;
+
+  /// Whether the sheet's surface is glass or opaque.
+  ///
+  /// [GlassSurfaceStyle.glass], the default, is glass that becomes opaque
+  /// toward the large detent, as [fillThreshold], [fillTransition] and the
+  /// per-state settings describe.
+  ///
+  /// [GlassSurfaceStyle.solid] is opaque at every detent and at every moment,
+  /// including while it is dragged, slides in or out, or resizes to fit its
+  /// content. It is filled with [expandedColor], or [expandedDarkColor] in
+  /// dark mode. [fillThreshold], [fillTransition], [peekSettings],
+  /// [halfSettings] and [fullSettings] do not change the surface, and the
+  /// surface shows no touch glow or saturation pulse. Glass controls inside
+  /// the sheet still receive [settings]. A solid sheet also publishes
+  /// [InheritedGlassSurfaceStyle] with [GlassSurfaceStyle.solid] to its
+  /// content. Widgets that read it then behave as they do inside a solid
+  /// card: buttons, chips and inputs that leave their own `surfaceStyle`
+  /// unset render solid, and list tiles, reorderable lists and disclosure
+  /// groups take their solid-card styling.
+  ///
+  /// A sheet presented with `morphFrom` morphs as a large sheet does: the
+  /// droplet starts as glass, and the opaque fill fades in as it grows.
+  ///
+  /// The sheet's shape, margins and detents do not change.
+  final GlassSurfaceStyle surfaceStyle;
 
   /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
   final GlassQuality? quality;
@@ -211,9 +239,11 @@ class GlassModalSheet extends StatefulWidget {
   /// Interaction mode (dismissible vs persistent).
   final GlassSheetMode mode;
 
-  /// The resting detents this sheet offers. Appearance follows the detent:
-  /// [GlassSheetDetent.small] is the peek floor, [GlassSheetDetent.medium] is
-  /// content-height glass, [GlassSheetDetent.large] is screen-height opaque.
+  /// The resting detents this sheet offers. With the default
+  /// [surfaceStyle], appearance follows the detent: [GlassSheetDetent.small]
+  /// is the peek floor, [GlassSheetDetent.medium] is content-height glass,
+  /// [GlassSheetDetent.large] is screen-height opaque. A
+  /// [GlassSurfaceStyle.solid] sheet is opaque at every detent.
   ///
   ///   • `{medium}`             → half-only glass (Apple Pay / Sign in with Apple)
   ///   • `{large}`              → full-only opaque, opens straight to full (Maps / Music)
@@ -305,6 +335,7 @@ class GlassModalSheet extends StatefulWidget {
     this.platformViewBackdrop = false,
     this.expandedColor,
     this.expandedDarkColor,
+    this.surfaceStyle = GlassSurfaceStyle.glass,
     this.controller,
     this.onStateChanged,
     this.mode = GlassSheetMode.dismissible,
@@ -448,6 +479,7 @@ class GlassModalSheet extends StatefulWidget {
     LiquidGlassSettings? settings,
     Color? expandedColor,
     Color? expandedDarkColor,
+    GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
     ValueChanged<GlassSheetState>? onStateChanged,
     GlassSheetMode mode = GlassSheetMode.dismissible,
     double peekSize = 90.0,
@@ -627,6 +659,7 @@ class GlassModalSheet extends StatefulWidget {
           settings: settings,
           expandedColor: expandedColor,
           expandedDarkColor: expandedDarkColor,
+          surfaceStyle: surfaceStyle,
           mode: mode,
           peekSize: peekSize,
           quality: quality,
@@ -718,6 +751,7 @@ class GlassModalSheet extends StatefulWidget {
             fullSettings: fullSettings,
             expandedColor: expandedColor,
             expandedDarkColor: expandedDarkColor,
+            surfaceStyle: surfaceStyle,
             quality: quality,
             peekHorizontalMargin: peekHorizontalMargin,
             peekBottomMargin: peekBottomMargin,
@@ -930,4 +964,25 @@ class _GlassModalSheetRoute<T> extends RawDialogRoute<T> {
 
   @override
   final Duration reverseTransitionDuration;
+}
+
+/// The colour of the sheet's opaque fill: [expandedDarkColor] in dark mode,
+/// else [expandedColor], else the default for the brightness and style.
+///
+/// Shared by the sheet and the morph droplet, so both land on one colour.
+Color _sheetFillColor(
+  BuildContext context, {
+  required Color? expandedColor,
+  required Color? expandedDarkColor,
+}) {
+  final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+  final style = GlassThemeHelpers.resolveStyle(context);
+  return (isDark ? expandedDarkColor : null) ??
+      expandedColor ??
+      (isDark
+          // 0xFF1C1C1E is systemGray6 in dark mode.
+          ? const Color(0xFF1C1C1E)
+          : (style == GlassStyle.classic
+              ? CupertinoColors.white
+              : const Color(0xFFF2F2F7)));
 }

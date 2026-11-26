@@ -58,6 +58,20 @@ GlassModalSheet.show<void>(
 );
 ```
 
+For a fitted sheet that is always opaque, add
+`surfaceStyle: GlassSurfaceStyle.solid`. The sheet stays opaque while it
+slides in, moves, resizes and slides out. With `morphFrom`, the droplet starts
+as glass and the opaque fill fades in as it grows:
+
+```dart
+GlassModalSheet.show<void>(
+  context: context,
+  detents: const {GlassSheetDetent.fitted},
+  surfaceStyle: GlassSurfaceStyle.solid,
+  builder: (context) => const MySheetBody(),
+);
+```
+
 The drag handle overlays the top of the content and keeps the sheet at least
 44 logical pixels tall while it shows. For a larger minimum height, wrap the
 content in a `ConstrainedBox`:
@@ -113,7 +127,7 @@ InteractionNotification(event).dispatch(context);
 ### 2.5. Solid Controls & Chips Inside Sheets (`1.x` Opt-In)
 Because `GlassModalSheet` already renders its own refractive glass surface, nesting glass-mode controls (`GlassChip`, `GlassButton`, `GlassIconButton`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, or `GlassPicker`) directly inside a sheet can cause double-refraction distortion and allocate per-control backdrop shader layers during sheet drags.
 
-In `1.x`, wrap dense sheet content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, ...)`:
+A sheet with `surfaceStyle: GlassSurfaceStyle.solid` does this for you: it publishes `GlassSurfaceStyle.solid` to its content. A glass sheet publishes nothing. To get solid controls on a glass sheet in `1.x`, wrap dense sheet content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, ...)`:
 
 ```dart
 GlassModalSheet.show(
@@ -200,7 +214,7 @@ Everything after the morph is unchanged — detents, drag, snap, and the control
 
 **Why the wrapper.** A `GlobalKey` can locate the trigger but not hide it, and nothing in Flutter lets one widget hide another it doesn't own. A trigger that keeps painting while the droplet inflates on top of it reads as a duplicated button rather than a morph — so `GlassMorphTrigger` owns the key *and* the opacity. The child paints nothing while the sheet is presented, and is restored the instant the droplet is caught, displaced by the spring's closing momentum so it visibly takes the hit. Use `morphFromRect` when the trigger can't be wrapped: the morph still runs, but the anchor blob is suppressed and the droplet blooms from the rect's centre instead of stretching a teardrop out of it.
 
-**What it lands on.** The droplet aims at the *initial detent's* resting frame, resolved through `SheetGeometry.positionForState` — the same call the sheet's own render metrics use — and takes on that detent's surface, so a glass `medium` sheet hands off to glass and an opaque `large` sheet hands off to colour. At the settled instant the droplet and the sheet occupy the identical frame, and the real sheet (mounted underneath the whole time, never inserted late) takes over.
+**What it lands on.** The droplet aims at the *initial detent's* resting frame, resolved through `SheetGeometry.positionForState` — the same call the sheet's own render metrics use — and takes on that detent's surface, so a glass `medium` sheet hands off to glass and an opaque `large` sheet hands off to colour. A `surfaceStyle: GlassSurfaceStyle.solid` sheet hands off to colour at any detent: its droplet is glass, and the opaque fill fades in as it grows. At the settled instant the droplet and the sheet occupy the identical frame, and the real sheet (mounted underneath the whole time, never inserted late) takes over.
 
 **Which dismissals morph back.** All of them. A dismissal that leaves the sheet at rest — barrier tap, close button, back gesture, `Navigator.pop()`, or `controller.snapToState(hidden)` — morphs back from the sheet's *current* resting detent frame (matching its live margins, bottom offset, corner radii, and fill even after dragging `half` → `full` or `half` → `peek`). A swipe morphs from wherever the finger let go, and the release hands that exact frame to the morph rather than snapping back to the resting one first. A swipe released short of the dismiss threshold springs back to the detent, full size and centred, carrying the finger's release momentum into the spring.
 
@@ -225,7 +239,9 @@ Configure the realism of the glass and how it turns into a solid color.
 | :--- | :--- | :--- | :--- |
 | `settings` | `LiquidGlassSettings?` | `null` | Main glass material recipe (blur, thickness, lighting). |
 | `quality` | `GlassQuality?` | `standard` | Rendering engine: Standard, Premium, or Minimal. |
-| `expandedColor` | `Color?` | `null` | Solid background color used in Full state when opaque. |
+| `surfaceStyle` | `GlassSurfaceStyle` | `glass` | `glass`: glass that turns opaque toward the large detent, as the rows below describe. `solid`: opaque at every detent and while it moves, in `expandedColor` / `expandedDarkColor`. `fillThreshold`, `fillTransition` and the per-state overrides then do not change the surface. |
+| `expandedColor` | `Color?` | `null` | Solid background color used in Full state when opaque, and at every detent when `surfaceStyle` is `solid`. Defaults to `#F2F2F7` (white in `GlassStyle.classic`). |
+| `expandedDarkColor` | `Color?` | `null` | `expandedColor` in dark mode. Defaults to `expandedColor`, then `#1C1C1E`. |
 | `fillThreshold` | `double` | `0.60` | At what point (0 to 1) the glass starts turning into a solid color. |
 | `fillTransition` | `FillTransition` | `instant` | `gradual`: fades smoothly into color. `instant`: snaps to color. |
 | `forceSpecularRim` | `bool` | `false` | **Critical for Web/Skia**: Forces the shiny edge highlight. |
@@ -304,6 +320,7 @@ This creates the signature "Liquid" snap that feels firm yet bouncy.
 Every frame, `_calculateMetrics` computes the visual state based on `_currentPosition`.
 
 ### Layer Opacity Transition
+This applies to the default `surfaceStyle: GlassSurfaceStyle.glass`. A `solid` sheet skips it: its fill is opaque in `expandedColor` at every position, and its glass effects are set to zero under the fill, so the premium renderer skips its glass pass.
 - **Below Half**: Lerps between `peekSettings` and `halfSettings`.
 - **Above Half**: 
   - If `FillTransition.gradual`: Opacity follows a `Curves.easeInOutCubic` curve starting at `fillThreshold`.

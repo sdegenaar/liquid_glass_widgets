@@ -1,11 +1,12 @@
-/// How a card-like, recessed input, or button surface is rendered.
+/// How a card-like, recessed input, button, or sheet surface is rendered.
 ///
 /// Used by `GlassContainer.card`, `GlassGroupedSection`,
 /// `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`,
 /// `GlassDatePicker`, `GlassMultiDatePicker`, `GlassTextField`,
 /// `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`,
-/// `GlassChip`, `GlassButton` (and `GlassButton.custom`), and
-/// `GlassIconButton` via their `surfaceStyle` parameter.
+/// `GlassChip`, `GlassButton` (and `GlassButton.custom`), `GlassIconButton`,
+/// and `GlassModalSheet` (and `GlassModalSheetScaffold` and
+/// `GlassModalSheet.show`) via their `surfaceStyle` parameter.
 enum GlassSurfaceStyle {
   /// A liquid glass surface (blur, refraction, rim light).
   ///
@@ -14,6 +15,8 @@ enum GlassSurfaceStyle {
   /// form inputs, chips, and in-content buttons inside **scrolling list
   /// content** (inset-grouped lists) as flat surfaces, so prefer [solid] when
   /// you want that native look.
+  ///
+  /// On a `GlassModalSheet`, glass becomes opaque toward the large detent.
   glass,
 
   /// A flat fill with no blur, rim light, refraction, or shadow.
@@ -38,10 +41,17 @@ enum GlassSurfaceStyle {
   ///   (SwiftUI `.borderless`) to no resting box (unless `color` is set),
   ///   auto-inheriting [solid] inside a solid card or section via
   ///   `InheritedGlassSurfaceStyle` unless overridden.
+  /// - **Sheets** (`GlassModalSheet`): opaque at every detent, in the sheet's
+  ///   `expandedColor` or `expandedDarkColor` (by default `#F2F2F7` in light
+  ///   mode, white in `GlassStyle.classic`, `#1C1C1E` in dark mode). The sheet
+  ///   publishes [solid] to its content through `InheritedGlassSurfaceStyle`,
+  ///   and its `settings` still reach the glass controls inside it. The sheet
+  ///   keeps the light-mode drop shadow that a glass sheet has.
   ///
-  /// This path does not sample the backdrop and does not use any shader, so
-  /// the surface renders identically on every platform and rendering backend,
-  /// and per-widget glass `settings`, `quality`, and `useOwnLayer` have no
-  /// effect on it (a debug-mode message is printed if you pass them).
+  /// On the cards, inputs, chips and buttons above, this path does not sample
+  /// the backdrop and does not use any shader, so the surface renders
+  /// identically on every platform and rendering backend, and per-widget glass
+  /// `settings`, `quality`, and `useOwnLayer` have no effect on it (a
+  /// debug-mode message is printed if you pass them).
   solid,
 }
