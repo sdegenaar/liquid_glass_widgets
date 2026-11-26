@@ -15,6 +15,7 @@
 ## Bug Fixes
 
 - **Disabled `GlassButton` Impeller Metal glass preservation:** In `GlassSurfaceStyle.glass` mode, disabled buttons now dim only their interior content (`Opacity(opacity: 0.5)`) inside `AdaptiveGlass` rather than wrapping the glass shader in an ancestor `Opacity` `saveLayer`, preventing disabled glass buttons and toggles from losing their refractive pill surface on Impeller Metal.
+- **`GlassTextField` press callbacks after dispose:** A pointer up or cancel that arrives after the field has left the tree (for example when the press itself pops the route or swaps the field out) no longer throws `setState() called after dispose()`. The press `Listener` stays in the pointer-down hit test path, so its callbacks now check `mounted` before updating the press-scale state.
 
 ## Deprecations
 
