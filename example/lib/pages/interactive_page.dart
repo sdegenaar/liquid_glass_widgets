@@ -809,6 +809,26 @@ class _InteractivePageState extends State<InteractivePage> {
                               height: 48,
                             ),
                           ),
+                          GlassBadge(
+                            count: 7,
+                            surfaceStyle: GlassSurfaceStyle.solid,
+                            child: GlassButton(
+                              icon: Icon(CupertinoIcons.bell_fill),
+                              onTap: () {},
+                              width: 48,
+                              height: 48,
+                            ),
+                          ),
+                          GlassBadge.dot(
+                            dotColor: CupertinoColors.systemGreen,
+                            surfaceStyle: GlassSurfaceStyle.solid,
+                            child: GlassButton(
+                              icon: Icon(CupertinoIcons.person_fill),
+                              onTap: () {},
+                              width: 48,
+                              height: 48,
+                            ),
+                          ),
                         ],
                       ),
 
