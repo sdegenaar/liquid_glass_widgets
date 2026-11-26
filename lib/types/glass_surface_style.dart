@@ -4,9 +4,10 @@
 /// `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`,
 /// `GlassDatePicker`, `GlassMultiDatePicker`, `GlassTextField`,
 /// `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`,
-/// `GlassToggle.button`, `GlassChip`, `GlassButton` (and `GlassButton.custom`),
-/// `GlassIconButton`, and `GlassModalSheet` (and `GlassModalSheetScaffold` and
-/// `GlassModalSheet.show`) via their `surfaceStyle` parameter.
+/// `GlassToggle.button`, `GlassBadge` (and `GlassBadge.dot`), `GlassChip`,
+/// `GlassButton` (and `GlassButton.custom`), `GlassIconButton`, and
+/// `GlassModalSheet` (and `GlassModalSheetScaffold` and `GlassModalSheet.show`)
+/// via their `surfaceStyle` parameter.
 enum GlassSurfaceStyle {
   /// A liquid glass surface (blur, refraction, rim light).
   ///
@@ -41,6 +42,10 @@ enum GlassSurfaceStyle {
   ///   (SwiftUI `.borderless`) to no resting box (unless `color` is set),
   ///   auto-inheriting [solid] inside a solid card or section via
   ///   `InheritedGlassSurfaceStyle` unless overridden.
+  /// - **Badges** (`GlassBadge`, `GlassBadge.dot`): renders a flat, native iOS
+  ///   notification pill or status dot with no border, shadow, or
+  ///   `AdaptiveLiquidGlassLayer`, auto-inheriting [solid] inside solid cards,
+  ///   sections, or sheets via `InheritedGlassSurfaceStyle` unless overridden.
   /// - **Sheets** (`GlassModalSheet`): opaque at every detent, in the sheet's
   ///   `expandedColor` or `expandedDarkColor` (by default `#F2F2F7` in light
   ///   mode, white in `GlassStyle.classic`, `#1C1C1E` in dark mode). The sheet
