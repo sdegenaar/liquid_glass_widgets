@@ -161,6 +161,7 @@ class GlassAppBar extends StatelessWidget
     this.leading,
     this.actions,
     this.centerTitle = true,
+    this.alignment = Alignment.center,
     // Whitelisted: Structural transparent default, not a Material colour.
     this.backgroundColor = const Color(0x00000000),
     this.surfaceStyle = GlassAppBarSurfaceStyle.automatic,
@@ -222,6 +223,7 @@ class GlassAppBar extends StatelessWidget
     this.onBack,
     this.buttonSize,
     this.centerTitle = true,
+    this.alignment = Alignment.center,
     // Whitelisted: Structural transparent default, not a Material colour.
     this.backgroundColor = const Color(0x00000000),
     this.surfaceStyle = GlassAppBarSurfaceStyle.automatic,
@@ -268,6 +270,21 @@ class GlassAppBar extends StatelessWidget
 
   /// Whether the [title] should be centered.
   final bool centerTitle;
+
+  /// Vertical alignment of the toolbar's content band.
+  ///
+  /// The leading, title, and action slots share one band whose height is the
+  /// tallest slot, with a minimum height of 44 logical pixels. This alignment
+  /// positions that whole band inside [toolbarHeight]; the slots themselves
+  /// stay vertically centred within the band. Use [Alignment.topCenter] or
+  /// [Alignment.bottomCenter] to move the complete row to an edge without
+  /// pulling a shorter title or button away from the row's centre line, and
+  /// without letting a title-only bar sit flush against the toolbar edge.
+  ///
+  /// Defaults to [Alignment.center]. Only [Alignment.y] is read; horizontal
+  /// placement is controlled by the leading/title/actions layout and
+  /// [centerTitle].
+  final Alignment alignment;
 
   /// The background color of the app bar.
   ///
@@ -507,6 +524,7 @@ class GlassAppBar extends StatelessWidget
             : resolved.left;
       }
       return GlassPinnedBarChrome(
+        alignment: alignment,
         leading: pinnedLeading,
         actions: pinnedActions!,
         backButton: pinnedBackButton,
@@ -577,6 +595,7 @@ class GlassAppBar extends StatelessWidget
           child: CustomMultiChildLayout(
             delegate: _ToolbarLayout(
               centerTitle: centerTitle && !inRow,
+              alignment: alignment,
               textDirection: Directionality.of(context),
               pinned: chrome != null,
             ),
@@ -810,6 +829,13 @@ class DefaultButtonSettings extends InheritedWidget {
 /// Identifies each child slot in [_ToolbarLayout].
 enum _ToolbarSlot { leading, title, actions }
 
+/// Minimum height of the row that leading, title, and actions share.
+///
+/// A title-only bar still needs the standard navigation row's breathing room;
+/// without this floor, [GlassAppBar.alignment] would pull the title itself to
+/// the toolbar edge rather than moving the complete row.
+const double _minimumToolbarContentBandHeight = 44.0;
+
 /// A [MultiChildLayoutDelegate] that matches Apple's
 /// `_CupertinoNavigationBarLayout` semantics:
 ///
@@ -831,11 +857,13 @@ enum _ToolbarSlot { leading, title, actions }
 class _ToolbarLayout extends MultiChildLayoutDelegate {
   _ToolbarLayout({
     required this.centerTitle,
+    required this.alignment,
     required this.textDirection,
     this.pinned = false,
   });
 
   final bool centerTitle;
+  final Alignment alignment;
   final TextDirection textDirection;
   final bool pinned;
 
@@ -844,9 +872,16 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
 
   bool get _isLTR => textDirection == TextDirection.ltr;
 
-  /// Returns the y-offset that vertically centres [child] inside [parent].
-  static double _centreY(Size parent, Size child) =>
-      ((parent.height - child.height) / 2.0).clamp(0.0, parent.height);
+  /// Returns the y-offset that aligns a content band of [bandHeight] inside
+  /// [parent].
+  double _bandTop(Size parent, double bandHeight) {
+    final available = math.max(0.0, parent.height - bandHeight);
+    return ((alignment.y + 1.0) / 2.0 * available).clamp(0.0, available);
+  }
+
+  /// Centres [child] in a content band whose top is [bandTop].
+  double _centredY(double bandTop, double bandHeight, Size child) =>
+      bandTop + (bandHeight - child.height) / 2.0;
 
   @override
   void performLayout(Size size) {
@@ -856,97 +891,111 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
         ? BoxConstraints(maxWidth: size.width)
         : BoxConstraints.loose(size);
 
-    // ── Leading ──────────────────────────────────────────────────────────────
-    if (hasChild(_ToolbarSlot.leading)) {
-      final Size ls = layoutChild(
-        _ToolbarSlot.leading,
-        slotConstraints,
-      );
-      leadingWidth = ls.width;
-      positionChild(
-        _ToolbarSlot.leading,
-        Offset(
-          _isLTR ? 0.0 : size.width - ls.width,
-          _centreY(size, ls),
-        ),
-      );
-    }
+    // Lay out the side slots first: they determine how much horizontal room
+    // the title may use, and their heights contribute to the shared content
+    // band.
+    final leading = hasChild(_ToolbarSlot.leading)
+        ? layoutChild(_ToolbarSlot.leading, slotConstraints)
+        : null;
+    if (leading != null) leadingWidth = leading.width;
 
-    // ── Actions ──────────────────────────────────────────────────────────────
-    if (hasChild(_ToolbarSlot.actions)) {
-      final Size as = layoutChild(
-        _ToolbarSlot.actions,
-        slotConstraints,
-      );
-      actionsWidth = as.width;
-      positionChild(
-        _ToolbarSlot.actions,
-        Offset(
-          _isLTR ? size.width - as.width : 0.0,
-          _centreY(size, as),
-        ),
-      );
-    }
+    final actions = hasChild(_ToolbarSlot.actions)
+        ? layoutChild(_ToolbarSlot.actions, slotConstraints)
+        : null;
+    if (actions != null) actionsWidth = actions.width;
 
     // ── Title ─────────────────────────────────────────────────────────────────
-    if (!hasChild(_ToolbarSlot.title)) return;
+    Size? title;
+    if (hasChild(_ToolbarSlot.title)) {
+      if (centerTitle) {
+        // Equal-margin constraint: widen the narrower side so both margins
+        // equal the larger one.  This prevents the centred title from ever
+        // reaching either button group.
+        final double sideWidth = math.max(leadingWidth, actionsWidth);
+        final double maxWidth = math.max(0.0, size.width - 2.0 * sideWidth);
+        title = layoutChild(
+          _ToolbarSlot.title,
+          BoxConstraints(maxWidth: maxWidth, maxHeight: size.height),
+        );
+      } else {
+        // Leading-aligned: title occupies the space between the two side
+        // widgets with an 8 px gap when adjacent to a leading or action
+        // widget.
+        final double startOccupied = leadingWidth;
+        final double endOccupied = actionsWidth;
+        final double startGap = startOccupied > 0 ? _titleGap : 0.0;
+        final double endGap = endOccupied > 0 ? _titleGap : 0.0;
+        final double maxWidth = math.max(
+          0.0,
+          size.width - startOccupied - startGap - endOccupied - endGap,
+        );
+        title = layoutChild(
+          _ToolbarSlot.title,
+          BoxConstraints(maxWidth: maxWidth, maxHeight: size.height),
+        );
+      }
+    }
 
-    if (centerTitle) {
-      // Equal-margin constraint: widen the narrower side so both margins
-      // equal the larger one.  This prevents the centred title from ever
-      // reaching either button group.
-      final double sideWidth = math.max(leadingWidth, actionsWidth);
-      final double maxWidth = math.max(0.0, size.width - 2.0 * sideWidth);
+    // The slots travel as one row: alignment moves this shared band, while
+    // every slot keeps its centre on the band's centre line. Aligning each
+    // child independently would pull a short title to the edge while the
+    // taller buttons stayed put, which defeats the visual alignment.
+    var bandHeight = _minimumToolbarContentBandHeight;
+    for (final child in <Size?>[leading, title, actions]) {
+      if (child != null) bandHeight = math.max(bandHeight, child.height);
+    }
+    final bandTop = _bandTop(size, bandHeight);
 
-      final Size ts = layoutChild(
-        _ToolbarSlot.title,
-        BoxConstraints(maxWidth: maxWidth, maxHeight: size.height),
+    // ── Position ──────────────────────────────────────────────────────────────
+    if (leading != null) {
+      positionChild(
+        _ToolbarSlot.leading,
+        Offset(
+          _isLTR ? 0.0 : size.width - leading.width,
+          _centredY(bandTop, bandHeight, leading),
+        ),
       );
+    }
 
+    if (actions != null) {
+      positionChild(
+        _ToolbarSlot.actions,
+        Offset(
+          _isLTR ? size.width - actions.width : 0.0,
+          _centredY(bandTop, bandHeight, actions),
+        ),
+      );
+    }
+
+    if (title == null) return;
+    if (centerTitle) {
       // Centre on the full bar width (not just the constrained zone).
       positionChild(
         _ToolbarSlot.title,
         Offset(
-          (size.width - ts.width) / 2.0,
-          _centreY(size, ts),
+          (size.width - title.width) / 2.0,
+          _centredY(bandTop, bandHeight, title),
         ),
       );
-    } else {
-      // Leading-aligned: title occupies the space between the two side widgets
-      // with an 8 px gap when adjacent to a leading or action widget.
-      //
-      // In both LTR and RTL:
-      //   - leading is positioned at the logical-start edge (0 in LTR, width - leadingWidth in RTL).
-      //   - actions is positioned at the logical-end edge (width - actionsWidth in LTR, 0 in RTL).
-      final double startOccupied = leadingWidth;
-      final double endOccupied = actionsWidth;
-      final double startGap = startOccupied > 0 ? _titleGap : 0.0;
-      final double endGap = endOccupied > 0 ? _titleGap : 0.0;
-      final double maxWidth = math.max(
-        0.0,
-        size.width - startOccupied - startGap - endOccupied - endGap,
-      );
-
-      final Size ts = layoutChild(
-        _ToolbarSlot.title,
-        BoxConstraints(maxWidth: maxWidth, maxHeight: size.height),
-      );
-
-      // Pin to logical-start edge (left in LTR, right in RTL).
-      final double titleX = _isLTR
-          ? startOccupied + startGap
-          : size.width - startOccupied - startGap - ts.width;
-
-      positionChild(
-        _ToolbarSlot.title,
-        Offset(titleX, _centreY(size, ts)),
-      );
+      return;
     }
+
+    // Pin to logical-start edge (left in LTR, right in RTL).
+    final double startOccupied = leadingWidth;
+    final double startGap = startOccupied > 0 ? _titleGap : 0.0;
+    final double titleX = _isLTR
+        ? startOccupied + startGap
+        : size.width - startOccupied - startGap - title.width;
+    positionChild(
+      _ToolbarSlot.title,
+      Offset(titleX, _centredY(bandTop, bandHeight, title)),
+    );
   }
 
   @override
   bool shouldRelayout(_ToolbarLayout old) =>
       old.centerTitle != centerTitle ||
+      old.alignment != alignment ||
       old.textDirection != textDirection ||
       old.pinned != pinned;
 }

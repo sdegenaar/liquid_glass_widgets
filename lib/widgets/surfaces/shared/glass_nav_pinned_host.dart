@@ -426,6 +426,41 @@ class GlassNavPinnedHost extends StatelessWidget {
         GlassNavPinnedMetrics.toolbarHeight;
     final statusRow = StatusBarRow.of(context);
 
+    List<GlassNavBarGroup> groupsFor(
+      BuildContext context,
+      GlassNavBarRegistration registration,
+      _BarSide side,
+    ) =>
+        groupGlassNavBarItems(
+          _itemsFor(context, state, registration, side),
+          buttonSize: registration.buttonSize,
+        );
+
+    // The route's title and the shell's clusters are laid out in separate
+    // trees. Give them the same band geometry: the band is as tall as the
+    // tallest cluster on either side but never shorter than the standard
+    // toolbar row, alignment moves the whole band, and each cluster stays
+    // centred inside it. That keeps the title's centre line on the buttons'
+    // even when alignment pins the row to an edge.
+    double contentHeightOf(GlassNavBarRegistration registration) {
+      var height = GlassNavPinnedMetrics.toolbarHeight;
+      for (final side in _BarSide.values) {
+        for (final group in groupsFor(context, registration, side)) {
+          height = math.max(height, group.crossExtent);
+        }
+      }
+      return height;
+    }
+
+    final incomingContentHeight = contentHeightOf(state.flowTo);
+    final contentHeight = incomingContentHeight > 0
+        ? incomingContentHeight
+        : contentHeightOf(state.flowFrom);
+    final alignment = state.flowTo.alignment;
+    final available = math.max(0.0, barHeight - contentHeight);
+    final contentTop =
+        ((alignment.y + 1.0) / 2.0 * available).clamp(0.0, available);
+
     Widget chrome = Stack(
       clipBehavior: Clip.none,
       children: [
@@ -434,20 +469,18 @@ class GlassNavPinnedHost extends StatelessWidget {
             textDirection: textDirection,
             start: side == _BarSide.leading ? 0 : null,
             end: side == _BarSide.trailing ? 0 : null,
-            top: 0,
+            top: statusRow == null ? contentTop : 0.0,
             child: _PinnedSide(
               state: state,
-              groupsFor: (context, registration) => groupGlassNavBarItems(
-                _itemsFor(context, state, registration, side),
-                buttonSize: registration.buttonSize,
-              ),
+              groupsFor: (context, registration) =>
+                  groupsFor(context, registration, side),
               anchoredAtStart: (side == _BarSide.leading) ==
                   (textDirection == TextDirection.ltr),
               scaleAlignment: side == _BarSide.leading
                   ? AlignmentDirectional.centerStart
                   : AlignmentDirectional.centerEnd,
               coverageScale: coverageScale,
-              minCross: statusRow == null ? barHeight : 0.0,
+              minCross: statusRow == null ? contentHeight : 0.0,
             ),
           ),
       ],

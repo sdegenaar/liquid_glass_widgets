@@ -29,6 +29,7 @@ class GlassNavBarRegistration {
     this.buttonSettings,
     this.buttonSize,
     this.toolbarHeight,
+    this.alignment = Alignment.center,
     @Deprecated(
       'A hoisted sheet item presents out of the hoisted capsule; the tap is '
       'no longer handed back.',
@@ -85,6 +86,14 @@ class GlassNavBarRegistration {
   /// Defaults to [GlassNavPinnedMetrics.toolbarHeight] (`44.0`), or
   /// [buttonSize] when [buttonSize] is larger.
   final double? toolbarHeight;
+
+  /// Vertical alignment of the toolbar's shared content band.
+  ///
+  /// The leading and trailing clusters use one band as tall as the tallest
+  /// cluster, with a minimum height of 44 logical pixels. This alignment
+  /// positions that whole band inside [toolbarHeight]; the clusters remain
+  /// centred inside it. Only [Alignment.y] is read.
+  final Alignment alignment;
 
   /// No longer called: a [GlassBarItem.sheet] presents out of the hoisted
   /// capsule itself, which the shell keeps through the presentation. See

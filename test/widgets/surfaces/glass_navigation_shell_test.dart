@@ -1870,6 +1870,104 @@ void main() {
     });
 
     testWidgets(
+        'alignment moves the pinned row as one band and keeps slots centred',
+        (tester) async {
+      const titleKey = ValueKey<String>('pinned-alignment-title');
+      const actionIcon = CupertinoIcons.bell;
+      const contentHeight = 44.0;
+
+      Future<void> pumpBar(Alignment alignment) async {
+        await tester.pumpWidget(shellApp(GlassScaffold(
+          appBar: GlassAppBar.pinned(
+            title: const SizedBox(
+              key: titleKey,
+              width: 40,
+              height: 20,
+            ),
+            toolbarHeight: 64,
+            padding: EdgeInsets.zero,
+            alignment: alignment,
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(actionIcon),
+                background: GlassBarItemBackground.separate,
+                onTap: () {},
+              ),
+            ],
+          ),
+          body: const SizedBox(),
+        )));
+        await settle(tester);
+      }
+
+      for (final scenario in const <({Alignment alignment, double top})>[
+        (alignment: Alignment.topCenter, top: 0),
+        (alignment: Alignment.center, top: 10),
+        (alignment: Alignment.bottomCenter, top: 20),
+      ]) {
+        await pumpBar(scenario.alignment);
+
+        final hostRect = tester.getRect(find.byType(GlassNavPinnedHost));
+        final titleRect = tester.getRect(find.byKey(titleKey));
+        final actionShell = find.ancestor(
+          of: inHost(find.byIcon(actionIcon)),
+          matching: find.byType(GlassButton),
+        );
+        final actionRect = tester.getRect(actionShell);
+
+        expect(actionRect.top - hostRect.top, closeTo(scenario.top, 0.01));
+        expect(
+          titleRect.top - hostRect.top,
+          closeTo(scenario.top + (contentHeight - titleRect.height) / 2, 0.01),
+        );
+        expect(titleRect.center.dy, closeTo(actionRect.center.dy, 0.01));
+      }
+    });
+
+    testWidgets('pinned alignment keeps a 44pt content band for small clusters',
+        (tester) async {
+      const titleKey = ValueKey<String>('pinned-min-band-title');
+      const actionIcon = CupertinoIcons.bell;
+
+      await tester.pumpWidget(shellApp(GlassScaffold(
+        appBar: GlassAppBar.pinned(
+          title: const SizedBox(
+            key: titleKey,
+            width: 40,
+            height: 20,
+          ),
+          toolbarHeight: 64,
+          padding: EdgeInsets.zero,
+          alignment: Alignment.topCenter,
+          buttonSize: 24,
+          actions: [
+            GlassBarItem.icon(
+              icon: const Icon(actionIcon),
+              background: GlassBarItemBackground.separate,
+              onTap: () {},
+            ),
+          ],
+        ),
+        body: const SizedBox(),
+      )));
+      await settle(tester);
+
+      final hostRect = tester.getRect(find.byType(GlassNavPinnedHost));
+      final titleRect = tester.getRect(find.byKey(titleKey));
+      final actionShell = find.ancestor(
+        of: inHost(find.byIcon(actionIcon)),
+        matching: find.byType(GlassButton),
+      );
+      final actionRect = tester.getRect(actionShell);
+
+      // The 24pt button is centred in the 44pt minimum band and the 20pt
+      // title shares that centre line; neither alone is pulled to the top.
+      expect(actionRect.top - hostRect.top, closeTo(10.0, 0.01));
+      expect(titleRect.top - hostRect.top, closeTo(12.0, 0.01));
+      expect(titleRect.center.dy, closeTo(actionRect.center.dy, 0.01));
+    });
+
+    testWidgets(
         'custom toolbarHeight vertically centers hoisted buttons to match '
         'in-route layout', (tester) async {
       Widget buildScreen() => GlassScaffold(

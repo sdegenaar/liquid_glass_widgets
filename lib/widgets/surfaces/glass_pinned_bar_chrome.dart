@@ -177,6 +177,7 @@ class GlassPinnedBarChrome extends StatefulWidget {
     this.onBack,
     this.buttonSize,
     this.toolbarHeight,
+    this.alignment = Alignment.center,
     this.buttonSettings,
     this.horizontalInset,
     this.platformViewBackdrop = false,
@@ -239,6 +240,18 @@ class GlassPinnedBarChrome extends StatefulWidget {
   /// expanding to at least [buttonSize] when [buttonSize] exceeds the toolbar
   /// height.
   final double? toolbarHeight;
+
+  /// Vertical alignment of the toolbar's shared content band.
+  ///
+  /// The pinned shell uses the same band geometry as [GlassAppBar]: the
+  /// leading and trailing clusters share a band as tall as the tallest one,
+  /// with a minimum height of 44 logical pixels. This alignment positions
+  /// that whole band inside [toolbarHeight]. Clusters remain centred inside
+  /// the band, so a short title and a taller button keep one centre line
+  /// instead of independently sticking to an edge.
+  ///
+  /// Defaults to [Alignment.center]. Only [Alignment.y] is read.
+  final Alignment alignment;
 
   /// Glass settings applied to this route's pinned chrome.
   ///
@@ -423,6 +436,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
         onBack: widget.onBack,
         buttonSize: widget.buttonSize,
         toolbarHeight: widget.toolbarHeight,
+        alignment: widget.alignment,
         buttonSettings: widget.buttonSettings,
         horizontalInset: widget.horizontalInset,
         platformViewBackdrop: widget.platformViewBackdrop,

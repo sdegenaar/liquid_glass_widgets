@@ -221,8 +221,11 @@ void main() {
 
     test('defaults are correct', () {
       const appBar = GlassAppBar();
+      const pinnedAppBar = GlassAppBar.pinned();
 
       expect(appBar.centerTitle, isTrue);
+      expect(appBar.alignment, Alignment.center);
+      expect(pinnedAppBar.alignment, Alignment.center);
       expect(appBar.backgroundColor, equals(Colors.transparent));
       expect(appBar.toolbarHeight, equals(44.0));
       expect(appBar.preferredSize, equals(const Size.fromHeight(44.0)));
@@ -726,5 +729,182 @@ void main() {
         expect(centeredLeft, greaterThan(initialLeft));
       },
     );
+  });
+
+  group('toolbar content alignment', () {
+    Future<void> expectVerticalAlignment(
+      WidgetTester tester, {
+      required bool pinned,
+      required Alignment alignment,
+    }) async {
+      const titleKey = ValueKey<String>('alignment-title');
+      final Widget title = const SizedBox(
+        key: titleKey,
+        width: 40,
+        height: 20,
+      );
+      final PreferredSizeWidget appBar = pinned
+          ? GlassAppBar.pinned(
+              backButton: false,
+              title: title,
+              toolbarHeight: 64,
+              padding: EdgeInsets.zero,
+              alignment: alignment,
+            )
+          : GlassAppBar(
+              title: title,
+              toolbarHeight: 64,
+              padding: EdgeInsets.zero,
+              alignment: alignment,
+            );
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Scaffold(
+            appBar: appBar,
+            body: const SizedBox.expand(),
+          ),
+        ),
+      );
+
+      final toolbar = tester.renderObject<RenderBox>(
+        find.descendant(
+          of: find.byType(GlassAppBar),
+          matching: find.byType(CustomMultiChildLayout),
+        ),
+      );
+      final titleBox = tester.renderObject<RenderBox>(find.byKey(titleKey));
+      final titleTop = titleBox.localToGlobal(Offset.zero).dy;
+      final toolbarTop = toolbar.localToGlobal(Offset.zero).dy;
+      final bandHeight =
+          titleBox.size.height < 44.0 ? 44.0 : titleBox.size.height;
+      final available = toolbar.size.height > bandHeight
+          ? toolbar.size.height - bandHeight
+          : 0.0;
+      final expectedTop = (alignment.y + 1.0) / 2.0 * available +
+          (bandHeight - titleBox.size.height) / 2.0;
+
+      expect(titleTop - toolbarTop, closeTo(expectedTop, 0.01));
+    }
+
+    const scenarios = <({String name, Alignment alignment})>[
+      (name: 'top', alignment: Alignment.topCenter),
+      (name: 'center', alignment: Alignment.center),
+      (name: 'bottom', alignment: Alignment.bottomCenter),
+    ];
+
+    testWidgets('keeps a 44pt content band when only the title is present',
+        (tester) async {
+      const titleKey = ValueKey<String>('title-only-band');
+
+      for (final pinned in const [false, true]) {
+        final PreferredSizeWidget appBar = pinned
+            ? GlassAppBar.pinned(
+                backButton: false,
+                title: const SizedBox(
+                  key: titleKey,
+                  width: 40,
+                  height: 20,
+                ),
+                toolbarHeight: 64,
+                padding: EdgeInsets.zero,
+                alignment: Alignment.topCenter,
+              )
+            : GlassAppBar(
+                title: const SizedBox(
+                  key: titleKey,
+                  width: 40,
+                  height: 20,
+                ),
+                toolbarHeight: 64,
+                padding: EdgeInsets.zero,
+                alignment: Alignment.topCenter,
+              );
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: Scaffold(
+              appBar: appBar,
+              body: const SizedBox.expand(),
+            ),
+          ),
+        );
+
+        final toolbar = tester.renderObject<RenderBox>(
+          find.descendant(
+            of: find.byType(GlassAppBar),
+            matching: find.byType(CustomMultiChildLayout),
+          ),
+        );
+        final title = tester.renderObject<RenderBox>(find.byKey(titleKey));
+        final titleTop = title.localToGlobal(Offset.zero).dy;
+        final toolbarTop = toolbar.localToGlobal(Offset.zero).dy;
+
+        // A 20pt title stays centred in the 44pt minimum band, leaving 12pt
+        // above it instead of sticking to the toolbar's top edge.
+        expect(titleTop - toolbarTop, closeTo(12.0, 0.01));
+      }
+    });
+
+    testWidgets('moves the content band as one unit', (tester) async {
+      const leadingKey = ValueKey<String>('alignment-leading');
+      const titleKey = ValueKey<String>('alignment-shared-title');
+      const actionsKey = ValueKey<String>('alignment-actions');
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: const Scaffold(
+            appBar: GlassAppBar(
+              toolbarHeight: 64,
+              padding: EdgeInsets.zero,
+              alignment: Alignment.bottomCenter,
+              leading: SizedBox(key: leadingKey, width: 30, height: 44),
+              title: SizedBox(key: titleKey, width: 40, height: 20),
+              actions: [
+                SizedBox(key: actionsKey, width: 30, height: 44),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final toolbar = tester.renderObject<RenderBox>(
+        find.descendant(
+          of: find.byType(GlassAppBar),
+          matching: find.byType(CustomMultiChildLayout),
+        ),
+      );
+      final toolbarBottom =
+          toolbar.localToGlobal(Offset.zero).dy + toolbar.size.height;
+      final leadingRect = tester.getRect(find.byKey(leadingKey));
+      final titleRect = tester.getRect(find.byKey(titleKey));
+      final actionsRect = tester.getRect(find.byKey(actionsKey));
+
+      // The 44pt side slots define the band, so the band's bottom lands on the
+      // toolbar's bottom. The shorter title stays centred inside the band
+      // rather than being pulled to the same edge independently.
+      expect(leadingRect.bottom, closeTo(toolbarBottom, 0.01));
+      expect(actionsRect.bottom, closeTo(toolbarBottom, 0.01));
+      expect(titleRect.bottom, lessThan(toolbarBottom));
+      expect(titleRect.center.dy, closeTo(leadingRect.center.dy, 0.01));
+      expect(titleRect.center.dy, closeTo(actionsRect.center.dy, 0.01));
+    });
+
+    for (final constructor in const <({String name, bool pinned})>[
+      (name: 'GlassAppBar', pinned: false),
+      (name: 'GlassAppBar.pinned', pinned: true),
+    ]) {
+      for (final scenario in scenarios) {
+        testWidgets(
+          '${constructor.name} aligns toolbar content to the '
+          '${scenario.name}',
+          (tester) => expectVerticalAlignment(
+            tester,
+            pinned: constructor.pinned,
+            alignment: scenario.alignment,
+          ),
+        );
+      }
+    }
   });
 }
