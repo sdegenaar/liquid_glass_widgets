@@ -458,25 +458,43 @@ float nativeLensDistance(vec2 frag, out vec2 normal) {
     return sd;
 }
 
-// The backdrop UV the native lens shows at a pass-pixel position: displaced
-// along the warp direction by displacement * (1 - sqrt(1 - t^2)),
-// t = 1 - d / bevel, then held inside the lens' bounds. UIKit captures this
-// backdrop with no margin, so a sample pushed out past the lens repeats the
-// lens' own edge: what sits right outside is smeared across the rim.
-vec2 nativeLensUV(vec2 frag) {
-    vec2 normal;
-    float d = max(-nativeLensDistance(frag, normal), 0.0);
-    float t = clamp(1.0 - d / max(uNativeLens.y, 1.0), 0.0, 1.0);
-    float profile = 1.0 - sqrt(max(0.0, 1.0 - t * t));
-    vec2 point = frag + normal * (uNativeLens.x * profile);
-    float inset = 2.0 * 3.0 * max(0.1, uEdgeConfig.z) + 0.5;
-    point = clamp(point, uGeometryOffset + vec2(inset),
-                  uGeometryOffset + uGeometrySize - vec2(inset));
-    vec2 uv = (point + uCaptureOffset) / uSize;
+// Clamps a pass-pixel sample point strictly inside the lens capsule silhouette
+// (not merely its bounding rectangle) and converts it to backdrop UV space.
+// Keeping samples inside the capsule preserves the native edge-smear around
+// top/bottom bar overhangs while preventing curved corners from reaching into
+// inverse-clipped unselected tab glyphs outside the lens. Capsule invariants
+// are hoisted once by the caller to avoid 5x recomputation in the rim loop.
+vec2 nativeLensClampUV(
+    vec2 point,
+    vec2 center,
+    vec2 seg,
+    float rIn,
+    vec2 halfTexel,
+    vec2 invSize
+) {
+    vec2 rel = point - center;
+    vec2 spine = clamp(rel, -seg, seg);
+    vec2 delta = rel - spine;
+    float dist = length(delta);
+    if (dist > rIn) {
+        point = center + spine + delta * (rIn / dist);
+    }
+    vec2 uv = clamp((point + uCaptureOffset) * invSize,
+                    halfTexel, vec2(1.0) - halfTexel);
     #ifdef LGR_GLES_FLIP_SAMPLE_Y
         uv.y = 1.0 - uv.y;
     #endif
     return uv;
+}
+
+// The backdrop sample point (in pass pixels) the native lens reads at a
+// fragment: displaced along the warp direction by
+// displacement * (1 - sqrt(1 - t^2)), t = 1 - d / bevel.
+vec2 nativeLensSamplePoint(vec2 frag, float sd, vec2 normal) {
+    float d = max(-sd, 0.0);
+    float t = clamp(1.0 - d / max(uNativeLens.y, 1.0), 0.0, 1.0);
+    float profile = 1.0 - sqrt(max(0.0, 1.0 - t * t));
+    return frag + normal * (uNativeLens.x * profile);
 }
 
 void main() {
@@ -559,58 +577,62 @@ void main() {
     float rimProgress      = geometryData.b;
     float rimDist          = rimProgress * uThickness;
     float normalizedHeight = sqrt(max(0.0, rimProgress * (2.0 - rimProgress)));
+    // The native tab-bar lens replaces the lens refraction and the
+    // bar-indicator pinch with its own warp (nativeLensSamplePoint), sampled
+    // below. uNativeLens.w is uniform so gating the unused refraction math on
+    // !nativeLens avoids dead ALU and sqrt() with zero warp divergence.
+    bool nativeLens = uNativeLens.w > 0.5;
+    float pinch = nativeLens ? 0.0 : uPinchStrength;
+
     float height           = normalizedHeight * uThickness;
     float baseHeight       = uThickness * 8.0;
     vec2  displacement     = vec2(0.0);
-    if (normalLenSq >= 1e-4) {
-        if (uLensModel > 0.5) {
-            // Paraxial lens: the thin-prism law, deviation = (n - 1) * slope,
-            // with the slope taken as sin(incidence)^2. normalXY is
-            // sin(incidence) and falls off linearly across the bevel, so the
-            // displacement runs up quadratically from the bevel's inner edge and
-            // folds past the point where it outgrows the distance to the rim:
-            // the band shows a mirrored, compressed copy of the interior. That
-            // is the native rim, measured with line probes on a 56 pt circle:
-            // the lens starts 0.6 of the radius out, the fold at 0.76, and the
-            // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
-            // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
-            // exact refraction below folds far harder toward the edge.
-            displacement = -normalXY * (uRefractiveIndex - 1.0)
-                         * normalLen * baseHeight;
-        } else {
-            vec3  incident    = vec3(0.0, 0.0, -1.0);
-            float invN        = 1.0 / max(uRefractiveIndex, 0.001);
-            vec3  baseRefract = refract(incident, normal, invN);
-            float refractLen  = (height + baseHeight)
-                              / max(0.001, abs(baseRefract.z));
-            displacement = baseRefract.xy * refractLen;
+    if (!nativeLens) {
+        if (normalLenSq >= 1e-4) {
+            if (uLensModel > 0.5) {
+                // Paraxial lens: the thin-prism law, deviation = (n - 1) * slope,
+                // with the slope taken as sin(incidence)^2. normalXY is
+                // sin(incidence) and falls off linearly across the bevel, so the
+                // displacement runs up quadratically from the bevel's inner edge and
+                // folds past the point where it outgrows the distance to the rim:
+                // the band shows a mirrored, compressed copy of the interior. That
+                // is the native rim, measured with line probes on a 56 pt circle:
+                // the lens starts 0.6 of the radius out, the fold at 0.76, and the
+                // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
+                // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
+                // exact refraction below folds far harder toward the edge.
+                displacement = -normalXY * (uRefractiveIndex - 1.0)
+                             * normalLen * baseHeight;
+            } else {
+                vec3  incident    = vec3(0.0, 0.0, -1.0);
+                float invN        = 1.0 / max(uRefractiveIndex, 0.001);
+                vec3  baseRefract = refract(incident, normal, invN);
+                float refractLen  = (height + baseHeight)
+                                  / max(0.001, abs(baseRefract.z));
+                displacement = baseRefract.xy * refractLen;
+            }
+        }
+        // Scale displacement by uRefractScale (uOpticalProps.w) to ensure logical-pixel
+        // identical refraction magnitude across all device pixel ratios.
+        displacement *= uOpticalProps.w;
+
+        // A lens cannot show what lies beyond its far side. At the rim the normal is
+        // nearly horizontal and refract() returns a displacement that grows with
+        // uThickness, not with the shape: on a pill a few dozen pixels tall the
+        // bottom rim sampled the backdrop well above the pill's top edge, so any
+        // text sitting there — a page title, a logo — came through as noise along
+        // the rim, split into red, green and blue by the dispersion below.
+        // Holding the reach to half the matte's shorter side keeps every sample,
+        // chromatic offsets included, inside the glass's own footprint. Surfaces
+        // large enough that the displacement never came near that bound are
+        // unchanged.
+        float maxReach = 0.5 * min(uGeometrySize.x, uGeometrySize.y);
+        float reachSq = dot(displacement, displacement);
+        if (reachSq > maxReach * maxReach) {
+            float reach = sqrt(reachSq);
+            displacement *= maxReach / reach;
         }
     }
-    // Scale displacement by uRefractScale (uOpticalProps.w) to ensure logical-pixel
-    // identical refraction magnitude across all device pixel ratios.
-    displacement *= uOpticalProps.w;
-
-    // A lens cannot show what lies beyond its far side. At the rim the normal is
-    // nearly horizontal and refract() returns a displacement that grows with
-    // uThickness, not with the shape: on a pill a few dozen pixels tall the
-    // bottom rim sampled the backdrop well above the pill's top edge, so any
-    // text sitting there — a page title, a logo — came through as noise along
-    // the rim, split into red, green and blue by the dispersion below.
-    // Holding the reach to half the matte's shorter side keeps every sample,
-    // chromatic offsets included, inside the glass's own footprint. Surfaces
-    // large enough that the displacement never came near that bound are
-    // unchanged.
-    float maxReach = 0.5 * min(uGeometrySize.x, uGeometrySize.y);
-    float reachSq = dot(displacement, displacement);
-    if (reachSq > maxReach * maxReach) {
-        float reach = sqrt(reachSq);
-        displacement *= maxReach / reach;
-    }
-
-    // The native tab-bar lens replaces the lens refraction and the
-    // bar-indicator pinch with its own warp (nativeLensUV), sampled below.
-    bool nativeLens = uNativeLens.w > 0.5;
-    float pinch = nativeLens ? 0.0 : uPinchStrength;
 
     float dprScale = max(0.1, uEdgeConfig.z);
     // dprScale is (devicePixelRatio / 3.0), so 1 logical point = 3.0 * dprScale
@@ -846,38 +868,66 @@ void main() {
         }
         refractColor = vec4(0.0, 0.0, 0.0, a);
     } else if (nativeLens) {
-        vec4 greenSample = textureBilinear(nativeLensUV(fragCoord), physTexSize, invTexSize);
+        vec2 centerNormal;
+        float centerSd = nativeLensDistance(fragCoord, centerNormal);
+        vec2 basePoint = nativeLensSamplePoint(fragCoord, centerSd, centerNormal);
+        vec2 lensCenter = uGeometryOffset + 0.5 * uGeometrySize;
+        vec2 lensHalfSize = max(0.5 * uGeometrySize - vec2(2.0 * pxPerPt), vec2(1.0));
+        float lensRadius = min(lensHalfSize.x, lensHalfSize.y);
+        vec2 lensSeg = lensHalfSize - vec2(lensRadius);
+        float lensRIn = max(lensRadius - max(pxPerPt, 2.0), 0.5);
+        vec2 halfTexel = 0.5 * invTexSize;
+        vec4 greenSample = textureBilinear(
+            nativeLensClampUV(
+                basePoint, lensCenter, lensSeg, lensRIn, halfTexel, invTexSize
+            ),
+            physTexSize,
+            invTexSize
+        );
         refractColor = greenSample;
         if (uNativeAberration.x > 0.0) {
             // UIKit's glassForeground splits red and blue across the outer
-            // band of the already-warped image, along the position's
-            // normalised (y, x): along the rim at the ends and the middle of
-            // each side, across it on the diagonals.
-            vec2 unused;
-            float d = max(-nativeLensDistance(fragCoord, unused), 0.0);
+            // band of the warped backdrop along the position's normalised
+            // (y, x). Applying the 5-tap spectral split directly in warped
+            // backdrop-point space keeps tap spacing tighter than the 1 pt
+            // tab-bar rim (eliminating separated neon red/blue bands on dark
+            // bar edges) while cutting 5 redundant SDF evaluations to 1.
+            float d = max(-centerSd, 0.0);
             float amount = uNativeAberration.x
                          * clamp(1.0 - d / max(uNativeAberration.y, 1.0), 0.0, 1.0);
             if (amount > 0.01) {
-                float px = 3.0 * max(0.1, uEdgeConfig.z);
-                vec2 halfSize = max(0.5 * uGeometrySize - vec2(2.0 * px), vec2(1.0));
-                vec2 rel = (fragCoord - (uGeometryOffset + 0.5 * uGeometrySize)) / halfSize;
+                vec2 rel = (fragCoord - lensCenter) / lensHalfSize;
                 vec2 dir = vec2(rel.y, rel.x);
                 float dirLength = length(dir);
                 dir = dirLength > 1e-4 ? dir / dirLength : vec2(0.0);
-                // Five taps across the split, weighted toward red on one side
-                // and blue on the other, blend the fringe through the
-                // spectrum. 1.355 puts the red and blue centroids at +-amount.
+                // Reuse greenSample for the centre tap (i == 2, t == 0) to
+                // avoid 4 redundant bilinear texture() fetches per rim pixel.
+                vec2 pointStep = dir * (amount * 0.65);
                 vec3 sum = vec3(0.0);
-                vec3 weights = vec3(0.0);
                 for (int i = 0; i < 5; i++) {
                     float t = float(i) * 0.5 - 1.0;
                     vec3 w = max(vec3(0.0),
                                  vec3(1.0) - abs(vec3(t) - vec3(1.0, 0.0, -1.0)) / 1.2);
-                    vec2 uv = nativeLensUV(fragCoord + dir * (amount * 1.355 * t));
-                    sum += textureBilinear(uv, physTexSize, invTexSize).rgb * w;
-                    weights += w;
+                    vec3 tapRgb = (i == 2)
+                        ? greenSample.rgb
+                        : textureBilinear(
+                            nativeLensClampUV(
+                                basePoint + pointStep * t,
+                                lensCenter,
+                                lensSeg,
+                                lensRIn,
+                                halfTexel,
+                                invTexSize
+                            ),
+                            physTexSize,
+                            invTexSize
+                          ).rgb;
+                    sum += tapRgb * w;
                 }
-                refractColor.rgb = sum / weights;
+                // Exact inverse weight sums for t in {-1, -0.5, 0, 0.5, 1} / 1.2:
+                // R = 21/12 (1.75), G = 30/12 (2.50), B = 21/12 (1.75).
+                const vec3 invWeights = vec3(0.57142857, 0.4, 0.57142857);
+                refractColor.rgb = sum * invWeights;
             }
         }
     } else if (dot(normalXY, normalXY) < 1e-4 && dot(displacement, displacement) < 1e-4) {
@@ -929,8 +979,12 @@ void main() {
                 refUV.y = 1.0 - refUV.y;
             #endif
             vec3 refPlatter = texture(uBackgroundTexture, clamp(refUV, vec2(0.001), vec2(0.999))).rgb;
-            float isDarkPlatter = 1.0 - step(0.35, dot(refPlatter, LUMA_WEIGHTS));
+            // Smooth luma transition instead of a hard step(0.35, ...) cliff so
+            // colourful artwork behind a dark bar (e.g. bright red circles)
+            // never flips light/dark masks frame-to-frame as the pill moves.
+            float isDarkPlatter = 1.0 - smoothstep(0.22, 0.48, dot(refPlatter, LUMA_WEIGHTS));
             float platterLuma = dot(platterSample.rgb, LUMA_WEIGHTS);
+            float darkPlatterGate = smoothstep(0.05, 0.12, platterLuma);
 
             #ifdef LGR_GLES_FLIP_SAMPLE_Y
                 barCaDisp.y = -barCaDisp.y;
@@ -944,12 +998,12 @@ void main() {
             float darkIconMask = max(smoothstep(0.38, 0.55, iconPeakG), smoothstep(0.08, 0.18, iconChromaG));
             float isInsidePlatter = mix(
                 lightIconMask,
-                darkIconMask * smoothstep(0.05, 0.12, platterLuma),
+                darkIconMask * darkPlatterGate,
                 isDarkPlatter
             );
             float iconCaGate = mix(
                 max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG)),
-                darkIconMask,
+                darkIconMask * darkPlatterGate,
                 isDarkPlatter
             );
             float iconDispersion = effectiveCA * 0.72 * iconCaGate;

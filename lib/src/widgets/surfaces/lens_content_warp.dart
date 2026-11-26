@@ -154,10 +154,13 @@ class _LensContentWarpState extends State<LensContentWarp> {
       builder: (context, constraints) {
         final size = constraints.biggest;
         final warping = _warping && !size.isEmpty;
-        // While warping, the shader masks to the lens itself: a clip to the
-        // lens here would also crop the filter's input to the lens' bounds.
+        // While warping, the shader masks to the lens itself and ClipRect
+        // bounds the filter's input texture. Switch ClipPath to Clip.none while
+        // warping so a parent Clip.antiAliasWithSaveLayer doesn't allocate a
+        // redundant full-bar offscreen saveLayer on top of ImageFiltered's own
+        // shader pass every 120 Hz drag frame.
         return ClipPath(
-          clipBehavior: widget.clipBehavior,
+          clipBehavior: warping ? Clip.none : widget.clipBehavior,
           clipper: _LensClipper(widget.lensGeometry, clipToLens: !warping),
           child: ImageFiltered(
             enabled: warping,
@@ -165,12 +168,17 @@ class _LensContentWarpState extends State<LensContentWarp> {
             // The filtered texture has to cover exactly this box so the
             // shader can map its pixels back to logical coordinates: the clip
             // stops content from widening it, and the near-transparent fill
-            // stops sparse content (a few glyphs) from narrowing it.
+            // stops sparse content (a few glyphs) from narrowing it. Keep the
+            // slot occupied by SizedBox.shrink() at rest so widget.child never
+            // shifts index or remounts when warping toggles, while avoiding
+            // 1/255 alpha overdraw over the resting pill.
             child: ClipRect(
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  const ColoredBox(color: Color(0x01000000)),
+                  warping
+                      ? const ColoredBox(color: Color(0x01000000))
+                      : const SizedBox.shrink(),
                   widget.child,
                 ],
               ),
