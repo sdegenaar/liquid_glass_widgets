@@ -353,7 +353,6 @@ void main() {
           node,
           matchesSemantics(
             label: 'Locked',
-            isButton: true,
             hasEnabledState: true,
             isEnabled: false,
             hasToggledState: true,
@@ -365,7 +364,7 @@ void main() {
       }
     });
 
-    testWidgets('emits toggled button semantics on a single node',
+    testWidgets('emits toggled semantics, not a button, on a single node',
         (tester) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -389,7 +388,6 @@ void main() {
           node,
           matchesSemantics(
             label: 'Notifications',
-            isButton: true,
             hasEnabledState: true,
             isEnabled: true,
             hasToggledState: true,
@@ -535,7 +533,6 @@ void main() {
           node,
           matchesSemantics(
             label: 'Mute',
-            isButton: true,
             hasEnabledState: true,
             isEnabled: true,
             hasToggledState: true,
@@ -580,7 +577,7 @@ void main() {
     });
 
     testWidgets(
-        'works inside unbounded horizontal SingleChildScrollView and ellipsizes in narrow bounds',
+        'works inside unbounded horizontal SingleChildScrollView and wraps in narrow bounds',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(

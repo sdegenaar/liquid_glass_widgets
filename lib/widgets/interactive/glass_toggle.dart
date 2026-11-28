@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -40,6 +44,18 @@ import 'glass_button.dart';
 /// - **Disabled (`onChanged: null`)**: renders at 50% opacity, ignores touch
 ///   and keyboard input without press stretch/glow, and reports disabled +
 ///   toggled semantics on a single accessibility node.
+///
+/// ## Accessibility
+///
+/// - The toggle reads as a switch that is on or off on iOS, macOS and
+///   Android. For one option of a set where exactly one is chosen, such as a
+///   choice chip, set [semanticsInMutuallyExclusiveGroup]: it then reads as
+///   a radio button, checked or not.
+/// - Its semantics node is at least 44 x 44 pt, centred on the capsule,
+///   without changing its layout; the touch area extends that far only
+///   within the parent's bounds.
+/// - A [label] that does not fit wraps onto more lines, as at large text
+///   sizes, unless [height] fixes the toggle's height.
 ///
 /// ## Usage
 ///
@@ -112,6 +128,8 @@ class GlassToggle extends StatelessWidget {
     this.autofocus = false,
     this.canRequestFocus = true,
     this.semanticLabel,
+    this.semanticsInMutuallyExclusiveGroup = false,
+    this.textDirection,
   })  : assert(
           child != null || label != null || icon != null,
           'GlassToggle.button requires at least one of label, icon, or child.',
@@ -140,8 +158,20 @@ class GlassToggle extends StatelessWidget {
 
   /// Optional text label displayed inside the capsule.
   ///
-  /// Mutually exclusive with [child]. Can be paired with [icon].
+  /// Mutually exclusive with [child]. Can be paired with [icon]. A label
+  /// wider than the space the toggle gets wraps onto more lines, as at
+  /// large text sizes, and the capsule grows to fit; with an explicit
+  /// [height] it stays on one line and ends in an ellipsis.
   final String? label;
+
+  /// The direction of [label], such as [TextDirection.rtl] for a name the
+  /// user typed in Arabic or Hebrew in a left-to-right app.
+  ///
+  /// When `null` (the default), the label takes the ambient
+  /// [Directionality]. The icon and the padding keep following the ambient
+  /// direction. Screen readers get the label with this direction, unless
+  /// [semanticLabel] names the toggle.
+  final TextDirection? textDirection;
 
   /// Optional leading icon widget (or standalone icon when [label] is null).
   ///
@@ -316,6 +346,22 @@ class GlassToggle extends StatelessWidget {
   /// `null`, screen readers read [label] or the semantics of [child].
   final String? semanticLabel;
 
+  /// Whether this toggle is one option of a set where exactly one is on,
+  /// such as a choice chip or a single-choice filter, rather than an
+  /// independent on/off toggle; for assistive technologies only.
+  ///
+  /// When `false` (the default), the toggle reads as a switch that is on or
+  /// off. When `true`, it reads as a radio button of a mutually exclusive
+  /// group, checked when [value] is `true`, in place of the switch: iOS
+  /// reads a toggled node outside such a group as a switch, which says
+  /// nothing of the other options. On iOS and macOS the checked toggle is
+  /// also reported as selected, as Flutter's radio buttons are, since iOS
+  /// reads a radio button's selected trait rather than its checked state.
+  ///
+  /// [onChanged] still receives `!value`: a set where the chosen option
+  /// stays chosen when tapped again ignores `false`.
+  final bool semanticsInMutuallyExclusiveGroup;
+
   static const _defaultTextPadding =
       EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 7);
   static const _defaultIconOnlyPadding =
@@ -447,8 +493,14 @@ class GlassToggle extends StatelessWidget {
           Flexible(
             child: Text(
               label!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              textDirection: textDirection,
+              textAlign: TextAlign.center,
+              // A label that does not fit wraps rather than being cut, as
+              // a SwiftUI button's does at large text sizes. Only a fixed
+              // height keeps it to one line.
+              maxLines: height == null ? null : 1,
+              overflow:
+                  height == null ? TextOverflow.clip : TextOverflow.ellipsis,
               style: effectiveLabelStyle,
             ),
           ),
@@ -471,10 +523,20 @@ class GlassToggle extends StatelessWidget {
       ),
     );
 
-    return GlassButton.custom(
+    // One option of a mutually exclusive set reads as a radio button; Apple
+    // platforms read its state from `selected`, as Flutter's own radio
+    // buttons report it there.
+    final exclusive = semanticsInMutuallyExclusiveGroup;
+    final reportsSelected = exclusive &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+
+    final button = GlassButton.custom(
       onTap: isEnabled ? _handleTap : _noOp,
       enabled: isEnabled,
-      isToggled: value,
+      isToggled: exclusive ? null : value,
+      isChecked: exclusive ? value : null,
+      isSelected: reportsSelected ? value : null,
       label: semanticLabel ?? '',
       width: width,
       height: height,
@@ -501,5 +563,70 @@ class GlassToggle extends StatelessWidget {
       canRequestFocus: canRequestFocus,
       child: paddedContent,
     );
+
+    // The 34 pt capsule is smaller than the 44 x 44 pt minimum target: the
+    // semantics node extends around it to that size, and the touch area as
+    // far as the parent's bounds allow, while the toggle keeps its size in
+    // the layout.
+    return _ToggleTapTarget(child: button);
+  }
+}
+
+/// Gives the toggle a semantics node of at least
+/// [kMinInteractiveDimensionCupertino] (44 pt) on each side, centred on the
+/// capsule, and extends its touch area towards that size, without changing
+/// its layout.
+///
+/// It owns the toggle's single semantics node (merging the button's node
+/// into it), so the node spans the target everywhere. The touch area
+/// reaches past the capsule only as far as the parent's bounds allow, since
+/// a hit test stops at any ancestor that does not contain the touch. A
+/// touch that lands around the capsule is moved onto its centre line by a
+/// translation only, so the press feedback follows it as on the capsule.
+class _ToggleTapTarget extends SingleChildRenderObjectWidget {
+  const _ToggleTapTarget({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderToggleTapTarget();
+}
+
+class _RenderToggleTapTarget extends RenderProxyBox {
+  Rect get _target => Rect.fromCenter(
+        center: size.center(Offset.zero),
+        width: math.max(size.width, kMinInteractiveDimensionCupertino),
+        height: math.max(size.height, kMinInteractiveDimensionCupertino),
+      );
+
+  @override
+  Rect get semanticBounds => _target;
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config
+      ..isSemanticBoundary = true
+      ..isMergingSemanticsOfDescendants = true;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (super.hitTest(result, position: position)) return true;
+    final child = this.child;
+    if (child == null || !_target.contains(position)) return false;
+    // The nearest point on the capsule's centre line, inside its round ends.
+    final radius = size.height / 2;
+    final onCapsule = Offset(
+      position.dx.clamp(radius, math.max(radius, size.width - radius)),
+      radius,
+    );
+    final hit = result.addWithPaintOffset(
+      offset: position - onCapsule,
+      position: position,
+      hitTest: (result, transformed) =>
+          child.hitTest(result, position: transformed),
+    );
+    if (hit) result.add(BoxHitTestEntry(this, position));
+    return hit;
   }
 }

@@ -1,3 +1,19 @@
+# Unreleased
+
+## Features
+
+- **`GlassToggle.button` as one option of a mutually exclusive set (`semanticsInMutuallyExclusiveGroup`) & `GlassButton.isChecked`:** A toggle that is one of a set where exactly one is on, such as a choice chip, reads as a radio button of a mutually exclusive group, checked or not, in place of a switch, without changing visuals. iOS reads a toggled node outside such a group as a switch, which says nothing of the other options, and macOS read no state at all (see below). On iOS and macOS the checked toggle is also reported as selected, as Flutter's radio buttons are, since iOS reads a radio button's selected trait rather than its checked state. `false` (the default) keeps the switch. `GlassButton.isChecked` carries the radio state for any button.
+- **`GlassToggle.button` label direction (`textDirection`):** Gives the label its own direction, such as right-to-left for a name the user typed in Arabic or Hebrew in a left-to-right app, on screen and for screen readers. The icon and the padding keep the ambient direction. `null` (the default) keeps the ambient `Directionality`.
+
+## Changes
+
+- **`GlassToggle.button` label wraps:** A label wider than the space the toggle gets now wraps onto more lines, centred, and the capsule grows to fit, as a SwiftUI button's label does; before, it was cut to one line with an ellipsis, so at large accessibility text sizes a label such as "Recently Added" read "Recently Ad…". A label that fits, and a toggle in an unbounded horizontal scroll view, stay on one line. A toggle with an explicit `height` keeps one line with an ellipsis.
+
+## Bug Fixes
+
+- **`GlassToggle.button` and `GlassButton(isToggled:)` read their on/off state on macOS:** The toggle's semantics node was also a button, and macOS gives `button` its role before the switch role and then reports no on/off state, so VoiceOver on the Mac read "button" whether the toggle was on or off. A toggled button now reads as a switch with its state on every platform; iOS and Android already read it as a switch, so nothing changes there.
+- **`GlassToggle.button` 44 pt tap target:** The 34 pt capsule (and a narrow one, such as a one-letter weekday, under 44 pt wide) reported its semantics node, and took touches, only over itself, under the 44 x 44 pt minimum (`iOSTapTargetGuideline`) that VoiceOver, Voice Control, Switch Control and fingers rely on. Its semantics node is now at least 44 x 44 pt, centred on the capsule, without changing its layout size or its look. Its touch area extends to 44 pt only as far as the parent's bounds allow, because a hit test stops at the parent: a toggle in a row no taller than the capsule takes touches only over the capsule's height. A toggle of 44 pt or more keeps its own size as its target.
+
 # 1.22.0
 
 ## Features
