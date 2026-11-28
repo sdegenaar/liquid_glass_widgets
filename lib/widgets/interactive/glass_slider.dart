@@ -184,6 +184,11 @@ class GlassSlider extends StatefulWidget {
   ///
   /// It receives the value in [min]..[max]. If null, the value is announced
   /// as a percentage of the range.
+  ///
+  /// It runs three times on every build of the slider (the value and the two
+  /// values an adjustment reaches), every frame of a drag included, so keep
+  /// it cheap and pure, as Material's must be in practice: no side effects,
+  /// and the same string for the same value.
   final String Function(double value)? semanticFormatterCallback;
 
   // ===========================================================================
