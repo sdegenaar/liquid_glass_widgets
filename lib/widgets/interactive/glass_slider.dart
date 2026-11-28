@@ -461,6 +461,15 @@ class _GlassSliderState extends State<GlassSlider>
     // (No need to reset; the spring naturally settles to its current target.)
   }
 
+  /// Moves the slider to [newValue] in one step, reporting the start, the
+  /// change and the end, as Flutter's Slider does for a screen-reader or
+  /// keyboard adjustment.
+  void _adjustTo(double newValue) {
+    widget.onChangeStart?.call(widget.value);
+    widget.onChanged?.call(newValue);
+    widget.onChangeEnd?.call(newValue);
+  }
+
   // Cache effectiveQuality at state level to make it accessible in _buildThumbGlass
   GlassQuality? _effectiveQuality;
 
@@ -535,6 +544,11 @@ class _GlassSliderState extends State<GlassSlider>
           isHoveredNotifier: _isHovered,
           // Sliders are adjusted with arrow keys, Space/Enter don't activate them natively
           onKeyboardActivate: null,
+          // One step per arrow key, reported as one adjustment.
+          onKeyboardIncrease:
+              widget.onChanged != null ? () => _adjustTo(increasedValue) : null,
+          onKeyboardDecrease:
+              widget.onChanged != null ? () => _adjustTo(decreasedValue) : null,
           child: RepaintBoundary(
             child: RawGestureDetector(
               gestures: <Type, GestureRecognizerFactory>{

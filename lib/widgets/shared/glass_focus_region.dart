@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'glass_focus_ring_painter.dart';
 
 /// A shared accessibility and focus region for interactive glass widgets.
@@ -52,6 +53,8 @@ class GlassFocusRegion extends StatefulWidget {
     this.toggled,
     this.checked,
     this.onKeyboardActivate,
+    this.onKeyboardIncrease,
+    this.onKeyboardDecrease,
     this.semanticOnTap,
     this.semanticOnLongPress,
     this.semanticValue,
@@ -91,6 +94,8 @@ class GlassFocusRegion extends StatefulWidget {
         toggled = null,
         checked = null,
         onKeyboardActivate = null,
+        onKeyboardIncrease = null,
+        onKeyboardDecrease = null,
         semanticOnTap = null,
         semanticOnLongPress = null,
         semanticValue = null,
@@ -175,6 +180,20 @@ class GlassFocusRegion extends StatefulWidget {
 
   /// Callback fired when the user presses Space or Enter while focused.
   final VoidCallback? onKeyboardActivate;
+
+  /// Callback fired when the user presses the arrow key that increases an
+  /// adjustable control (such as a slider) while focused: Up, or the
+  /// trailing arrow (Right in a left-to-right layout, Left in right-to-left).
+  ///
+  /// When this or [onKeyboardDecrease] is set, the region handles the arrow
+  /// keys, which otherwise move focus. Under [NavigationMode.directional]
+  /// it handles Left and Right only, and Up and Down still move focus.
+  final VoidCallback? onKeyboardIncrease;
+
+  /// Callback fired when the user presses the arrow key that decreases an
+  /// adjustable control while focused: Down, or the leading arrow. See
+  /// [onKeyboardIncrease].
+  final VoidCallback? onKeyboardDecrease;
 
   /// Callback fired when screen readers invoke a tap.
   final VoidCallback? semanticOnTap;
@@ -265,8 +284,50 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
           return null;
         },
       ),
+      _AdjustIntent: CallbackAction<_AdjustIntent>(
+        onInvoke: (_AdjustIntent intent) {
+          _adjust(intent.direction);
+          return null;
+        },
+      ),
     };
   }
+
+  /// Up increases and Down decreases; Left and Right follow the reading
+  /// direction, as Flutter's Slider handles them.
+  void _adjust(AxisDirection direction) {
+    final isRtl = Directionality.maybeOf(context) == TextDirection.rtl;
+    final increase = switch (direction) {
+      AxisDirection.up => true,
+      AxisDirection.down => false,
+      AxisDirection.left => isRtl,
+      AxisDirection.right => !isRtl,
+    };
+    (increase ? widget.onKeyboardIncrease : widget.onKeyboardDecrease)?.call();
+  }
+
+  bool get _adjustsWithArrows =>
+      widget.onKeyboardIncrease != null || widget.onKeyboardDecrease != null;
+
+  static const Map<ShortcutActivator, Intent> _arrowShortcuts =
+      <ShortcutActivator, Intent>{
+    SingleActivator(LogicalKeyboardKey.arrowUp):
+        _AdjustIntent(AxisDirection.up),
+    SingleActivator(LogicalKeyboardKey.arrowDown):
+        _AdjustIntent(AxisDirection.down),
+    SingleActivator(LogicalKeyboardKey.arrowLeft):
+        _AdjustIntent(AxisDirection.left),
+    SingleActivator(LogicalKeyboardKey.arrowRight):
+        _AdjustIntent(AxisDirection.right),
+  };
+
+  static const Map<ShortcutActivator, Intent> _directionalArrowShortcuts =
+      <ShortcutActivator, Intent>{
+    SingleActivator(LogicalKeyboardKey.arrowLeft):
+        _AdjustIntent(AxisDirection.left),
+    SingleActivator(LogicalKeyboardKey.arrowRight):
+        _AdjustIntent(AxisDirection.right),
+  };
 
   /// Called by the observed [FocusNode] listener in observe mode.
   /// Only activates the ring when focus is keyboard-driven.
@@ -449,6 +510,12 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
           focusNode: _internalFocusNode!,
           autofocus: widget.autofocus,
           actions: _actions,
+          shortcuts: !_adjustsWithArrows
+              ? null
+              : MediaQuery.maybeNavigationModeOf(context) ==
+                      NavigationMode.directional
+                  ? _directionalArrowShortcuts
+                  : _arrowShortcuts,
           mouseCursor: widget.enabled
               ? SystemMouseCursors.click
               : SystemMouseCursors.basic,
@@ -464,4 +531,11 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
       ),
     );
   }
+}
+
+/// An arrow key pressed on an adjustable region.
+class _AdjustIntent extends Intent {
+  const _AdjustIntent(this.direction);
+
+  final AxisDirection direction;
 }
