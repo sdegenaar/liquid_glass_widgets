@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassDisclosureGroup` header text at large text sizes:** The default header cut its title and subtitle to one line each with an ellipsis, so at large accessibility text sizes they read "Advanced…" / "Rarely neede…". They now wrap, as a SwiftUI `DisclosureGroup` label and `GlassListTile` do. A `title` or `subtitle` `Text` with its own `maxLines` and `overflow` still applies them.
+
 # 1.22.0
 
 ## Features

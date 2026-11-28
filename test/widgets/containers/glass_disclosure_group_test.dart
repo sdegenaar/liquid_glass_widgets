@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -430,6 +431,48 @@ void main() {
       expect(find.text('Parent Group'), findsOneWidget);
       expect(find.text('Nested Group 1'), findsOneWidget);
       expect(find.byType(GlassDivider), findsWidgets);
+    });
+
+    testWidgets(
+        'at the largest text size the header title and subtitle wrap, '
+        'not cut off', (tester) async {
+      // A phone held upright, at iOS's largest accessibility text size (AX5:
+      // 53 pt body text over 17 pt).
+      tester.view
+        ..physicalSize = const Size(1170, 2532)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(53 / 17)),
+            child: child!,
+          ),
+          home: CupertinoPageScaffold(
+            child: ListView(
+              children: const [
+                GlassDisclosureGroup(
+                  leading: Icon(CupertinoIcons.gear),
+                  title: Text('Advanced settings'),
+                  subtitle: Text('Rarely needed, such as resetting statistics'),
+                  children: [Text('Reset statistics')],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      for (final text in [
+        'Advanced settings',
+        'Rarely needed, such as resetting statistics',
+      ]) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+        expect(paragraph.didExceedMaxLines, isFalse,
+            reason: '"$text" is cut off');
+        expect(paragraph.maxLines, isNull, reason: '"$text" may wrap');
+      }
     });
   });
 }

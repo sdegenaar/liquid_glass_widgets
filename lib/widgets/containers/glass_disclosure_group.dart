@@ -451,6 +451,8 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
           ),
         );
 
+    // The title and subtitle wrap, as a SwiftUI DisclosureGroup label and a
+    // GlassListTile do, so they stay whole at large text sizes.
     Widget titleColumn = widget.subtitle != null
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,24 +460,18 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
             children: [
               DefaultTextStyle(
                 style: effectiveTitleStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 child: widget.title,
               ),
               // No gap: SwiftUI stacks title and subtitle with natural line
               // heights only.
               DefaultTextStyle(
                 style: effectiveSubtitleStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 child: widget.subtitle!,
               ),
             ],
           )
         : DefaultTextStyle(
             style: effectiveTitleStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             child: widget.title,
           );
 
