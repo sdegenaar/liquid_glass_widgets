@@ -1,3 +1,13 @@
+# Unreleased
+
+## Changes
+
+- **`GlassSwitch` has no English default name:** Without `semanticLabel` the switch no longer names itself "Switch". VoiceOver and TalkBack already announce it as a switch, so the fallback was read twice ("Switch, switch button") and never localized. A switch with no label of its own takes its name from what surrounds it: `MergeSemantics` around a `GlassListTile` (without `onTap`) with a trailing `GlassSwitch` reads as one switch named by the tile's title.
+
+## Bug Fixes
+
+- **`GlassSwitch` reads as a switch on macOS:** The switch's semantics node was also a button, and macOS gives `button` its role before the switch role and then reports no on/off state, so VoiceOver on the Mac read "button" whether the switch was on or off. It is now a switch only (`AXSwitch` with `AXValue` 1 or 0); iOS and Android read it as before.
+
 # 1.22.0
 
 ## Features

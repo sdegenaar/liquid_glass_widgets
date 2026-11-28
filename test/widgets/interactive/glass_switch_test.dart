@@ -819,7 +819,8 @@ void main() {
           expect(
             tester.getSemantics(find.byType(GlassSwitch)),
             matchesSemantics(
-              isButton: true,
+              // A switch, not a button: macOS reads a button first and then
+              // no on/off state.
               hasEnabledState: true,
               isEnabled: true,
               isFocusable: true,
@@ -1133,7 +1134,6 @@ void main() {
             expect(
               tester.getSemantics(find.byType(GlassSwitch)),
               matchesSemantics(
-                isButton: true,
                 hasEnabledState: true,
                 isEnabled: false,
                 isFocusable: false,

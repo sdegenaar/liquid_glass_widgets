@@ -221,6 +221,22 @@ class GlassSwitch extends StatefulWidget {
   final bool autofocus;
 
   /// The semantic label for screen readers.
+  ///
+  /// When null, the switch has no name of its own (screen readers already
+  /// announce it as a switch). Name it here, or merge it into the row whose
+  /// title names it, which reads as a single switch:
+  ///
+  /// ```dart
+  /// MergeSemantics(
+  ///   child: GlassListTile(
+  ///     title: const Text('Wi-Fi'),
+  ///     trailing: GlassSwitch(value: wifi, onChanged: setWifi),
+  ///   ),
+  /// )
+  /// ```
+  ///
+  /// Leave the tile's `onTap` unset there: a tile with `onTap` is a button,
+  /// and macOS reads a button before a switch.
   final String? semanticLabel;
 
   /// The color of the on mark (the `I`) drawn on the track when the user
@@ -888,8 +904,11 @@ class _GlassSwitchState extends State<GlassSwitch>
       enabled: isInteractive,
       focusNode: widget.focusNode,
       autofocus: widget.autofocus,
-      semanticLabel: widget.semanticLabel ?? 'Switch',
-      isButton: true,
+      // No default name: VoiceOver and TalkBack already say "switch", and an
+      // English fallback is never localized.
+      semanticLabel: widget.semanticLabel,
+      // A switch, not a button: macOS gives `button` its role before the
+      // switch role and then reports no on/off state.
       toggled: widget.value,
       semanticOnTap: isInteractive ? _handleTap : null,
       shape: const StadiumBorder(),

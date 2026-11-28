@@ -416,6 +416,7 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
       container: widget.isButton ||
           widget.isSlider ||
           widget.checked != null ||
+          widget.toggled != null ||
           hasSemanticLabel,
       button: widget.isButton && widget.checked == null,
       checked: widget.checked,
