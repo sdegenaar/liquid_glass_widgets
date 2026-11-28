@@ -200,7 +200,8 @@ void main() {
       );
 
       expect(bar.spacing, equals(8));
-      expect(bar.barHeight, equals(64));
+      expect(bar.barHeight, equals(62));
+      expect(bar.horizontalPadding, equals(21));
       expect(bar.barBorderRadius, equals(GlassDefaults.capsuleRadius));
       expect(bar.showIndicator, isTrue);
       expect(bar.quality, isNull);
@@ -229,7 +230,7 @@ void main() {
 
       expect(button.icon, isA<Icon>());
       expect(button.label, equals('Add'));
-      expect(button.size, equals(64));
+      expect(button.size, equals(62));
     });
 
     test('collapseOnSearchFocus defaults to true', () {

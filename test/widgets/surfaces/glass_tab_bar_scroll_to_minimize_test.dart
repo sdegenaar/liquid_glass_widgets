@@ -13,8 +13,8 @@ const _testTabs = [
   GlassTab(label: 'Saved', icon: Icon(CupertinoIcons.bookmark)),
 ];
 
-/// Expanded height with the defaults: barHeight 64 + verticalPadding 20 * 2.
-const _expandedHeight = 104.0;
+/// Expanded height with the defaults: barHeight 62 + verticalPadding 20 * 2.
+const _expandedHeight = 102.0;
 
 /// Minimized: minimizedBarHeight 50 + 40.
 const _minimizedHeight = 90.0;

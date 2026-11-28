@@ -434,7 +434,7 @@ class SheetGeometry {
         double pos = peekSize ?? 5.0;
         return pos > 1.0 ? pos / screenHeight : pos;
       case GlassSheetState.half:
-        double pos = halfSize ?? 0.45;
+        double pos = halfSize ?? 0.525;
         return pos > 1.0 ? pos / screenHeight : pos;
       case GlassSheetState.full:
         double? target = fullSize;

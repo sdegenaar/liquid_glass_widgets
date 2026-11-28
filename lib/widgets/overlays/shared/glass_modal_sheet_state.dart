@@ -414,6 +414,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         _currentPosition,
         targetPosition,
         layoutHeight > 0 ? velocity / layoutHeight : 0.0,
+        snapToEnd: true,
       );
       final slide = _animationController.animateWith(
         widget.mode == GlassSheetMode.persistent

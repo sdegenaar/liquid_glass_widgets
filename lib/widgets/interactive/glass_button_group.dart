@@ -71,7 +71,7 @@ class GlassButtonGroupItem {
   })  : onTap = onTap ?? _noOp,
         menuItems = null,
         menuAlignment = null,
-        menuWidth = 200,
+        menuWidth = 250,
         menuHeight = null,
         menuSettings = null;
 
@@ -97,7 +97,7 @@ class GlassButtonGroupItem {
     required this.icon,
     required List<Widget> this.menuItems,
     this.menuAlignment,
-    this.menuWidth = 200,
+    this.menuWidth = 250,
     this.menuHeight,
     this.menuSettings,
     this.label,

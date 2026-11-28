@@ -380,8 +380,8 @@ void main() {
         minimizedBarHeight: 44,
       );
 
-      // barHeight 64 + verticalPadding 20 * 2 / minimizedBarHeight 44 + 40.
-      expect(expanded.preferredSize.height, 104);
+      // barHeight 62 + verticalPadding 20 * 2 / minimizedBarHeight 44 + 40.
+      expect(expanded.preferredSize.height, 102);
       expect(minimized.preferredSize.height, 84);
     });
 

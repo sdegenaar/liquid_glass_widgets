@@ -35,7 +35,8 @@ import 'tab_bar_bottom_internal.dart'
         TabIndicator,
         resolveActiveLensTabColors,
         resolveBarGlassSettings,
-        resolveBarLabelColor;
+        resolveBarLabelColor,
+        resolveDefaultSelectedTabColor;
 import '../../../widgets/surfaces/shared/glass_search_bar_config.dart';
 import '../../../widgets/surfaces/shared/tab_bar_searchable_controller.dart';
 import 'tab_bar_searchable_internal.dart'
@@ -72,9 +73,9 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.bottomAccessorySpacing = 6.0,
     this.bottomAccessoryHeight,
     this.spacing = 8,
-    this.horizontalPadding = 20,
+    this.horizontalPadding = 21,
     this.verticalPadding = 20,
-    this.barHeight = 64,
+    this.barHeight = 62,
     this.searchBarHeight = 50,
     this.barBorderRadius = _kDefaultBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
@@ -516,8 +517,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
 
     final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final dynamicLabelColor = resolveBarLabelColor(context, darkAmount);
-    final resolvedSelectedIconColor =
-        widget.selectedIconColor ?? dynamicLabelColor;
+    final resolvedSelectedIconColor = widget.selectedIconColor ??
+        resolveDefaultSelectedTabColor(context, dynamicLabelColor);
     final resolvedUnselectedIconColor =
         widget.unselectedIconColor ?? dynamicLabelColor;
     // A minimized bar still shows its selected tab; a searching one shows the

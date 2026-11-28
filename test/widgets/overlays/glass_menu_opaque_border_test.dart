@@ -82,7 +82,7 @@ void main() {
       // The fill covers the whole panel, behind the rows.
       final fill = tester.getRect(_fills(_opaque));
       expect(fill.contains(tester.getCenter(find.text('Copy'))), isTrue);
-      expect(fill.width, closeTo(200, 0.01));
+      expect(fill.width, closeTo(250, 0.01));
     });
 
     testWidgets('stays fully opaque under Reduce Transparency', (tester) async {

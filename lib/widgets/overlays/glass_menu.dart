@@ -359,7 +359,7 @@ class GlassMenu extends StatefulWidget {
     required this.items,
     this.menuAlignment,
     this.autoAdjustToScreen = false,
-    this.menuWidth = 200,
+    this.menuWidth = 250,
     this.menuBorderRadius = 32.0,
     this.itemBorderRadius = 24.0,
     this.settings,

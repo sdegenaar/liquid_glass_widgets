@@ -44,6 +44,24 @@ import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
 /// Alias for [LiquidGlassSettings.classicTabBar].
 const kBottomBarGlassDefaults = LiquidGlassSettings.classicTabBar;
 
+/// Resolves the default active-tab tint when neither `selectedIconColor` nor
+/// `selectedLabelColor` is explicitly supplied.
+///
+/// Matches native iOS 26 / iOS 27 `UITabBar` by tinting the selected tab icon
+/// and label with `CupertinoTheme.of(context).primaryColor` (defaulting to
+/// `CupertinoColors.systemBlue`), while preserving monochrome [fallback] for
+/// `GlassStyle.classic`.
+Color resolveDefaultSelectedTabColor(BuildContext context, Color fallback) {
+  final style = GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
+  if (style == GlassStyle.classic) return fallback;
+  final primary = CupertinoTheme.of(context).primaryColor;
+  if (primary is CupertinoDynamicColor) {
+    final brightness = GlassTheme.brightnessOf(context);
+    return brightness == Brightness.dark ? primary.darkColor : primary.color;
+  }
+  return primary;
+}
+
 /// Resolves the default [LiquidGlassSettings] for [GlassTabBar.bottom] and
 /// [GlassTabBar.searchable].
 ///

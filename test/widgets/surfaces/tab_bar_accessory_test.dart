@@ -112,10 +112,10 @@ void main() {
 
       // Test the preferredSize computation.
       var tabBar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
-      // isSearchActive: false → effectivePillH = barHeight(64) + vertPad(20*2) = 104
+      // isSearchActive: false → effectivePillH = barHeight(62) + vertPad(20*2) = 102
       // gapAdjustment = 0 (not searching)
-      // total = 104 + spacing(6) + accessory(50) = 160
-      expect(tabBar.preferredSize.height, 160.0);
+      // total = 102 + spacing(6) + accessory(50) = 158
+      expect(tabBar.preferredSize.height, 158.0);
 
       // Rebuild in inline mode
       await tester.pumpWidget(
@@ -141,9 +141,9 @@ void main() {
       tabBar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
       // isSearchActive: true, no explicit placement → stays expanded (no auto-collapse)
       // effectivePillH = searchBarHeight(36) + vertPad(40) = 76
-      // gapAdjustment = barHeight(64) - searchBarHeight(36) = 28
-      // total = 76 - 28 + spacing(6) + accessory(50) = 104
-      expect(tabBar.preferredSize.height, 104.0);
+      // gapAdjustment = barHeight(62) - searchBarHeight(36) = 26
+      // total = 76 - 26 + spacing(6) + accessory(50) = 106
+      expect(tabBar.preferredSize.height, 106.0);
     });
 
     testWidgets(
@@ -173,10 +173,10 @@ void main() {
 
       final tabBar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
       // Base search bar height (36) + vertical padding (20) * 2 = 76
-      // Gap adjustment: barHeight (64) - searchBarHeight (36) = 28
+      // Gap adjustment: barHeight (62) - searchBarHeight (36) = 26
       // PLUS accessory height (50) + spacing (6)
-      // Total = 76 - 28 + 6 + 50 = 104.0
-      expect(tabBar.preferredSize.height, 104.0);
+      // Total = 76 - 26 + 6 + 50 = 106.0
+      expect(tabBar.preferredSize.height, 106.0);
     });
   });
 
@@ -282,7 +282,7 @@ void main() {
       final accessory = tester.getRect(find.byKey(const Key('acc')));
 
       // Symmetric with the leading inset the bar already applies.
-      expect(bar.right - accessory.right, closeTo(20.0, 0.5));
+      expect(bar.right - accessory.right, closeTo(21.0, 0.5));
     });
 
     testWidgets('still clears the trailing button when one is present',
@@ -298,8 +298,8 @@ void main() {
       final bar = tester.getRect(find.byType(GlassTabBar));
       final accessory = tester.getRect(find.byKey(const Key('acc')));
 
-      // horizontalPadding(20) + searchBarHeight(50) + spacing(6)
-      expect(bar.right - accessory.right, closeTo(76.0, 0.5));
+      // horizontalPadding(21) + searchBarHeight(50) + spacing(6)
+      expect(bar.right - accessory.right, closeTo(77.0, 0.5));
     });
 
     testWidgets(

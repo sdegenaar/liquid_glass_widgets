@@ -26,7 +26,7 @@ class GlassPullDownButton extends StatelessWidget {
     this.buttonWidth,
     this.buttonHeight = 44,
     this.buttonShape,
-    this.menuWidth = 200,
+    this.menuWidth = 250,
     this.menuBorderRadius = 32.0,
     this.menuPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.menuAlignment,

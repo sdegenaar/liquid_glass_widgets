@@ -30,7 +30,8 @@ import 'tab_bar_bottom_internal.dart'
         TabIndicator,
         resolveActiveLensTabColors,
         resolveBarGlassSettings,
-        resolveBarLabelColor;
+        resolveBarLabelColor,
+        resolveDefaultSelectedTabColor;
 import '../../../widgets/surfaces/shared/tab_bar_accessory_placement.dart';
 import 'tab_bar_layout_utils.dart';
 
@@ -49,9 +50,9 @@ class TabBarBottomLayout extends StatefulWidget {
     this.bottomAccessoryEnabled = true,
     this.bottomAccessorySpacing = 6.0,
     this.spacing = 8,
-    this.horizontalPadding = 20,
+    this.horizontalPadding = 21,
     this.verticalPadding = 20,
-    this.barHeight = 64,
+    this.barHeight = 62,
     this.barBorderRadius = _kDefaultBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
     this.iconLabelSpacing = 4,
@@ -256,8 +257,8 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
 
     final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final dynamicLabelColor = resolveBarLabelColor(context, darkAmount);
-    final resolvedSelectedIconColor =
-        widget.selectedIconColor ?? dynamicLabelColor;
+    final resolvedSelectedIconColor = widget.selectedIconColor ??
+        resolveDefaultSelectedTabColor(context, dynamicLabelColor);
     final resolvedUnselectedIconColor =
         widget.unselectedIconColor ?? dynamicLabelColor;
 

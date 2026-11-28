@@ -15,6 +15,7 @@ import '../../../widgets/input/glass_text_field.dart';
 import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/surfaces/glass_tab_bar.dart';
 import '../../../widgets/surfaces/glass_vertical_bar.dart';
+import 'tab_bar_bottom_internal.dart' show resolveDefaultSelectedTabColor;
 import 'tab_bar_drag_gesture_mixin.dart';
 import 'vertical_bar_reservation.dart';
 import 'vertical_bar_title_row.dart';
@@ -688,7 +689,8 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
     // search is active.
     final selectedSlot = searching ? tabs.length : widget.selectedIndex;
     final label = CupertinoColors.label.resolveFrom(context);
-    final selectedColor = widget.selectedIconColor ?? label;
+    final selectedColor = widget.selectedIconColor ??
+        resolveDefaultSelectedTabColor(context, label);
     final unselectedColor = widget.unselectedIconColor ?? label;
     // The capsule sits in the strip's column: its inner edge
     // GlassVerticalBarMetrics.inset from the content, the rest of the strip

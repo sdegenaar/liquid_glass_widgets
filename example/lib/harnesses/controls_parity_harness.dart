@@ -427,7 +427,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
       morphFrom: morph ? _morphSheetAnchor : null,
       initialState: full ? GlassSheetState.full : GlassSheetState.half,
       detents: const {GlassSheetDetent.medium, GlassSheetDetent.large},
-      halfSize: 0.48,
       builder: (sheetCtx) => _OverlaysSheetContent(
         title: morph
             ? 'Morph Sheet'
@@ -790,11 +789,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
             quality: _quality,
             selectedIndex: _selectedTab,
             onTabSelected: (i) => setState(() => _selectedTab = i),
-            selectedIconColor: CupertinoColors.systemBlue.resolveFrom(context),
-            selectedLabelStyle: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.systemBlue.resolveFrom(context),
-            ),
             tabs: const [
               GlassTab(
                 label: 'Controls',
@@ -904,8 +898,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           key: _switchOnKey,
                           quality: _quality,
                           value: _switchOn,
-                          width: 63,
-                          height: 28,
                           onChanged: (v) => setState(() => _switchOn = v),
                         ),
                       ),
@@ -921,8 +913,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           key: _switchOffKey,
                           quality: _quality,
                           value: _switchOff,
-                          width: 63,
-                          height: 28,
                           onChanged: (v) => setState(() => _switchOff = v),
                         ),
                       ),
@@ -1316,7 +1306,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       label: 'Pull-Down',
                       buttonWidth: 122,
                       buttonHeight: 34.5,
-                      menuWidth: 220,
                       quality: buttonQuality,
                       items: [
                         GlassMenuLabel(
@@ -1351,7 +1340,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                     ),
                     const SizedBox(width: 12),
                     GlassMenu(
-                      menuWidth: 220,
                       quality: buttonQuality,
                       triggerBuilder: (context, toggle) => GlassIconButton(
                         size: 36,
