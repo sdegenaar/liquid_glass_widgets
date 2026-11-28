@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -55,5 +56,38 @@ void main() {
       expect(data.decreasedValue, '23%');
       handle.dispose();
     });
+  });
+
+  testWidgets('has no English default name', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: CupertinoPageScaffold(
+          child: Center(
+            child: SizedBox(
+              width: 300,
+              child: GlassSlider(value: 0.5, onChanged: (_) {}),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // The slider's own node: the one that carries its value.
+    SemanticsData? slider;
+    void visit(SemanticsNode node) {
+      final data = node.getSemanticsData();
+      if (data.hasFlag(SemanticsFlag.isSlider)) slider = data;
+      node.visitChildren((child) {
+        visit(child);
+        return true;
+      });
+    }
+
+    visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+    expect(slider, isNotNull, reason: 'the slider is its own element');
+    expect(slider!.label, isEmpty);
+    expect(slider!.value, '50%');
+    handle.dispose();
   });
 }

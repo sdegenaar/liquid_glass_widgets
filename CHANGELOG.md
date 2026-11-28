@@ -4,6 +4,10 @@
 
 - **`GlassSlider.semanticFormatterCallback`:** Formats the value a screen reader announces, and the values an increment or decrement reaches, as Material's `Slider.semanticFormatterCallback` does. The value was always a percentage of the range, so a 0.5x to 2x speed slider at 1x read "33%". `null` (the default) keeps the percentage.
 
+## Changes
+
+- **`GlassSlider` has no English default name:** Without `label` the slider no longer names itself "Slider". It was English in every language, and VoiceOver and TalkBack already announce the role ("adjustable"). A slider with no label now reads like a `UISlider` or SwiftUI `Slider` without one: its value and its role. `label` is documented as the screen reader name it is.
+
 # 1.22.0
 
 ## Features

@@ -170,7 +170,11 @@ class GlassSlider extends StatefulWidget {
   /// to discrete values.
   final int? divisions;
 
-  /// Optional label shown above the thumb.
+  /// What screen readers call the slider, such as "Speed".
+  ///
+  /// Without it the slider has no name of its own, as a `UISlider` or a
+  /// SwiftUI `Slider` without a label: VoiceOver reads its value and its
+  /// role ("33%, adjustable"), or the name of a parent that merges it.
   final String? label;
 
   /// Formats the value a screen reader announces, and the values an
@@ -531,7 +535,7 @@ class _GlassSliderState extends State<GlassSlider>
           enabled: widget.onChanged != null,
           focusNode: widget.focusNode,
           autofocus: widget.autofocus,
-          semanticLabel: widget.label ?? 'Slider',
+          semanticLabel: widget.label,
           isSlider: true,
           semanticValue: _semanticValue(effectiveValue, normalizedValue),
           semanticIncreasedValue:
