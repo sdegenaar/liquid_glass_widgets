@@ -132,6 +132,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                     Column(
                       children: [
                         GlassSlider(
+                          label: 'Level',
                           value: _sliderValue,
                           onChanged: (v) => setState(() => _sliderValue = v),
                         ),

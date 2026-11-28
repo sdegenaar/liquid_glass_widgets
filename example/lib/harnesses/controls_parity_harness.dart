@@ -972,6 +972,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   minHeight: 46,
                                   maxHeight: 46,
                                   child: GlassSlider(
+                                    label: 'Continuous',
                                     key: _sliderContKey,
                                     quality: _quality,
                                     value: _sliderContinuous,
@@ -1019,6 +1020,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   minHeight: 46,
                                   maxHeight: 46,
                                   child: GlassSlider(
+                                    label: 'Stepped',
                                     key: _sliderDiscKey,
                                     quality: _quality,
                                     value: _sliderDiscrete,

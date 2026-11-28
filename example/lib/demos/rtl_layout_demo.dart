@@ -226,6 +226,7 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                         icon: CupertinoIcons.slider_horizontal_3,
                       ),
                       GlassSlider(
+                        label: 'Value',
                         value: _sliderValue,
                         onChanged: (v) => setState(() => _sliderValue = v),
                       ),

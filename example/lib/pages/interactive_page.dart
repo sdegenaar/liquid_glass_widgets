@@ -442,6 +442,7 @@ class _InteractivePageState extends State<InteractivePage> {
                       ),
                       SizedBox(height: 8),
                       GlassSlider(
+                        label: 'Premium quality',
                         value: _slider1,
                         onChanged: (v) => setState(() => _slider1 = v),
                         quality: GlassQuality.premium,
@@ -463,12 +464,14 @@ class _InteractivePageState extends State<InteractivePage> {
                       ),
                       SizedBox(height: 8),
                       GlassSlider(
+                        label: 'Standard quality',
                         value: _slider1,
                         onChanged: (v) => setState(() => _slider1 = v),
                         quality: GlassQuality.standard,
                       ),
                       SizedBox(height: 24),
                       GlassSlider(
+                        label: 'Tinted',
                         value: _slider2,
                         onChanged: (v) => setState(() => _slider2 = v),
                         activeColor: CupertinoColors.activeBlue,
