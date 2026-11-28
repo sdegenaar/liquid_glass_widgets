@@ -4,7 +4,8 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// The switch draws a 58 x 26 pt track, but a finger, VoiceOver, Voice
 /// Control and Switch Control need a 44 x 44 pt target (Apple's minimum).
-/// The target grows around the track without changing the layout.
+/// The semantics node grows around the track without changing the layout,
+/// and the touch area as far as the parent's bounds allow.
 void main() {
   Widget host(Widget child) => CupertinoApp(
         home: CupertinoPageScaffold(child: Center(child: child)),
@@ -77,6 +78,46 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
       expect(value, isTrue);
+    });
+
+    testWidgets(
+        'as a GlassListTile trailing, the node is 44 pt and taps toggle '
+        'within the row that holds it', (tester) async {
+      final handle = tester.ensureSemantics();
+      var value = false;
+      await tester.pumpWidget(host(StatefulBuilder(
+        builder: (context, setState) => GlassListTile(
+          title: const Text('Wi-Fi'),
+          trailing: GlassSwitch(
+            value: value,
+            onChanged: (v) => setState(() => value = v),
+          ),
+        ),
+      )));
+      final center = tester.getCenter(find.byType(GlassSwitch));
+      final row = tester.getRect(find
+          .ancestor(of: find.byType(GlassSwitch), matching: find.byType(Row))
+          .first);
+
+      expect(
+        tester.getSemantics(find.byType(GlassSwitch)).rect.size,
+        const Size(58, 44),
+      );
+
+      // The row the tile puts its trailing widget in is as tall as the
+      // track, and a hit test stops at it.
+      await tester.tapAt(Offset(center.dx, row.top + 1));
+      await tester.pumpAndSettle();
+      expect(value, isTrue);
+
+      await tester.tapAt(Offset(center.dx, row.bottom - 1));
+      await tester.pumpAndSettle();
+      expect(value, isFalse);
+
+      await tester.tapAt(Offset(center.dx, row.top - 5));
+      await tester.pumpAndSettle();
+      expect(value, isFalse, reason: 'inside the 44 pt node, outside the row');
+      handle.dispose();
     });
 
     testWidgets('a larger switch keeps its own size as its target',

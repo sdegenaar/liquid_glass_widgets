@@ -886,9 +886,10 @@ class _GlassSwitchState extends State<GlassSwitch>
       ),
     );
 
-    // The track is smaller than the 44 x 44 pt minimum target: the touch
-    // area and the semantics node extend around it to that size, while the
-    // switch keeps the track's size in the layout.
+    // The track is smaller than the 44 x 44 pt minimum target: the
+    // semantics node extends around it to that size, and the touch area as
+    // far as the parent's bounds allow, while the switch keeps the track's
+    // size in the layout.
     return _SwitchTapTarget(
       child: GlassFocusRegion(
         enabled: isInteractive,
@@ -1138,19 +1139,20 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 }
 
-/// Paints iOS's On/Off Labels marks on the track: an `I` on the side the
-/// thumb leaves when on, an `O` on the side it leaves when off. Each fades
-/// with the thumb's position and while the thumb blooms under a press, like
-/// [CupertinoSwitch]'s.
-/// Extends the switch's touch area and semantics node to at least
+/// Gives the switch a semantics node of at least
 /// [kMinInteractiveDimensionCupertino] (44 pt) on each side, centred on the
-/// track, without changing its layout, like the extended touch area of a
-/// native control.
+/// track, and extends its touch area towards that size, without changing
+/// its layout.
 ///
 /// It owns the switch's single semantics node (merging the focus region's
-/// node into it), so the node spans the target, and it moves a touch that
-/// lands around the track onto the track, by a translation only, so a drag
-/// that starts there moves the thumb as one on the track does.
+/// node into it), so the node spans the target everywhere. The touch area
+/// reaches past the track only as far as the parent's bounds allow, since a
+/// hit test stops at any ancestor that does not contain the touch: a parent
+/// that is already 44 pt tall gives the full area, and a parent no taller
+/// than the track, such as the row a `GlassListTile` puts its trailing
+/// widget in, gives none beyond the track. A touch that lands around the
+/// track is moved onto it by a translation only, so a drag that starts
+/// there moves the thumb as one on the track does.
 class _SwitchTapTarget extends SingleChildRenderObjectWidget {
   const _SwitchTapTarget({required super.child});
 
@@ -1199,6 +1201,10 @@ class _RenderSwitchTapTarget extends RenderProxyBox {
   }
 }
 
+/// Paints iOS's On/Off Labels marks on the track: an `I` on the side the
+/// thumb leaves when on, an `O` on the side it leaves when off. Each fades
+/// with the thumb's position and while the thumb blooms under a press, like
+/// [CupertinoSwitch]'s.
 class _OnOffLabelsPainter extends CustomPainter {
   _OnOffLabelsPainter({
     required this.onColor,
