@@ -24,6 +24,7 @@ final class ResolvedGlassFaceOptics {
     required this.bleedSign,
     required this.lumaBracketTint,
     required this.effectiveFrostSigma,
+    this.effectiveFrostOpacity = 1.0,
     this.effectiveThickness = 0.0,
     this.shadowOpacityScale = 1.0,
   });
@@ -39,6 +40,7 @@ final class ResolvedGlassFaceOptics {
     bleedSign: 0.0,
     lumaBracketTint: 0.0,
     effectiveFrostSigma: 0.0,
+    effectiveFrostOpacity: 1.0,
     effectiveThickness: 0.0,
     shadowOpacityScale: 1.0,
   );
@@ -76,6 +78,15 @@ final class ResolvedGlassFaceOptics {
   /// Effective frost blur sigma (quantized to 0.5 pt steps when size-adaptive
   /// so resizing animations do not thrash `ImageFilter.blur` caches).
   final double effectiveFrostSigma;
+
+  /// Effective frost cloud opacity `[0..1]`. Matches live iOS 27
+  /// `inputBlurFillNormalOpacity = 0.50` (`inputBlurOpacity0 = 0.0`) on
+  /// small/medium controls (`h <= 64 pt`, including buttons and tab bars) so
+  /// scrolling content and bevel refractions remain crisp, ramping smoothly up
+  /// to `0.88` on large platters (`h >= 160 pt`, matching CoreAnimation's
+  /// `inputBlurOpacity0 = 0.80` on cards/dialogs/sheets). Explicit caller
+  /// overrides (including overlay platters at `1.0`) pass through unchanged.
+  final double effectiveFrostOpacity;
 
   /// Effective bevel thickness in logical pixels, synchronized between the
   /// cached geometry matte and the render pass. For tiny size-adaptive pills
@@ -186,6 +197,7 @@ ResolvedGlassFaceOptics resolveGlassFaceOptics(
         bleedSign: 0.0,
         lumaBracketTint: 0.0,
         effectiveFrostSigma: baseFrost,
+        effectiveFrostOpacity: settings.frostOpacity.clamp(0.0, 1.0),
         effectiveThickness: settings.effectiveThickness,
         shadowOpacityScale: 1.0,
       );
@@ -334,6 +346,25 @@ ResolvedGlassFaceOptics resolveGlassFaceOptics(
 
   final double shadowOpacityScale = _lerp(1.0, 0.55, largeT);
 
+  // Size-adaptive frost opacity for iOS 27:
+  // Live iOS 27.0 CoreAnimation keeps inputBlurOpacity0 = 0.0 and
+  // inputBlurFillNormalOpacity = 0.50 for controls <= 64 pt (buttons, pills,
+  // tab bars) so scrolling content & bevel refractions stay sharp and vivid,
+  // then ramps inputBlurOpacity0 up to 0.80 by h = 160 pt for large platters.
+  // Explicit overrides (e.g. isOverlayPlatter frostOpacity = 1.0 or custom
+  // caller overrides away from the preset baseline) pass through untouched.
+  final double baseFrostOpacity = settings.frostOpacity.clamp(0.0, 1.0);
+  final double presetFrostOpacity = isIos27
+      ? (isDark
+          ? LiquidGlassSettings.ios27Dark.frostOpacity
+          : LiquidGlassSettings.ios27Light.frostOpacity)
+      : baseFrostOpacity;
+  final bool usesPresetFrostOpacity =
+      isIos27 && (baseFrostOpacity - presetFrostOpacity).abs() < 0.005;
+  final double effectiveFrostOpacity = usesPresetFrostOpacity
+      ? _lerp(baseFrostOpacity, 0.88, largeT)
+      : baseFrostOpacity;
+
   return ResolvedGlassFaceOptics(
     faceBlack: faceBlack,
     faceWhite: faceWhite,
@@ -344,6 +375,7 @@ ResolvedGlassFaceOptics resolveGlassFaceOptics(
     bleedSign: bleedSign,
     lumaBracketTint: 1.0,
     effectiveFrostSigma: math.max(0.0, scaledFrost),
+    effectiveFrostOpacity: effectiveFrostOpacity,
     effectiveThickness: effectiveThickness,
     shadowOpacityScale: shadowOpacityScale,
   );

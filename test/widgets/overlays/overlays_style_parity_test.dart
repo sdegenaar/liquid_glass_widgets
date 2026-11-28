@@ -43,7 +43,7 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(resolved.lensModel, GlassLensModel.paraxial);
-                expect(resolved.frost, 14.0);
+                expect(resolved.frost, LiquidGlassSettings.ios27Light.frost);
                 expect(resolved.ambientStrength, 0.0);
                 expect(resolved.rimShade, 1.0);
                 if (brightness == Brightness.light) {
@@ -164,7 +164,8 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(menuSettings.lensModel, GlassLensModel.paraxial);
-                expect(menuSettings.frost, 14.0);
+                expect(
+                    menuSettings.frost, LiquidGlassSettings.ios27Light.frost);
                 expect(menuSettings.frostOpacity, 1.0);
                 expect(menuSettings.rimShade, 1.0);
                 break;
@@ -314,7 +315,10 @@ void main() {
                 platterGlass.settings.lensModel,
                 GlassLensModel.paraxial,
               );
-              expect(platterGlass.settings.frost, 14.0);
+              expect(
+                platterGlass.settings.frost,
+                LiquidGlassSettings.ios27Light.frost,
+              );
               expect(platterGlass.settings.frostOpacity, 1.0);
               expect(platterGlass.settings.rimShade, 1.0);
               break;
@@ -648,7 +652,10 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(platterSettings.lensModel, GlassLensModel.paraxial);
-                expect(platterSettings.frost, 14.0);
+                expect(
+                  platterSettings.frost,
+                  LiquidGlassSettings.ios27Light.frost,
+                );
                 expect(platterSettings.frostOpacity, 1.0);
                 expect(platterSettings.rimShade, 1.0);
                 break;
@@ -716,7 +723,10 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(sheetSettings.lensModel, GlassLensModel.paraxial);
-                expect(sheetSettings.frost, 14.0);
+                expect(
+                  sheetSettings.frost,
+                  LiquidGlassSettings.ios27Light.frost,
+                );
                 expect(sheetSettings.frostOpacity, 1.0);
                 expect(sheetSettings.rimShade, 1.0);
                 break;
@@ -778,7 +788,7 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(popSettings.lensModel, GlassLensModel.paraxial);
-                expect(popSettings.frost, 14.0);
+                expect(popSettings.frost, LiquidGlassSettings.ios27Light.frost);
                 expect(popSettings.frostOpacity, 1.0);
                 expect(popSettings.rimShade, 1.0);
                 break;
@@ -840,7 +850,10 @@ void main() {
             switch (style) {
               case GlassStyle.ios27:
                 expect(toastSettings.lensModel, GlassLensModel.paraxial);
-                expect(toastSettings.frost, 14.0);
+                expect(
+                  toastSettings.frost,
+                  LiquidGlassSettings.ios27Light.frost,
+                );
                 expect(toastSettings.frostOpacity, 1.0);
                 expect(toastSettings.rimShade, 1.0);
                 break;

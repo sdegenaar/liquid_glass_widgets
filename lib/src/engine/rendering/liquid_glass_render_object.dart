@@ -578,7 +578,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
         // animates up from 0 doesn't start as a sharp, opaque cloud, and kept
         // above zero so uFrost.x doubles as the frost's on switch.
         final frostOpacity = max(
-          settings.frostOpacity.clamp(0.0, 1.0) *
+          resolvedFaceOptics.effectiveFrostOpacity.clamp(0.0, 1.0) *
               (settings.effectiveFrost / 2).clamp(0.0, 1.0),
           1e-3,
         );

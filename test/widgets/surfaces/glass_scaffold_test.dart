@@ -781,6 +781,92 @@ void main() {
       // (issue #177). Mirrors prior Scaffold(backgroundColor: null) behaviour.
       expect(scaffold.backgroundColor, isNull);
     });
+
+    testWidgets(
+        'suppresses automatic opaque soft bottomEdgeFade behind native '
+        'GlassTabBar while honoring explicit opt-ins and classic style',
+        (tester) async {
+      GlassTabBar tabBar() => GlassTabBar.bottom(
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            tabs: const [
+              GlassTab(label: 'Explore', icon: Icon(Icons.explore)),
+            ],
+          );
+
+      // 1. Default iOS 27 style with GlassTabBar: no opaque soft bottom fade.
+      await tester.pumpWidget(
+        GlassTheme(
+          data: const GlassThemeData.ios27(),
+          child: CupertinoApp(
+            home: GlassScaffold(
+              bottomBar: tabBar(),
+              body: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassScrollEdgeEffect), findsNothing);
+
+      // 2. Explicit bottomEdgeFade: true restores the fade on iOS 27.
+      await tester.pumpWidget(
+        GlassTheme(
+          data: const GlassThemeData.ios27(),
+          child: CupertinoApp(
+            home: GlassScaffold(
+              bottomEdgeFade: true,
+              bottomBar: tabBar(),
+              body: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      expect(
+        tester
+            .widget<GlassScrollEdgeEffect>(find.byType(GlassScrollEdgeEffect))
+            .fadeBottom,
+        isTrue,
+      );
+
+      // 3. Explicit edgeStyle: blur restores progressive blur on iOS 27.
+      await tester.pumpWidget(
+        GlassTheme(
+          data: const GlassThemeData.ios27(),
+          child: CupertinoApp(
+            home: GlassScaffold(
+              edgeStyle: GlassScrollEdgeStyle.blur,
+              bottomBar: tabBar(),
+              body: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      expect(
+        tester
+            .widget<GlassScrollEdgeEffect>(find.byType(GlassScrollEdgeEffect))
+            .fadeBottom,
+        isTrue,
+      );
+
+      // 4. Classic style retains historical automatic soft bottom fade.
+      await tester.pumpWidget(
+        GlassTheme(
+          data: const GlassThemeData.classic(),
+          child: CupertinoApp(
+            home: GlassScaffold(
+              bottomBar: tabBar(),
+              body: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      expect(
+        tester
+            .widget<GlassScrollEdgeEffect>(find.byType(GlassScrollEdgeEffect))
+            .fadeBottom,
+        isTrue,
+      );
+    });
   });
 }
 

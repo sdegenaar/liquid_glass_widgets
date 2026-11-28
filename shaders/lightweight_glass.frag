@@ -556,14 +556,14 @@ void main() {
         float faceL = clamp(bgLuminance, 0.0, 1.0);
         float mappedL = uFace.x + (uFace.y - uFace.x) * faceL;
         vec3 faceRgb = clamp(vec3(mappedL) + (bgRgb - vec3(faceL)) * 1.2, 0.0, 1.0);
+        float outL = dot(faceRgb, LUMA_WEIGHTS);
+        if (uFace.z > 0.001 && outL > uFace.z) {
+          faceRgb *= uFace.z / max(outL, 0.001);
+        }
         if (uFace.w > 0.001) {
           faceRgb = mix(faceRgb, vec3(1.0), uFace.w);
         } else if (uFace.w < -0.001) {
           faceRgb = mix(faceRgb, vec3(0.0), -uFace.w);
-        }
-        float outL = dot(faceRgb, LUMA_WEIGHTS);
-        if (uFace.z > 0.001 && outL > uFace.z) {
-          faceRgb *= uFace.z / max(outL, 0.001);
         }
         float gcChroma = max(max(uGlassColor.r, uGlassColor.g), uGlassColor.b)
                        - min(min(uGlassColor.r, uGlassColor.g), uGlassColor.b);

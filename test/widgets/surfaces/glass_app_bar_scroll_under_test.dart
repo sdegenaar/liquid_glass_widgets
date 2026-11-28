@@ -285,7 +285,9 @@ void main() {
         final controller = ScrollController();
         addTearDown(controller.dispose);
 
-        // 1. Default ios27 scaffold + appBar + bottomBar: top suppressed, bottom kept.
+        // 1. Default ios27 scaffold + appBar + bottomBar: top suppressed by
+        //    scroll-under fullBlur and automatic soft bottom fade suppressed
+        //    behind native GlassTabBar (matching native iOS 27 UITabBar).
         await tester.pumpWidget(
           buildScrollableScaffold(
             controller: controller,
@@ -301,6 +303,30 @@ void main() {
         await tester.pump();
 
         var edge = tester.widget<GlassScrollEdgeEffect>(
+          find.byType(GlassScrollEdgeEffect),
+        );
+        expect(edge.fadeTop, isFalse);
+        expect(edge.fadeBottom, isFalse);
+        expect(find.byType(GlassAppBarScrollUnderSurface), findsOneWidget);
+
+        // 1b. Non-tab bottom bar (GlassToolbar) keeps default bottom fade while
+        //     top fade remains suppressed by GlassAppBar scroll-under surface.
+        await tester.pumpWidget(
+          buildScrollableScaffold(
+            controller: controller,
+            bottomBar: GlassToolbar(
+              children: [
+                GlassIconButton(
+                  icon: const Icon(CupertinoIcons.share),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        edge = tester.widget<GlassScrollEdgeEffect>(
           find.byType(GlassScrollEdgeEffect),
         );
         expect(edge.fadeTop, isFalse);

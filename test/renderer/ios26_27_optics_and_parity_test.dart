@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
@@ -540,6 +541,48 @@ void main() {
       expect(small.shadowOpacityScale, equals(1.0));
       expect(mid.shadowOpacityScale, closeTo(0.775, 1e-3));
       expect(large.shadowOpacityScale, closeTo(0.55, 1e-4));
+
+      // iOS 27 live CoreAnimation frost calibration: 8 pt blur fill radius,
+      // 0.50 light / 0.65 dark cloud opacity for controls <= 64 pt (buttons &
+      // tab bars), ramping smoothly to 0.88 on large platters (160 pt) while
+      // leaving explicit overrides (such as overlay platters at 1.0) untouched.
+      expect(LiquidGlassSettings.ios27Light.frost, equals(8.0));
+      expect(LiquidGlassSettings.ios27Light.frostOpacity, equals(0.50));
+      expect(LiquidGlassSettings.ios27Dark.frost, equals(8.0));
+      expect(LiquidGlassSettings.ios27Dark.frostOpacity, equals(0.65));
+
+      final tabBarLight =
+          resolveGlassFaceOptics(LiquidGlassSettings.ios27Light, 62);
+      final tabBarDark =
+          resolveGlassFaceOptics(LiquidGlassSettings.ios27Dark, 62);
+      final overlayPlatter = resolveGlassFaceOptics(
+        LiquidGlassSettings.ios27Light.copyWith(frostOpacity: 1.0),
+        160,
+      );
+      expect(tabBarLight.effectiveFrostOpacity, closeTo(0.50, 1e-4));
+      expect(tabBarDark.effectiveFrostOpacity, closeTo(0.65, 1e-4));
+      expect(large.effectiveFrostOpacity, closeTo(0.88, 1e-4));
+      expect(overlayPlatter.effectiveFrostOpacity, equals(1.0));
+    });
+
+    test(
+        'shaders apply uFace.z maxLumaSDR cap before uFace.w fill mix to avoid '
+        'flat-clipping light-mode text and card edges', () {
+      for (final path in [
+        'shaders/liquid_glass_render.frag',
+        'shaders/lightweight_glass.frag',
+      ]) {
+        final src = File(path).readAsStringSync();
+        final capIdx = src.indexOf('if (uFace.z > 0.001 && outL > uFace.z)');
+        final fillIdx = src.indexOf('if (uFace.w > 0.001)');
+        expect(capIdx, isNonNegative, reason: '$path missing maxLumaSDR cap');
+        expect(fillIdx, isNonNegative, reason: '$path missing face fill mix');
+        expect(
+          capIdx,
+          lessThan(fillIdx),
+          reason: '$path must cap maxLumaSDR before adding white faceFillAlpha',
+        );
+      }
     });
 
     testWidgets(

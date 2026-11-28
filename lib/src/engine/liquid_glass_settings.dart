@@ -418,8 +418,8 @@ class LiquidGlassSettings {
     saturation: 2.1,
     blur: 0.6,
     blurWeight: 0.8,
-    frost: 14,
-    frostOpacity: 0.73,
+    frost: 8,
+    frostOpacity: 0.5,
     frostClamp: 0.4,
     frostWeight: 2.0,
     thickness: 32,
@@ -445,8 +445,8 @@ class LiquidGlassSettings {
     saturation: 1.4,
     blur: 0.6,
     blurWeight: 2.5,
-    frost: 14,
-    frostOpacity: 0.85,
+    frost: 8,
+    frostOpacity: 0.65,
     frostClamp: -0.45,
     frostWeight: 0.5,
     thickness: 32,
@@ -624,9 +624,10 @@ class LiquidGlassSettings {
   ///
   /// This is the cloud of iOS 27 glass: a blur far wider than [blur] that a
   /// copy of the lightly blurred content still shows through, so text under
-  /// a control reads as pale ghosts rather than going out of focus. On a
-  /// 56 pt control it measures at about `frost: 14, frostOpacity: 0.73`,
-  /// with `blur: 0.6` barely softening the copy: the ghosts keep their
+  /// a control reads as pale ghosts rather than going out of focus. Measured
+  /// against live iOS 27 CoreAnimation `glassBackground` (`inputBlurFillBlurRadius`
+  /// = `8.0`, `inputBlurFillNormalOpacity` = `0.50`), with `blur: 0.6` barely
+  /// softening the copy so scrolling content and rim refractions keep crisp
   /// edges.
   ///
   /// Costs one blur pass, written to alternate pixel rows of the shape; the
@@ -650,8 +651,9 @@ class LiquidGlassSettings {
   /// At `1.0` (the default) the frost replaces the content under it. Below
   /// that a copy of the content, blurred by [blur], shows through and keeps
   /// `1 - frostOpacity` of its contrast against the cloud; see [frostClamp]
-  /// for the side of it that is held back. The native material measures
-  /// `0.73` light, `0.85` dark.
+  /// for the side of it that is held back. Calibrated to `0.50` light, `0.65`
+  /// dark on controls up to 64 pt, ramping smoothly upward on larger platters
+  /// when [sizeAdaptive] is enabled.
   final double frostOpacity;
 
   /// How far the copy of the content showing through the [frost] may stray

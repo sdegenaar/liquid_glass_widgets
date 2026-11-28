@@ -1102,6 +1102,15 @@ void main() {
                 vec3(mappedL) + (refractColor.rgb - vec3(faceL)) * uFaceExtra.x,
                 0.0,
                 1.0);
+            // Apply SDR luminance ceiling (inputFaceColorMatrixMaxLumaSDR) to
+            // the face matrix BEFORE compositing faceFillColor (white a=0.20 in
+            // light mode). Applying it after the white fill would flat-clip all
+            // light backdrops with luma >= 0.83 to uniform 0.94, erasing faint
+            // dark text and scrolling card edges behind light glass.
+            float outL = dot(faceRgb, LUMA_WEIGHTS);
+            if (uFace.z > 0.001 && outL > uFace.z) {
+                faceRgb *= uFace.z / max(outL, 0.001);
+            }
             if (uFace.w > 0.001) {
                 faceRgb = mix(faceRgb, vec3(1.0), uFace.w);
             } else if (uFace.w < -0.001) {
@@ -1112,12 +1121,8 @@ void main() {
                 float bleedMix = bleedBand * bleedBand * uFaceExtra.y * 0.35;
                 vec3 bleedTarget = uFaceExtra.z >= 0.0
                     ? clamp(vec3(0.9 + 0.1 * faceL) + (refractColor.rgb - vec3(faceL)) * 1.2, 0.0, 1.0)
-                    : clamp(vec3(0.125 + 0.375 * faceL) + (refractColor.rgb - vec3(faceL)), 0.0, 1.0);
+                    : clamp(vec3(0.125 + 0.375 * min(faceL, uFace.z)) + (refractColor.rgb - vec3(faceL)), 0.0, 1.0);
                 faceRgb = mix(faceRgb, bleedTarget, bleedMix);
-            }
-            float outL = dot(faceRgb, LUMA_WEIGHTS);
-            if (uFace.z > 0.001 && outL > uFace.z) {
-                faceRgb *= uFace.z / max(outL, 0.001);
             }
             finalColor.rgb = mix(faceRgb, refractColor.rgb, hairline);
         }
