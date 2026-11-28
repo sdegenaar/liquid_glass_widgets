@@ -13,17 +13,34 @@ void main() {
     WidgetTester tester, {
     TextDirection textDirection = TextDirection.ltr,
     bool enabled = true,
+    NavigationMode navigationMode = NavigationMode.traditional,
+    FocusNode? below,
   }) async {
     final focusNode = FocusNode();
     addTearDown(focusNode.dispose);
     await tester.pumpWidget(CupertinoApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(navigationMode: navigationMode),
+        child: child!,
+      ),
       home: Directionality(
         textDirection: textDirection,
         child: CupertinoPageScaffold(
           child: Center(
             child: SizedBox(
               width: 300,
-              child: _Host(log: log, focusNode: focusNode, enabled: enabled),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Host(log: log, focusNode: focusNode, enabled: enabled),
+                  // Something below the slider for focus to move to.
+                  if (below != null)
+                    Focus(
+                      focusNode: below,
+                      child: const SizedBox(width: 300, height: 44),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -75,6 +92,27 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
       expect(log, ['start 0.60', 'changed 0.50', 'end 0.50']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets(
+        'under directional navigation, Right adjusts and Down moves focus '
+        'without adjusting', (tester) async {
+      final below = FocusNode(debugLabel: 'below');
+      addTearDown(below.dispose);
+      final focusNode = await pumpSlider(tester,
+          navigationMode: NavigationMode.directional, below: below);
+      expect(focusNode.hasFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(log, ['start 0.50', 'changed 0.60', 'end 0.60']);
+      expect(focusNode.hasFocus, isTrue);
+
+      log.clear();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(log, isEmpty, reason: 'Down does not adjust');
+      expect(below.hasFocus, isTrue, reason: 'Down moves focus');
     }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
     testWidgets('a disabled slider takes no focus and ignores the keys',
