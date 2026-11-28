@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassDisclosureGroup` header on iOS VoiceOver and from the keyboard:** iOS VoiceOver reads no `expanded` flag, so the header read "button" whether the group was open or closed; on iOS it now carries the state as its value, in the app's language (`CupertinoLocalizations`' "Collapsed" / "Expanded", the words `CupertinoExpansionTile` puts in its hint; as a value they are read right after the title, and also with VoiceOver's hints turned off). macOS and Android keep reading the expanded flag. The default header is now a focusable control: Tab stops on it, it shows the pressed highlight while focused, and Space or Enter opens and closes the group (calling `onExpansionChanged`). The rows of a closed group, which stay built at zero height, no longer take keyboard focus, so Tab no longer stops on rows that cannot be seen and Space or Enter no longer activates them.
+
 # 1.22.0
 
 ## Features
