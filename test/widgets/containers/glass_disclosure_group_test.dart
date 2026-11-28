@@ -474,5 +474,38 @@ void main() {
         expect(paragraph.maxLines, isNull, reason: '"$text" may wrap');
       }
     });
+
+    testWidgets(
+        'a title that asks for one line keeps it, ending in an ellipsis',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(53 / 17)),
+            child: child!,
+          ),
+          home: CupertinoPageScaffold(
+            child: ListView(
+              children: const [
+                GlassDisclosureGroup(
+                  title: Text(
+                    'Advanced settings',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  children: [Text('Reset statistics')],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final paragraph =
+          tester.renderObject<RenderParagraph>(find.text('Advanced settings'));
+      expect(paragraph.maxLines, 1);
+      expect(paragraph.overflow, TextOverflow.ellipsis);
+    });
   });
 }
