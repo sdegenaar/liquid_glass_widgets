@@ -107,20 +107,39 @@ void main() {
     float dy = (sdPY - sdMY) / (2.0 * stepDist);
 
     float gradMag = sqrt(dx * dx + dy * dy);
-    // Normalize the SDF using the gradient magnitude. This converts a pseudo-SDF
-    // (like our continuous superellipse) into a true Euclidean distance metric.
-    float sdN = (gradMag > 0.1) ? sd / gradMag : sd;
+    // Normalize the SDF using the gradient magnitude. In multi-shape metaball
+    // saddle regions gradMag -> 0, so clamp the divisor below 0.85 to prevent
+    // distance spikes and preserve seam-free unnormalized saddle refraction.
+    float safeGrad = (numShapes > 1) ? max(gradMag, 0.85) : gradMag;
+    float sdN = (safeGrad > 0.1) ? sd / safeGrad : sd;
     sdN -= edgePad;
 
     vec2 gradUnit = (gradMag > 1e-4) ? vec2(dx, dy) / gradMag : vec2(0.0);
+    // For single native frosted platters (uNativeEdge == 1, squircle or
+    // roundrect), preserve exact silhouette distance sdN while computing the
+    // surface normal direction from CoreAnimation's rounder 5/3 * r box + 0.5
+    // gradientOvalization above 64..72 pt. Classic, custom, clear lenses
+    // (uNativeEdge == 2), and multi-shape metaball necks keep exact gradUnit.
+    bool useNativePlatterGrad = (numShapes == 1) &&
+                                (uNativeEdge > 0.5 && uNativeEdge < 1.5) &&
+                                (uShapeData[0] == 1.0 || uShapeData[0] == 3.0);
+    vec2 surfaceDir = useNativePlatterGrad
+        ? nativePlatterNormal(
+              fragCoord,
+              vec2(uShapeData[1], uShapeData[2]),
+              vec2(uShapeData[3], uShapeData[4]),
+              uShapeData[5],
+              uShapeData[6],
+              uDpr)
+        : gradUnit;
     float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sdN);
     if (foregroundAlpha < 0.01) {
         // Store the continuous outward normal in RG even when alpha == 0 so
         // hardware bilinear filtering (FilterQuality.medium) across the outer
         // edge never blends valid normals with RG=(0,0) (which decodes to (-1,-1)).
-        fragColor = encodeGeometryData(gradUnit, 0.0, uThickness, 0.0);
+        fragColor = encodeGeometryData(surfaceDir, 0.0, uThickness, 0.0);
     } else if (uThickness <= 0.0) {
-        fragColor = encodeGeometryData(gradUnit, 0.0, 1.0, 0.0);
+        fragColor = encodeGeometryData(surfaceDir, 0.0, 1.0, 0.0);
     } else {
         float n_cos = max(uThickness + sdN, 0.0) / uThickness;
         float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
@@ -128,7 +147,10 @@ void main() {
         // True surface normal from the SDF gradient — this is what we store.
         // In blend-group neck zones the displacement vector diverges from this
         // normal, which is why storing the normal (not displacement) fixes lighting.
-        vec3 normal = normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
+        vec2 normalXY = useNativePlatterGrad
+            ? (surfaceDir * n_cos)
+            : vec2(dx * n_cos, dy * n_cos);
+        vec3 normal = normalize(vec3(normalXY, n_sin));
 
         // Fragments just outside the silhouette (0 <= sdN < smoothing * 0.5)
         // still carry the outer half of the smoothstep's AA coverage. The dome
@@ -140,7 +162,7 @@ void main() {
         // silhouette, most visibly when the matte is resampled under the
         // indicator's drag/stretch transform.
         if (sdN >= 0.0) {
-            vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : gradUnit;
+            vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : surfaceDir;
             fragColor =
                 encodeGeometryData(edgeNormal, 0.0, uThickness, foregroundAlpha);
         } else {

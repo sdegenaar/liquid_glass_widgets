@@ -202,9 +202,12 @@ void main() {
         expect(settings.thickness, greaterThan(0.0));
         switch (style) {
           case GlassStyle.ios27:
+            expect(settings.lensModel, GlassLensModel.paraxial);
+            expect(settings.frost, LiquidGlassSettings.ios27Light.frost);
+            break;
           case GlassStyle.ios26:
             expect(settings.lensModel, GlassLensModel.paraxial);
-            expect(settings.frost, 14.0);
+            expect(settings.frost, LiquidGlassSettings.ios26Light.frost);
             break;
           case GlassStyle.classic:
             expect(settings.lensModel, GlassLensModel.spherical);

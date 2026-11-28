@@ -1841,11 +1841,15 @@ void main() {
     });
 
     testWidgets(
-        'untinted prominent glass stays neutral adaptive frosted glass for 1.x compatibility',
+        'untinted prominent glass defaults to CupertinoTheme.primaryColor with contrasting foreground and reverts to neutral glass when disabled',
         (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
+        CupertinoApp(
+          theme: const CupertinoThemeData(
+            brightness: Brightness.light,
+            primaryColor: CupertinoColors.systemBlue,
+          ),
+          home: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: const Icon(CupertinoIcons.heart_fill),
@@ -1858,7 +1862,39 @@ void main() {
 
       final glass = adaptiveGlassOf(tester);
       expect(glass.useOwnLayer, isTrue);
-      expect(glass.settings.bodyMode, equals(GlassBodyMode.adaptive));
+      expect(glass.settings.bodyMode, equals(GlassBodyMode.clear));
+      expect(
+        glass.settings.glassColor.toARGB32() & 0x00FFFFFF,
+        equals(CupertinoColors.systemBlue.color.toARGB32() & 0x00FFFFFF),
+      );
+      expect(glass.settings.glassColor.a, closeTo(0.85, 0.005));
+
+      final iconTheme = tester.widget<IconTheme>(
+        find
+            .descendant(
+              of: find.byType(GlassButton),
+              matching: find.byType(IconTheme),
+            )
+            .last,
+      );
+      expect(iconTheme.data.color, equals(CupertinoColors.white));
+
+      // Disabled prominent glass reverts to neutral glass pill (no accent flood)
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(CupertinoIcons.heart_fill),
+              style: GlassButtonStyle.prominent,
+              enabled: false,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      final disabledGlass = adaptiveGlassOf(tester);
+      expect(disabledGlass.settings.bodyMode, equals(GlassBodyMode.adaptive));
     });
 
     testWidgets(

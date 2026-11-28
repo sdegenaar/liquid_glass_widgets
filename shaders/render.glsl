@@ -102,3 +102,19 @@ vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor, float bodyMode) {
 vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
     return applyGlassColor(liquidColor, glassColor, 0.0);
 }
+
+// ── applyGlassColorBracketed ──────────────────────────────────────────────────
+// CoreAnimation-inspired luma-bracketed glass tinting.
+// Maps backdrop luminance linearly between a deep dark tint (over dark pixels)
+// and a luminous pastel tint (over bright pixels), preventing saturated colors
+// from clipping channels toward cyan/yellow under additive luminance shifting.
+vec4 applyGlassColorBracketed(vec4 liquidColor, vec4 glassColor) {
+    if (glassColor.a <= 0.001) {
+        return liquidColor;
+    }
+    float backdropLuminance = clamp(dot(liquidColor.rgb, LUMA_WEIGHTS), 0.0, 1.0);
+    vec3 darkTint = glassColor.rgb * 0.45;
+    vec3 brightTint = mix(glassColor.rgb, vec3(1.0), 0.35);
+    vec3 bracketed = mix(darkTint, brightTint, backdropLuminance);
+    return vec4(mix(liquidColor.rgb, bracketed, glassColor.a), liquidColor.a);
+}

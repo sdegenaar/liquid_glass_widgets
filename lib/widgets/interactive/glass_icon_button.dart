@@ -314,11 +314,14 @@ class GlassIconButton extends StatelessWidget {
       effectiveIconColor = resolvedColor.computeLuminance() > 0.55
           ? CupertinoColors.black
           : CupertinoColors.white;
-    } else if (!isSolid && style == GlassButtonStyle.prominent) {
-      effectiveIconColor = resolvedTint != null
-          ? (resolvedTint.computeLuminance() > 0.55
-              ? CupertinoColors.black
-              : CupertinoColors.white)
+    } else if (!isSolid && style == GlassButtonStyle.prominent && isEnabled) {
+      final bg = resolvedTint ??
+          CupertinoDynamicColor.resolve(
+            CupertinoTheme.of(context).primaryColor,
+            context,
+          );
+      effectiveIconColor = bg.computeLuminance() > 0.55
+          ? CupertinoColors.black
           : CupertinoColors.white;
     } else {
       effectiveIconColor = isEnabled

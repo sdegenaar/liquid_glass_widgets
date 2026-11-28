@@ -63,6 +63,55 @@ class GlassBackdropGroup extends StatefulWidget {
     super.key,
   });
 
+  /// Creates a [GlassBackdropGroup] with a tree-scoped Pass-1 frost hoist slot
+  /// placed between [backdrop] and [overlay].
+  ///
+  /// Non-overlapping glass surfaces in [overlay] whose transform to this group
+  /// is a pure translation hoist their Pass-1 blur/frost into one shared layer
+  /// (1 framebuffer copy) and share a Pass-2 backdrop key (1 framebuffer copy),
+  /// reducing `N` floating glass surfaces from `N + 1` full-screen copies to
+  /// **2** — the same architecture `GlassScaffold` wires automatically for its
+  /// app bar and bottom bar.
+  ///
+  /// [backdrop] is automatically excluded from the group so body glass cards do
+  /// not interfere with floating chrome in [overlay]. Both [backdrop] and
+  /// [overlay] sit directly in a [Stack], so [Positioned] widgets work in
+  /// either slot.
+  ///
+  /// ```dart
+  /// GlassBackdropGroup.hoisted(
+  ///   backdrop: ListView.builder(...),
+  ///   overlay: Positioned(
+  ///     left: 16,
+  ///     right: 16,
+  ///     bottom: 24,
+  ///     child: GlassToolbar(...),
+  ///   ),
+  /// )
+  /// ```
+  factory GlassBackdropGroup.hoisted({
+    required Widget backdrop,
+    required Widget overlay,
+    bool enabled = true,
+    Key? key,
+  }) =>
+      GlassBackdropGroup(
+        key: key,
+        enabled: enabled,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            GlassBackdropGroupOptOut(child: backdrop),
+            enabled
+                ? const Positioned.fill(
+                    child: IgnorePointer(child: GlassBackdropHoistSlot()),
+                  )
+                : const SizedBox.shrink(),
+            overlay,
+          ],
+        ),
+      );
+
   /// The subtree whose premium glass shares the backdrop read.
   final Widget child;
 

@@ -341,7 +341,7 @@ class GlassThemeHelpers {
               ? GlassThemeSettings.ios26Dark
               : GlassThemeSettings.ios26Light);
       // Native iOS 26 / iOS 27 floating overlay platters (_UIContextMenuPlatterView
-      // and _UISheetPresentationController) use the full 14pt frosted cloud
+      // and _UISheetPresentationController) use the full frosted cloud
       // (`frostOpacity: 1.0`) so sharp background text does not ghost through
       // behind dense menu or sheet text. Preserve any custom frostOpacity set
       // by the user on the active GlassThemeVariant.

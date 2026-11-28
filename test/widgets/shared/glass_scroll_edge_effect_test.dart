@@ -387,6 +387,7 @@ void main() {
                   return GlassScaffold(
                     backgroundColor: background,
                     background: ColoredBox(color: background),
+                    bottomEdgeFade: true,
                     bottomBar: GlassTabBar.bottom(
                       tabs: const [
                         GlassTab(icon: Icon(Icons.home), label: 'Home'),
@@ -454,6 +455,7 @@ void main() {
                   // Explicitly omit backgroundColor so fadeColor remains null
                   return GlassScaffold(
                     background: ColoredBox(color: background),
+                    bottomEdgeFade: true,
                     bottomBar: GlassTabBar.bottom(
                       tabs: const [
                         GlassTab(icon: Icon(Icons.home), label: 'Home'),

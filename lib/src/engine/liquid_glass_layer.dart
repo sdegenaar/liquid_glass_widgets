@@ -447,7 +447,9 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       captureOriginInScreenSpace: captureOriginInScreenSpace,
       selfScaled: selfScaled,
       pushBackActive: pushBackActive,
-    )..sharedBackdrop = GlassBackdropGroup.keyOf(context) != null;
+    )
+      ..sharedBackdrop = GlassBackdropGroup.keyOf(context) != null
+      ..hoistAllowed = !GlassBackdropHoistOptOut.isOptedOut(context);
   }
 
   @override
@@ -466,7 +468,8 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       ..captureOriginInScreenSpace = captureOriginInScreenSpace
       ..selfScaled = selfScaled
       ..pushBackActive = pushBackActive
-      ..sharedBackdrop = GlassBackdropGroup.keyOf(context) != null;
+      ..sharedBackdrop = GlassBackdropGroup.keyOf(context) != null
+      ..hoistAllowed = !GlassBackdropHoistOptOut.isOptedOut(context);
   }
 }
 
@@ -509,6 +512,17 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     markNeedsPaint();
   }
 
+  /// Whether Pass-1 frost hoisting is permitted for this layer (false inside
+  /// [GlassBackdropHoistOptOut], e.g. app bar buttons sitting above an iOS 27
+  /// scroll-under blur surface).
+  bool get hoistAllowed => _hoistAllowed;
+  bool _hoistAllowed = true;
+  set hoistAllowed(bool value) {
+    if (_hoistAllowed == value) return;
+    _hoistAllowed = value;
+    markNeedsPaint();
+  }
+
   /// The group this layer shares the backdrop read with, while it does.
   RenderGlassBackdropGroupBoundary? _group;
 
@@ -517,9 +531,54 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   bool get debugSharesBackdrop => _sharesBackdrop;
   bool _sharesBackdrop = false;
 
+  /// Whether the last paint hoisted Pass 1 blur/frost into the group's
+  /// [GlassBackdropHoistSlot].
+  @visibleForTesting
+  bool get debugIsHoisted => _isHoisted;
+  bool _isHoisted = false;
+
+  /// The [BackdropKey] currently bound to Pass 2's shader [BackdropFilterLayer],
+  /// for tests.
+  @visibleForTesting
+  BackdropKey? get debugShaderBackdropKey => _shaderHandle.layer?.backdropKey;
+
   /// Runs the group check [paintLiquidGlass] runs; see there.
   @visibleForTesting
   bool debugResolveSharing() => _resolveSharing();
+
+  /// Returns the pure 2D translation from this render object's coordinate space
+  /// to [host], or `null` if any rotation, scale, skew, or perspective exists.
+  Offset? _pureTranslationTo(RenderObject host) {
+    final m = getTransformTo(host);
+    // Pure translation iff linear 3x3 is identity and perspective row is (0,0,0,1).
+    const eps = 1e-4;
+    if ((m[0] - 1.0).abs() > eps ||
+        m[1].abs() > eps ||
+        m[2].abs() > eps ||
+        m[3].abs() > eps ||
+        m[4].abs() > eps ||
+        (m[5] - 1.0).abs() > eps ||
+        m[6].abs() > eps ||
+        m[7].abs() > eps ||
+        m[8].abs() > eps ||
+        m[9].abs() > eps ||
+        (m[10] - 1.0).abs() > eps ||
+        m[11].abs() > eps ||
+        m[14].abs() > eps ||
+        (m[15] - 1.0).abs() > eps) {
+      return null;
+    }
+    return Offset(m[12], m[13]);
+  }
+
+  void _clearHoisted() {
+    if (_isHoisted || _hoistedPass1Handle.layer != null) {
+      _group?.removeHoisted(this);
+      _hoistedPass1Handle.layer?.remove();
+      _hoistedPass1Handle.layer = null;
+      _isHoisted = false;
+    }
+  }
 
   /// Whether this surface has a visible backer pad painted beneath it (see
   /// `AdaptiveGlass._wrapWithBacker`). The glass's blur has to read that pad
@@ -546,6 +605,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
   @override
   void detach() {
+    _clearHoisted();
     _group?.leave(this);
     _group = null;
     _uniformsTransform = null;
@@ -564,6 +624,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   List<BoxShadow>? _bakedShadowList;
   Rect _bakedShadowBounds = Rect.zero;
   double _bakedShadowDpr = 0;
+  double _bakedShadowOpacityScale = 1.0;
 
   final _shaderHandle = LayerHandle<BackdropFilterLayer>();
   final _blurLayerHandle = LayerHandle<BackdropFilterLayer>();
@@ -574,6 +635,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   final _frostClipLayerHandle = LayerHandle<ClipPathLayer>();
   final _frostRowsOffsetHandle = LayerHandle<OffsetLayer>();
   final _frostRowsLayerHandle = LayerHandle<ClipPathLayer>();
+  final _hoistedPass1Handle = LayerHandle<OffsetLayer>();
 
   Path? _cachedShapePath;
   final List<GeometryCache> _cachedShapePathGeometries = [];
@@ -816,6 +878,14 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     }
     // Re-add the clips around changed layers instead of their retained copy.
     if (!_Recomposite.mark(clipLayer)) return needsFullPaint();
+    // GlassBackdropHoistSlot is an earlier sibling in the layer tree, so it
+    // has already run addToScene() for this frame before our
+    // GeometryTransformTrackingLayer reaches _updateAtComposite(). Never
+    // mutate an earlier sibling during addToScene() — fall back to a normal
+    // repaint so Pass 1 frost stays in exact frame lockstep with Pass 2.
+    if (_isHoisted) {
+      return needsFullPaint();
+    }
     if (frostRowsBasePath case final base?) {
       final rowsLayer = _frostRowsLayerHandle.layer;
       final rowsOffsetLayer = _frostRowsOffsetHandle.layer;
@@ -833,8 +903,8 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
           rowsLayer.clipPath = base;
         }
         if (phaseChanged) {
-          rowsOffsetLayer.offset =
-              _paintOffset + Offset(0, frostRowsPhaseOffsetY);
+          rowsOffsetLayer.offset = (_isHoisted ? Offset.zero : _paintOffset) +
+              Offset(0, frostRowsPhaseOffsetY);
         }
       }
     }
@@ -887,10 +957,82 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     // unless the blur is wider than the shader takes.
     final frostBase = frostRowsBasePath;
     final frostPhaseY = frostRowsPhaseOffsetY;
-    if (settings.effectiveBlur > 0 &&
+    final bool needsBlurPass = settings.effectiveBlur > 0 &&
         (frostBase == null ||
             settings.effectiveBlur * devicePixelRatio >
-                LiquidGlassRenderObject.frostGhostMaxSigma)) {
+                LiquidGlassRenderObject.frostGhostMaxSigma);
+    final bool needsFrostPass = frostBase != null;
+    final bool hasPass1 = needsBlurPass || needsFrostPass;
+    _group?.setMemberHasPass1(this, hasPass1);
+
+    bool hasInsideGlass = false;
+    for (final (g, _, _) in shapes) {
+      if (g.hasInsideGlassContent) {
+        hasInsideGlass = true;
+        break;
+      }
+    }
+
+    // Check Pass-1 hoisting eligibility: when this layer shares a backdrop
+    // group that has a GlassBackdropHoistSlot, has Pass 1 blur/frost with no
+    // inside-glass children, has a pure translation to the hoist host, and does
+    // not overlap any other hoisted member, paint Pass 1 into the group's
+    // hoisted ContainerLayer (ahead of all Pass-2 shaders) so Pass 2 can share
+    // _group.glassKey (reducing N + 1 full-screen copies to 2 total).
+    Offset? hostTranslation;
+    Rect? rectInHost;
+    bool willHoist = false;
+    if (shared &&
+        _hoistAllowed &&
+        _group != null &&
+        _group!.hasHoistHost &&
+        hasPass1 &&
+        captureImage == null &&
+        !hasInsideGlass) {
+      final hostBox = _group!.hoistHostBox;
+      if (hostBox != null) {
+        hostTranslation = _pureTranslationTo(hostBox);
+        if (hostTranslation != null) {
+          // getTransformTo(hostBox) already maps this layer's local (0, 0) to
+          // hostBox's local coordinates (whose _HoistContainerLayer carries
+          // hostBox's own paint offset), so never add `offset` again.
+          rectInHost = boundingBox.shift(hostTranslation);
+          if (!_group!.overlapsOtherHoisted(this, rectInHost)) {
+            willHoist = true;
+          }
+        }
+      }
+    }
+
+    final bool hoistModeChanged = _isHoisted != willHoist;
+    if (hoistModeChanged) {
+      // Clear cached layer handles so no child Layer is reparented across
+      // inline and hoisted containers in the same frame.
+      _clipPathLayerHandle.layer = null;
+      _frostClipLayerHandle.layer = null;
+      _frostRowsOffsetHandle.layer = null;
+      _frostRowsLayerHandle.layer = null;
+    }
+
+    PaintingContext pass1Context = context;
+    Offset pass1Offset = offset;
+    OffsetLayer? hoistOffsetLayer;
+    _HoistPaintingContext? hoistPaintingContext;
+    if (willHoist) {
+      hoistOffsetLayer = (_hoistedPass1Handle.layer ??= _OffsetLayer())
+        ..offset = hostTranslation!;
+      hoistOffsetLayer.removeAllChildren();
+      hoistPaintingContext = _HoistPaintingContext(
+        hoistOffsetLayer,
+        boundingBox,
+      );
+      pass1Context = hoistPaintingContext;
+      pass1Offset = Offset.zero;
+    } else {
+      _clearHoisted();
+    }
+
+    if (needsBlurPass) {
       final blurSigma = settings.effectiveBlur;
       // Reuse cached blur filter when sigma hasn't changed.
       if (_cachedBlur == null || _cachedBlurSigma != blurSigma) {
@@ -909,52 +1051,55 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         ..backdropKey = shared || !sharedBackdrop ? backdropKey : null
         ..filter = _cachedBlur!;
 
-      _clipPathLayerHandle.layer = context.pushClipPath(
+      _clipPathLayerHandle.layer = pass1Context.pushClipPath(
         needsCompositing,
-        offset,
+        pass1Offset,
         boundingBox,
         _shapePath(shapes),
         (context, offset) {
           context.pushLayer(
             blurLayer,
             (context, offset) {
-              paintShapeContents(context, offset, shapes, insideGlass: true);
+              if (!willHoist) {
+                paintShapeContents(context, offset, shapes, insideGlass: true);
+              }
             },
             offset,
           );
         },
-        oldLayer: _clipPathLayerHandle.layer,
+        oldLayer: willHoist ? null : _clipPathLayerHandle.layer,
       );
-    } else if (frostBase != null) {
+    } else if (needsFrostPass) {
       _blurLayerHandle.layer = null;
-      // Straight onto the backdrop, where the frost will read it.
-      _clipPathLayerHandle.layer = context.pushClipPath(
-        needsCompositing,
-        offset,
-        boundingBox,
-        _shapePath(shapes),
-        (context, offset) {
-          paintShapeContents(context, offset, shapes, insideGlass: true);
-        },
-        oldLayer: _clipPathLayerHandle.layer,
-      );
+      if (!willHoist) {
+        // Straight onto the backdrop, where the frost will read it.
+        _clipPathLayerHandle.layer = context.pushClipPath(
+          needsCompositing,
+          offset,
+          boundingBox,
+          _shapePath(shapes),
+          (context, offset) {
+            paintShapeContents(context, offset, shapes, insideGlass: true);
+          },
+          oldLayer: _clipPathLayerHandle.layer,
+        );
+      } else {
+        _clipPathLayerHandle.layer = null;
+      }
     } else {
       _blurLayerHandle.layer = null;
       _clipPathLayerHandle.layer = null;
     }
 
     // ── Pass 1b: Frost ───────────────────────────────────────────────────────
-    // The cloud of iOS 27 glass: a wide blur of the backdrop, written only to
-    // alternate pixel rows of the shape (frostRowsBasePath shifted via an
-    // OffsetLayer), so the sharp backdrop survives on the rows between. The
-    // render shader reads both and makes the ghost, the clamp and the mix
-    // itself (uFrost), which keeps the frost to one plain blur pass: on
-    // Impeller any other filter stage composed with a backdrop blur measured
-    // as costly as a pass over the whole screen. Not part of the layer's
-    // BackdropGroup, so that content painted inside the glass above is in what
-    // it reads, unless the layer sits in a GlassBackdropGroup.
-    if (frostBase != null) {
-      final frostSigma = settings.effectiveFrost;
+    if (needsFrostPass) {
+      // Inside a shared GlassBackdropGroup, keep every member's frost sigma
+      // locked to settings.effectiveFrost so Impeller's BackdropKey filter
+      // cache (all_filters_equal) runs the full-screen frost blur ONCE for the
+      // entire group instead of busting the cache on a 0.5 pt height delta.
+      final frostSigma = shared
+          ? settings.effectiveFrost
+          : resolvedFaceOptics.effectiveFrostSigma;
       if (_cachedFrost == null || _cachedFrostSigma != frostSigma) {
         _cachedSharedFrost = null;
         _cachedFrost = ImageFilter.blur(
@@ -980,11 +1125,6 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         _cachedWeightValue = weight;
         _cachedSharedFrost = null;
       }
-      // In a GlassBackdropGroup the frost reads the group's shared backdrop,
-      // so the weight can't be written into the backdrop by a pass of its
-      // own first: it goes ahead of the blur in the same filter. Alone that
-      // costs more than the two passes; shared, the engine runs the filter
-      // once for every surface with the same settings.
       ImageFilter frostFilter = _cachedFrost!;
       if (shared && weighted) {
         frostFilter = _cachedSharedFrost ??= ImageFilter.compose(
@@ -994,31 +1134,21 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       }
       final frostLayer = (_frostLayerHandle.layer ??= BackdropFilterLayer())
         ..backdropKey = shared ? backdropKey : null
-        // Replaces rather than covers the weighted pixels below, so the
-        // cloud rows keep the blurred weight in their alpha.
         ..blendMode = weighted ? BlendMode.src : BlendMode.srcOver
         ..filter = frostFilter;
 
-      // frostWeight: the shape is first given an alpha that weights each
-      // pixel by its luminance, colour premultiplied by it, so the blur's
-      // unpremultiplied result is a weighted mean in which light (or dark)
-      // pixels count for more; the sharp rows unpremultiply back to what
-      // they were. A lone colour filter stays within the clip; ahead of the
-      // blur in one filter it would not.
       if (weighted && !shared) {
         (_weightLayerHandle.layer ??= BackdropFilterLayer())
           ..backdropKey = null
-          // Only the alpha is taken: the pixels beneath keep their colour,
-          // premultiplied by it.
           ..blendMode = BlendMode.dstIn
           ..filter = _cachedWeight!;
       } else {
         _weightLayerHandle.layer = null;
       }
 
-      _frostClipLayerHandle.layer = context.pushClipPath(
+      _frostClipLayerHandle.layer = pass1Context.pushClipPath(
         needsCompositing,
-        offset,
+        pass1Offset,
         boundingBox,
         _shapePath(shapes),
         (context, offset) {
@@ -1040,13 +1170,15 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
                   context.pushLayer(frostLayer, (context, offset) {}, offset);
                 },
                 clipBehavior: Clip.hardEdge,
-                oldLayer: _frostRowsLayerHandle.layer,
+                oldLayer: willHoist ? null : _frostRowsLayerHandle.layer,
               );
             },
             Offset.zero,
           );
         },
-        oldLayer: _frostClipLayerHandle.layer ?? _ClipPathLayer(),
+        oldLayer: willHoist
+            ? null
+            : (_frostClipLayerHandle.layer ?? _ClipPathLayer()),
       );
     } else {
       _frostLayerHandle.layer = null;
@@ -1054,6 +1186,12 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       _frostClipLayerHandle.layer = null;
       _frostRowsOffsetHandle.layer = null;
       _frostRowsLayerHandle.layer = null;
+    }
+
+    if (willHoist) {
+      hoistPaintingContext!.finish();
+      _group!.setHoisted(this, hoistOffsetLayer!, rectInHost!);
+      _isHoisted = true;
     }
 
     // ── Pass 2: Glass refraction + lighting shader ────────────────────────────
@@ -1110,7 +1248,11 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     // Publish the clip rect so descendant premium glass can find the pass their
     // FlutterFragCoord() is relative to (see enclosingBackdropPassRect).
     backdropPassClipRectLocal = clipRect;
+    final bool sharePass2 = shared &&
+        _group != null &&
+        (_isHoisted || (!hasPass1 && _group!.allMembersWithoutPass1));
     final shaderLayer = (_shaderHandle.layer ??= BackdropFilterLayer())
+      ..backdropKey = sharePass2 ? _group!.glassKey : null
       ..filter = ImageFilter.shader(renderShader!);
 
     _clipRectLayerHandle.layer = context.pushClipRect(
@@ -1142,14 +1284,16 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     ui.Image geometry,
     Rect bounds,
   ) {
+    final shadowScale = resolvedFaceOptics.shadowOpacityScale;
     final stable = identical(geometry, _lastShadowGeometry);
     _lastShadowGeometry = geometry;
     if (stable) {
       if (!identical(_bakedShadowGeometry, geometry) ||
           !listEquals(_bakedShadowList, shadows) ||
           _bakedShadowBounds != bounds ||
-          _bakedShadowDpr != devicePixelRatio) {
-        _bakeShadows(geometry, bounds);
+          _bakedShadowDpr != devicePixelRatio ||
+          _bakedShadowOpacityScale != shadowScale) {
+        _bakeShadows(geometry, bounds, shadowScale);
       }
       if (_bakedShadow case final baked?) {
         canvas.drawImageRect(
@@ -1161,16 +1305,17 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         return;
       }
     }
-    _drawShadows(canvas, bounds.shift(offset), geometry);
+    _drawShadows(canvas, bounds.shift(offset), geometry, shadowScale);
   }
 
-  void _bakeShadows(ui.Image geometry, Rect bounds) {
+  void _bakeShadows(ui.Image geometry, Rect bounds, double shadowScale) {
     _bakedShadow?.dispose();
     _bakedShadow = null;
     _bakedShadowGeometry = geometry;
     _bakedShadowList = List.of(shadows);
     _bakedShadowBounds = bounds;
     _bakedShadowDpr = devicePixelRatio;
+    _bakedShadowOpacityScale = shadowScale;
 
     Rect? area;
     for (final shadow in shadows) {
@@ -1190,7 +1335,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     final canvas = Canvas(recorder)
       ..scale(dpr)
       ..translate(-rect.left, -rect.top);
-    _drawShadows(canvas, bounds, geometry);
+    _drawShadows(canvas, bounds, geometry, shadowScale);
     final picture = recorder.endRecording();
     _bakedShadow = picture.toImageSync(width, height);
     picture.dispose();
@@ -1224,7 +1369,12 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
           .shift(shadow.offset)
           .inflate(shadow.spreadRadius + (shadow.blurSigma * 3).ceil());
 
-  void _drawShadows(Canvas canvas, Rect bounds, ui.Image geometry) {
+  void _drawShadows(
+    Canvas canvas,
+    Rect bounds,
+    ui.Image geometry,
+    double shadowScale,
+  ) {
     Rect? area;
     for (final shadow in shadows) {
       if (shadow.color.a == 0) continue;
@@ -1245,10 +1395,15 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     canvas.saveLayer(area, _shadowLayerPaint);
     for (final shadow in shadows) {
       if (shadow.color.a == 0) continue;
+      final Color effectiveColor = shadowScale >= 0.999
+          ? shadow.color
+          : shadow.color.withValues(
+              alpha: (shadow.color.a * shadowScale).clamp(0.0, 1.0),
+            );
 
       // 1. Draw the geometry matte as a blurred, tinted shadow
       final shadowPaint = Paint()
-        ..colorFilter = ColorFilter.mode(shadow.color, BlendMode.srcIn)
+        ..colorFilter = ColorFilter.mode(effectiveColor, BlendMode.srcIn)
         ..imageFilter = ImageFilter.blur(
           sigmaX: shadow.blurSigma,
           sigmaY: shadow.blurSigma,
@@ -1276,6 +1431,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
   @override
   void dispose() {
+    _clearHoisted();
     _bakedShadow?.dispose();
     _bakedShadow = null;
     _bakedShadowGeometry = null;
@@ -1332,3 +1488,9 @@ class _ClipRectLayer = ClipRectLayer with _Recomposite;
 class _ClipPathLayer = ClipPathLayer with _Recomposite;
 
 class _OffsetLayer = OffsetLayer with _Recomposite;
+
+class _HoistPaintingContext extends PaintingContext {
+  _HoistPaintingContext(super.containerLayer, super.estimatedBounds);
+
+  void finish() => stopRecordingIfNeeded();
+}

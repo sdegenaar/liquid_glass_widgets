@@ -174,6 +174,11 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
     List<ShapeGeometry> shapes,
   );
 
+  /// Whether any shape in this geometry paints child content inside the glass
+  /// (`glassContainsChild == true`). Used by `RenderLiquidGlassLayer` to skip
+  /// Pass-1 frost hoisting when child content must paint inside Pass 1.
+  bool get hasInsideGlassContent => false;
+
   /// Paints the contents of all shapes to the given [context] at the given
   /// [offset].
   void paintShapeContents(

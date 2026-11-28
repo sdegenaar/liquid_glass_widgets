@@ -64,6 +64,7 @@ class ScrollableSegmentContent extends StatefulWidget {
     this.selectionAlignment = SegmentSelectionAlignment.minimal,
     this.regridDuration = Duration.zero,
     this.dragBehavior = SegmentDragBehavior.selectIndicator,
+    this.enabled = true,
     super.key,
   });
 
@@ -110,6 +111,9 @@ class ScrollableSegmentContent extends StatefulWidget {
 
   /// See [GlassSegmentedControl.dragBehavior].
   final SegmentDragBehavior dragBehavior;
+
+  /// Whether the control accepts pointer and tap interactions.
+  final bool enabled;
 
   @override
   State<ScrollableSegmentContent> createState() =>
@@ -363,6 +367,12 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
   @override
   void didUpdateWidget(ScrollableSegmentContent oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.enabled && !widget.enabled) {
+      _isDown = false;
+      _isDragging = false;
+      _isDraggingIndicator = false;
+    }
 
     // Handle scrollController swap (e.g., parent provides a new controller).
     if (widget.isScrollable &&
@@ -634,7 +644,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
   // ===========================================================================
 
   void _handleTapUp(TapUpDetails details) {
-    if (_morphing) return; // sub-200ms; geometry is in flux
+    if (!widget.enabled || _morphing) return; // sub-200ms; geometry is in flux
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
 
@@ -663,7 +673,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
   }
 
   void _handleDragDown(DragDownDetails details) {
-    if (_morphing) return;
+    if (!widget.enabled || _morphing) return;
     if (!widget.isScrollable) {
       setState(() => _isDown = true);
       return;
@@ -848,7 +858,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
   }
 
   void _onTabTap(int index) {
-    if (!widget.tabs[index].enabled) return;
+    if (!widget.enabled || !widget.tabs[index].enabled) return;
     if (index != widget.selectedIndex) {
       widget.onTabSelected(index);
     }
@@ -1145,7 +1155,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                     //     cleanly at the viewport boundary as the user scrolls.
                     //  2. Glass bloom layer (above ClipRect): only the glass effect renders
                     //     here, so the jelly bloom can expand freely past the bar edges.
-                    final physics = _isDraggingIndicator
+                    final physics = !widget.enabled || _isDraggingIndicator
                         ? const NeverScrollableScrollPhysics()
                         : const ClampingScrollPhysics();
 
@@ -1242,6 +1252,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
           child: TabBarItem(
             tab: tab,
             isSelected: isSelected,
+            enabled: widget.enabled && tab.enabled,
             onTap: () => _onTabTap(index),
             onTapDown: () {},
             labelStyle: isSelected ? selectedStyle : unselectedStyle,
@@ -1331,11 +1342,13 @@ class TabBarItem extends StatelessWidget {
     required this.iconColor,
     required this.iconSize,
     required this.padding,
+    this.enabled = true,
     super.key,
   });
 
   final GlassSegment tab;
   final bool isSelected;
+  final bool enabled;
   final VoidCallback onTap;
   final VoidCallback onTapDown;
   final TextStyle labelStyle;
@@ -1383,11 +1396,12 @@ class TabBarItem extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
-      onTapDown: (_) => onTapDown(),
+      onTap: enabled ? onTap : null,
+      onTapDown: enabled ? (_) => onTapDown() : null,
       behavior: HitTestBehavior.opaque,
       child: Semantics(
         button: true,
+        enabled: enabled,
         selected: isSelected,
         label: tab.semanticLabel ?? tab.label,
         child: Container(

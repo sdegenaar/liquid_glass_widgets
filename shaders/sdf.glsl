@@ -177,6 +177,120 @@ float smoothUnion(float d1, float d2, float k) {
     return min(d1, d2) - e * e * 0.25 / max(k, 1e-5);
 }
 
+// ── Shape distance + unit outward normal helpers ──────────────────────────────
+// Returns vec3(signedDistance, normal.x, normal.y) for O(N) 2-nearest
+// normal-weighted metaball smooth-union (CoreAnimation CASDFLayer law:
+// k_eff = k * 0.5 * (1 - dot(n1, n2))). Facing edges (dot = -1) merge at
+// full strength k; aligned parallel edges (dot = +1) keep zero bulge.
+
+vec2 _safeSign(vec2 p) {
+    return vec2(p.x < 0.0 ? -1.0 : 1.0, p.y < 0.0 ? -1.0 : 1.0);
+}
+
+vec3 sdfRRectGrad(in vec2 p, in vec2 b, in float r) {
+    float shortest = min(b.x, b.y);
+    r = min(r, shortest);
+    vec2 q = abs(p) - b + r;
+    vec2 m = max(q, 0.0);
+    float mLen = length(m);
+    float d = min(max(q.x, q.y), 0.0) + mLen - r;
+    vec2 gLocal = (mLen > 1e-4)
+        ? (m / mLen)
+        : (q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0));
+    return vec3(d, _safeSign(p) * gLocal);
+}
+
+vec3 sdfRRectAsymGrad(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    if (rTop == rBottom) return sdfRRectGrad(p, b, rTop);
+    vec3 gT = sdfRRectGrad(p, b, rTop);
+    vec3 gB = sdfRRectGrad(p, b, rBottom);
+    float t = smoothstep(-2.0, 2.0, p.y);
+    vec2 g = mix(gT.yz, gB.yz, t);
+    float gLen = length(g);
+    return vec3(mix(gT.x, gB.x, t), gLen > 1e-4 ? g / gLen : gT.yz);
+}
+
+vec3 sdfSquircleGrad(in vec2 p, in vec2 b, in float r) {
+    float boxShort = min(b.x, b.y);
+    r = min(r, boxShort);
+    float zone = min(r * 1.528, boxShort);
+    float base = 1.0 - 0.29289322 * (r / max(zone, 1e-4));
+    float n = -1.0 / log2(clamp(base, 0.5, 0.9999));
+    vec2 q = abs(p) - b + zone;
+    vec2 m = max(q, 0.0);
+    float M = max(m.x, m.y);
+    float corner = 0.0;
+    vec2 gLocal;
+    if (M > 1e-4) {
+        vec2 mNorm = m / M;
+        float mx = fastPow(mNorm.x, n);
+        float my = fastPow(mNorm.y, n);
+        corner = M * fastPow(mx + my, 1.0 / n);
+        vec2 dg = vec2(
+            mNorm.x > 1e-4 ? fastPow(mNorm.x, n - 1.0) : 0.0,
+            mNorm.y > 1e-4 ? fastPow(mNorm.y, n - 1.0) : 0.0);
+        float dgLen = length(dg);
+        gLocal = dgLen > 1e-4 ? (dg / dgLen) : (q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0));
+    } else {
+        gLocal = q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    }
+    float d = min(max(q.x, q.y), 0.0) + corner - zone;
+    return vec3(d, _safeSign(p) * gLocal);
+}
+
+vec3 sdfSquircleAsymGrad(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    if (rTop == rBottom) return sdfSquircleGrad(p, b, rTop);
+    vec3 gT = sdfSquircleGrad(p, b, rTop);
+    vec3 gB = sdfSquircleGrad(p, b, rBottom);
+    float t = smoothstep(-2.0, 2.0, p.y);
+    vec2 g = mix(gT.yz, gB.yz, t);
+    float gLen = length(g);
+    return vec3(mix(gT.x, gB.x, t), gLen > 1e-4 ? g / gLen : gT.yz);
+}
+
+vec3 sdfEllipseGrad(vec2 p, vec2 r) {
+    r = max(r, 1e-4);
+    vec2 invR   = 1.0 / r;
+    vec2 invR2  = invR * invR;
+    vec2 pInvR  = p * invR;
+    float k1    = length(pInvR);
+    vec2 pInvR2 = p * invR2;
+    float k2    = length(pInvR2);
+    float d = (k1 * (k1 - 1.0)) / max(k2, 1e-4);
+    vec2 g = k2 > 1e-4 ? (pInvR2 / k2) : vec2(0.0, 1.0);
+    return vec3(d, g);
+}
+
+// CoreAnimation CASDFElementLayer refraction normal for a single native
+// frosted platter: evaluates the outward normal on a rounder 5/3 * r box so
+// refraction turns smoothly before straight edges meet corners, and blends
+// 50% ellipse gradient (gradientOvalization = 0.5) on large platters
+// (shortestSide >= 66 pt, ramped smoothly across 64..72 pt).
+vec2 nativePlatterNormal(
+    vec2 p,
+    vec2 center,
+    vec2 size,
+    float rTop,
+    float rBottom,
+    float dpr
+) {
+    vec2 pLocal = p - center;
+    vec2 b = max(size * 0.5, vec2(1e-4));
+    float boxShort = min(b.x, b.y);
+    float rTopG = min(rTop * (5.0 / 3.0), boxShort);
+    float rBotG = min(rBottom * (5.0 / 3.0), boxShort);
+    vec2 roundN = sdfRRectAsymGrad(pLocal, b, rTopG, rBotG).yz;
+    float shortSidePt = (2.0 * boxShort) / max(dpr, 1.0);
+    float ovalWeight = 0.5 * smoothstep(64.0, 72.0, shortSidePt);
+    if (ovalWeight > 1e-4) {
+        vec2 ellipseN = sdfEllipseGrad(pLocal, b).yz;
+        vec2 blended = mix(roundN, ellipseN, ovalWeight);
+        float bLen = length(blended);
+        return bLen > 1e-4 ? (blended / bLen) : roundN;
+    }
+    return roundN;
+}
+
 // ── Per-type dispatch ─────────────────────────────────────────────────────────
 
 // rTop / rBottom collapse to a single radius for symmetric shapes (caller
@@ -187,6 +301,13 @@ float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float rTop, float 
     else if (type == 2.0) return sdfEllipse  (p - center, size / 2.0);
     else if (type == 3.0) return sdfRRectAsym(p - center, size / 2.0, rTop, rBottom);
     return 0.0;
+}
+
+vec3 getShapeSDFGrad(float type, vec2 p, vec2 center, vec2 size, float rTop, float rBottom) {
+    if      (type == 1.0) return sdfSquircleAsymGrad(p - center, size / 2.0, rTop, rBottom);
+    else if (type == 2.0) return sdfEllipseGrad     (p - center, size / 2.0);
+    else if (type == 3.0) return sdfRRectAsymGrad   (p - center, size / 2.0, rTop, rBottom);
+    return vec3(1e9, 0.0, 1.0);
 }
 
 // ── Constant-index shape accessors ───────────────────────────────────────────
@@ -204,310 +325,83 @@ float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float rTop, float 
                 uShapeData[BASE+5], \
                 uShapeData[BASE+6])
 
+#define SDF_GRAD_N(BASE) \
+    getShapeSDFGrad(uShapeData[BASE], p, \
+                    vec2(uShapeData[BASE+1], uShapeData[BASE+2]), \
+                    vec2(uShapeData[BASE+3], uShapeData[BASE+4]), \
+                    uShapeData[BASE+5], \
+                    uShapeData[BASE+6])
+
 float sdf0(vec2 p)  { return SDF_SHAPE_N(0);   }
-float sdf1(vec2 p)  { return SDF_SHAPE_N(7);   }
-float sdf2(vec2 p)  { return SDF_SHAPE_N(14);  }
-float sdf3(vec2 p)  { return SDF_SHAPE_N(21);  }
-float sdf4(vec2 p)  { return SDF_SHAPE_N(28);  }
-float sdf5(vec2 p)  { return SDF_SHAPE_N(35);  }
-float sdf6(vec2 p)  { return SDF_SHAPE_N(42);  }
-float sdf7(vec2 p)  { return SDF_SHAPE_N(49);  }
+
+vec3 sdfGrad0(vec2 p)  { return SDF_GRAD_N(0);   }
+vec3 sdfGrad1(vec2 p)  { return SDF_GRAD_N(7);   }
+vec3 sdfGrad2(vec2 p)  { return SDF_GRAD_N(14);  }
+vec3 sdfGrad3(vec2 p)  { return SDF_GRAD_N(21);  }
+vec3 sdfGrad4(vec2 p)  { return SDF_GRAD_N(28);  }
+vec3 sdfGrad5(vec2 p)  { return SDF_GRAD_N(35);  }
+vec3 sdfGrad6(vec2 p)  { return SDF_GRAD_N(42);  }
+vec3 sdfGrad7(vec2 p)  { return SDF_GRAD_N(49);  }
 #ifndef LGR_OPENGLES_CAP_SHAPES
-float sdf8(vec2 p)  { return SDF_SHAPE_N(56);  }
-float sdf9(vec2 p)  { return SDF_SHAPE_N(63);  }
-float sdf10(vec2 p) { return SDF_SHAPE_N(70);  }
-float sdf11(vec2 p) { return SDF_SHAPE_N(77);  }
-float sdf12(vec2 p) { return SDF_SHAPE_N(84);  }
-float sdf13(vec2 p) { return SDF_SHAPE_N(91);  }
-float sdf14(vec2 p) { return SDF_SHAPE_N(98);  }
-float sdf15(vec2 p) { return SDF_SHAPE_N(105); }
+vec3 sdfGrad8(vec2 p)  { return SDF_GRAD_N(56);  }
+vec3 sdfGrad9(vec2 p)  { return SDF_GRAD_N(63);  }
+vec3 sdfGrad10(vec2 p) { return SDF_GRAD_N(70);  }
+vec3 sdfGrad11(vec2 p) { return SDF_GRAD_N(77);  }
+vec3 sdfGrad12(vec2 p) { return SDF_GRAD_N(84);  }
+vec3 sdfGrad13(vec2 p) { return SDF_GRAD_N(91);  }
+vec3 sdfGrad14(vec2 p) { return SDF_GRAD_N(98);  }
+vec3 sdfGrad15(vec2 p) { return SDF_GRAD_N(105); }
 #endif
 
-// ── sceneSDF — fully unrolled, no loops, no dynamic indices ──────────────────
+// ── sceneSDF — O(N) 2-nearest normal-weighted union, fully unrolled ──────────
 //
-// MAINTAINER GUIDE — READ BEFORE EDITING
-// ────────────────────────────────────────
-// This function is intentionally written in a fully-unrolled style.
-// This is NOT a code-quality issue; it is the correct cross-platform
-// approach for GLSL that must compile on both Impeller/Metal AND
-// SkSL/glslang (Windows), where dynamic array indices are illegal.
+// Tracks the two closest shapes (near1, near2) with their analytical unit
+// outward normals in a single literal-indexed O(N) pass (16 shapes on
+// Metal/Vulkan, 8 on OpenGL ES / ANGLE) and blends them via CoreAnimation's
+// normal-weighted smooth union:
+//   k_eff = k * clamp(0.5 * (1.0 - dot(near1.yz, near2.yz)), 0.0, 1.0)
 //
-// HOW IT WORKS
-//   Symmetric bidirectional smooth-union, averaged 50/50:
-//     fwd(n) = leftFold(smoothUnion, [s0,  s1, …, s_{n-1}], k)  (L→R)
-//     bwd(n) = leftFold(smoothUnion, [s_{n-1}, …, s1,  s0], k)  (R→L)
-//     result = mix(fwd, bwd, 0.5)
-//   This cancels the blend-influence asymmetry in multi-shape groups.
-//   For n=2 smoothUnion is commutative so fwd==bwd (no visual change vs n=1).
-//
-// WHAT IS SAFE TO CHANGE — single touch points that propagate everywhere:
-//   • Shape type logic        → edit getShapeSDF()     above
-//   • Blend formula           → edit smoothUnion()     above
-//   • Shape data layout       → edit SDF_SHAPE_N macro above (and sdf0…sdf15)
-//
-// WHAT REQUIRES UNROLL UPDATE — mechanical but must be consistent:
-//   • Increasing MAX_SHAPES   → add sdfN() below, add one more n==N block
-//     with the same bNa/bNb/… intermediate-variable pattern shown for n=16.
-//   • Changing the fwd/bwd averaging strategy → update all 16 n-blocks;
-//     they all follow the same pattern so find-replace is reliable.
-//
-// WHY NOT #ifdef IMPELLER_TARGET_METAL + dynamic fallback?
-//   That would require maintaining two separate algorithm copies that must
-//   be kept in sync — a higher maintenance burden than the unrolled form.
-//   The literal-index version is equally or more efficient on Metal too,
-//   since the compiler can constant-fold and prefetch known offsets.
+// Properties:
+//   • Order-independent (perfectly symmetric regardless of shape order).
+//   • O(N) cost and compact AST (no O(N^2) pair loops, no dynamic indexing).
+//   • Facing edges (dot = -1) merge at full strength k; aligned parallel
+//     edges (dot = +1) keep k_eff = 0 with zero edge bulging.
+
+#define TRACK_NEAR2(S) \
+    if ((S).x < near1.x) { near2 = near1; near1 = (S); } \
+    else if ((S).x < near2.x) { near2 = (S); }
 
 float sceneSDF(vec2 p, int n, float k) {
     if (n <= 0) return 1e9;
+    if (n == 1) return sdf0(p);
 
-    // ── n = 1 ────────────────────────────────────────────────────────────────
-    float s0 = sdf0(p);
-    if (n == 1) return s0;
+    vec3 near1 = sdfGrad0(p);
+    vec3 near2 = vec3(1e9, 0.0, 1.0);
 
-    // ── n = 2 ────────────────────────────────────────────────────────────────
-    float s1  = sdf1(p);
-    float fwd = smoothUnion(s0, s1, k);
-    // smoothUnion is commutative for n=2, so fwd == bwd exactly.
-    if (n == 2) return fwd;
-
-    // ── n = 3 ────────────────────────────────────────────────────────────────
-    float s2  = sdf2(p);
-    fwd = smoothUnion(fwd, s2, k);
-    if (n == 3) {
-        if (k <= 0.0) return fwd;
-        float bwd = smoothUnion(smoothUnion(s2, s1, k), s0, k);
-        return mix(fwd, bwd, 0.5);
-    }
-
-    // ── n = 4 ────────────────────────────────────────────────────────────────
-    float s3  = sdf3(p);
-    fwd = smoothUnion(fwd, s3, k);
-    if (n == 4) {
-        if (k <= 0.0) return fwd;
-        float bwd = smoothUnion(smoothUnion(smoothUnion(s3, s2, k), s1, k), s0, k);
-        return mix(fwd, bwd, 0.5);
-    }
-
-    // ── n = 5 ────────────────────────────────────────────────────────────────
-    float s4  = sdf4(p);
-    fwd = smoothUnion(fwd, s4, k);
-    if (n == 5) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s4, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 6 ────────────────────────────────────────────────────────────────
-    float s5  = sdf5(p);
-    fwd = smoothUnion(fwd, s5, k);
-    if (n == 6) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s5, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 7 ────────────────────────────────────────────────────────────────
-    float s6  = sdf6(p);
-    fwd = smoothUnion(fwd, s6, k);
-    if (n == 7) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s6, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 8 ────────────────────────────────────────────────────────────────
-    float s7  = sdf7(p);
-    fwd = smoothUnion(fwd, s7, k);
-#ifdef LGR_OPENGLES_CAP_SHAPES
-    // On OpenGL ES / ANGLE (Windows and Android GLES), clamp evaluation to 8
-    // shapes maximum to avoid AST node explosion in runtime JIT compilers
-    // (e.g. Intel Arc ANGLE / PowerVR GE8320).
-    if (k <= 0.0) return fwd;
-    float b8 = smoothUnion(s7, s6, k);
-    b8 = smoothUnion(b8, s5, k);
-    b8 = smoothUnion(b8, s4, k);
-    b8 = smoothUnion(b8, s3, k);
-    b8 = smoothUnion(b8, s2, k);
-    b8 = smoothUnion(b8, s1, k);
-    b8 = smoothUnion(b8, s0, k);
-    return mix(fwd, b8, 0.5);
-#else
-    if (n == 8) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s7, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 9 ────────────────────────────────────────────────────────────────
-    float s8  = sdf8(p);
-    fwd = smoothUnion(fwd, s8, k);
-    if (n == 9) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s8, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 10 ───────────────────────────────────────────────────────────────
-    float s9  = sdf9(p);
-    fwd = smoothUnion(fwd, s9, k);
-    if (n == 10) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s9, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 11 ───────────────────────────────────────────────────────────────
-    float s10 = sdf10(p);
-    fwd = smoothUnion(fwd, s10, k);
-    if (n == 11) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s10, s9, k);
-        b = smoothUnion(b, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 12 ───────────────────────────────────────────────────────────────
-    float s11 = sdf11(p);
-    fwd = smoothUnion(fwd, s11, k);
-    if (n == 12) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s11, s10, k);
-        b = smoothUnion(b, s9, k);
-        b = smoothUnion(b, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 13 ───────────────────────────────────────────────────────────────
-    float s12 = sdf12(p);
-    fwd = smoothUnion(fwd, s12, k);
-    if (n == 13) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s12, s11, k);
-        b = smoothUnion(b, s10, k);
-        b = smoothUnion(b, s9, k);
-        b = smoothUnion(b, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 14 ───────────────────────────────────────────────────────────────
-    float s13 = sdf13(p);
-    fwd = smoothUnion(fwd, s13, k);
-    if (n == 14) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s13, s12, k);
-        b = smoothUnion(b, s11, k);
-        b = smoothUnion(b, s10, k);
-        b = smoothUnion(b, s9, k);
-        b = smoothUnion(b, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 15 ───────────────────────────────────────────────────────────────
-    float s14 = sdf14(p);
-    fwd = smoothUnion(fwd, s14, k);
-    if (n == 15) {
-        if (k <= 0.0) return fwd;
-        float b = smoothUnion(s14, s13, k);
-        b = smoothUnion(b, s12, k);
-        b = smoothUnion(b, s11, k);
-        b = smoothUnion(b, s10, k);
-        b = smoothUnion(b, s9, k);
-        b = smoothUnion(b, s8, k);
-        b = smoothUnion(b, s7, k);
-        b = smoothUnion(b, s6, k);
-        b = smoothUnion(b, s5, k);
-        b = smoothUnion(b, s4, k);
-        b = smoothUnion(b, s3, k);
-        b = smoothUnion(b, s2, k);
-        b = smoothUnion(b, s1, k);
-        b = smoothUnion(b, s0, k);
-        return mix(fwd, b, 0.5);
-    }
-
-    // ── n = 16 (MAX_SHAPES) ───────────────────────────────────────────────────
-    float s15 = sdf15(p);
-    fwd = smoothUnion(fwd, s15, k);
-    if (k <= 0.0) return fwd;
-    float b = smoothUnion(s15, s14, k);
-    b = smoothUnion(b, s13, k);
-    b = smoothUnion(b, s12, k);
-    b = smoothUnion(b, s11, k);
-    b = smoothUnion(b, s10, k);
-    b = smoothUnion(b, s9, k);
-    b = smoothUnion(b, s8, k);
-    b = smoothUnion(b, s7, k);
-    b = smoothUnion(b, s6, k);
-    b = smoothUnion(b, s5, k);
-    b = smoothUnion(b, s4, k);
-    b = smoothUnion(b, s3, k);
-    b = smoothUnion(b, s2, k);
-    b = smoothUnion(b, s1, k);
-    b = smoothUnion(b, s0, k);
-    return mix(fwd, b, 0.5);
+    vec3 s1 = sdfGrad1(p);
+    TRACK_NEAR2(s1);
+    if (n > 2) { vec3 s2 = sdfGrad2(p); TRACK_NEAR2(s2); }
+    if (n > 3) { vec3 s3 = sdfGrad3(p); TRACK_NEAR2(s3); }
+    if (n > 4) { vec3 s4 = sdfGrad4(p); TRACK_NEAR2(s4); }
+    if (n > 5) { vec3 s5 = sdfGrad5(p); TRACK_NEAR2(s5); }
+    if (n > 6) { vec3 s6 = sdfGrad6(p); TRACK_NEAR2(s6); }
+    if (n > 7) { vec3 s7 = sdfGrad7(p); TRACK_NEAR2(s7); }
+#ifndef LGR_OPENGLES_CAP_SHAPES
+    if (n > 8)  { vec3 s8  = sdfGrad8(p);  TRACK_NEAR2(s8);  }
+    if (n > 9)  { vec3 s9  = sdfGrad9(p);  TRACK_NEAR2(s9);  }
+    if (n > 10) { vec3 s10 = sdfGrad10(p); TRACK_NEAR2(s10); }
+    if (n > 11) { vec3 s11 = sdfGrad11(p); TRACK_NEAR2(s11); }
+    if (n > 12) { vec3 s12 = sdfGrad12(p); TRACK_NEAR2(s12); }
+    if (n > 13) { vec3 s13 = sdfGrad13(p); TRACK_NEAR2(s13); }
+    if (n > 14) { vec3 s14 = sdfGrad14(p); TRACK_NEAR2(s14); }
+    if (n > 15) { vec3 s15 = sdfGrad15(p); TRACK_NEAR2(s15); }
 #endif
+
+    if (k <= 0.0) return near1.x;
+    float normalWeight = clamp(0.5 * (1.0 - dot(near1.yz, near2.yz)), 0.0, 1.0);
+    // Smoothly revert to isotropic k when shapes overlap deeply so interior
+    // medial-axis normal flips never introduce creases in finite-difference normals.
+    float exteriorGate = smoothstep(-k, 0.0, max(near1.x, near2.x));
+    float effectiveWeight = mix(1.0, normalWeight, exteriorGate);
+    return smoothUnion(near1.x, near2.x, k * effectiveWeight);
 }

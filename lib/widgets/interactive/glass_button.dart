@@ -909,6 +909,21 @@ class _GlassButtonState extends State<GlassButton>
           }
         : null;
 
+    // Effective prominent tint in glass mode: matches solid prominent,
+    // GlassBarItemStyle.prominent, and SwiftUI `.buttonStyle(.glassProminent)`
+    // by defaulting untinted prominent buttons to CupertinoTheme.primaryColor.
+    // Disabled prominent buttons revert to muted neutral glass (matching UIKit
+    // and GlassBarItemStyle.prominent).
+    final Color? effectiveProminentGlassTint = (!isSolid &&
+            widget.style == GlassButtonStyle.prominent &&
+            widget.enabled)
+        ? (resolvedTint ??
+            CupertinoDynamicColor.resolve(
+              CupertinoTheme.of(context).primaryColor,
+              context,
+            ))
+        : null;
+
     // Contrast-aware foreground for prominent buttons (solid or glass) and
     // solid buttons with an explicit high-alpha fill (`a > 0.5`).
     final Color? contrastForeground;
@@ -918,11 +933,9 @@ class _GlassButtonState extends State<GlassButton>
       contrastForeground = solidFillColor!.computeLuminance() > 0.55
           ? CupertinoColors.black
           : CupertinoColors.white;
-    } else if (!isSolid && widget.style == GlassButtonStyle.prominent) {
-      contrastForeground = resolvedTint != null
-          ? (resolvedTint.computeLuminance() > 0.55
-              ? CupertinoColors.black
-              : CupertinoColors.white)
+    } else if (effectiveProminentGlassTint != null) {
+      contrastForeground = effectiveProminentGlassTint.computeLuminance() > 0.55
+          ? CupertinoColors.black
           : CupertinoColors.white;
     } else {
       contrastForeground = null;
@@ -1174,16 +1187,14 @@ class _GlassButtonState extends State<GlassButton>
             explicit: effectiveExplicit,
           );
 
-          // Prominent style: thicker, more opaque, brighter glass for primary CTAs.
-          // iOS 26's `.glassProminent` is visibly more frosted than `.glass`.
-          if (widget.style == GlassButtonStyle.prominent) {
-            final prominentAlpha =
-                (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9);
+          // Prominent style: thicker, accent-tinted glass for primary CTAs
+          // (defaults to CupertinoTheme.primaryColor when untinted). When
+          // disabled, reverts to neutral glass so unavailable primary actions
+          // do not dominate the surface, matching UIKit and
+          // GlassBarItemStyle.prominent.
+          if (widget.style == GlassButtonStyle.prominent && widget.enabled) {
             baseSettings = baseSettings.copyWith(
               thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
-              glassColor: baseSettings.glassColor.withValues(
-                alpha: widget.enabled ? prominentAlpha : prominentAlpha * 0.5,
-              ),
               lightIntensity:
                   (baseSettings.effectiveLightIntensity * 1.5).clamp(0.3, 1.0),
             );
@@ -1191,18 +1202,24 @@ class _GlassButtonState extends State<GlassButton>
 
           // Tinted glass: flood body via GlassBodyMode.clear so hex colors stay
           // accurate while preserving active GlassStyle refraction, frost, blur,
-          // and Fresnel rim highlights. When disabled, attenuate tint alpha by
-          // 0.5 so disabled tinted/prominent buttons read as inactive without
-          // wrapping AdaptiveGlass in an Impeller-breaking Opacity saveLayer.
-          if (resolvedTint != null) {
+          // and Fresnel rim highlights. Prominent enabled buttons flood with
+          // `resolvedTint ?? primaryColor`; disabled prominent buttons stay
+          // neutral glass; disabled tinted filled buttons attenuate tint alpha
+          // by 0.5 without wrapping AdaptiveGlass in an Impeller-breaking
+          // Opacity saveLayer.
+          final Color? activeGlassTint =
+              widget.style == GlassButtonStyle.prominent
+                  ? (resolvedTint ?? effectiveProminentGlassTint)
+                  : resolvedTint;
+          if (activeGlassTint != null) {
             final double defaultTintAlpha =
                 widget.style == GlassButtonStyle.prominent ? 0.85 : 0.24;
             final double baseTintAlpha =
-                resolvedTint.a < 1.0 ? resolvedTint.a : defaultTintAlpha;
+                activeGlassTint.a < 1.0 ? activeGlassTint.a : defaultTintAlpha;
             final double effectiveTintAlpha =
                 widget.enabled ? baseTintAlpha : baseTintAlpha * 0.5;
             baseSettings = baseSettings.copyWith(
-              glassColor: resolvedTint.withValues(alpha: effectiveTintAlpha),
+              glassColor: activeGlassTint.withValues(alpha: effectiveTintAlpha),
               bodyMode: GlassBodyMode.clear,
             );
           }

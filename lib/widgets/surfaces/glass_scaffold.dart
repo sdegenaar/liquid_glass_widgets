@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import '../../theme/glass_theme.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
+import '../../src/renderer/glass_backdrop_group_boundary.dart'
+    show GlassBackdropHoistSlot;
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../src/widgets/surfaces/app_bar_scroll_under_surface.dart';
@@ -15,6 +17,7 @@ import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_background.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../../theme/glass_theme_data.dart';
 import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_content_aware_scope.dart';
@@ -524,8 +527,27 @@ class GlassScaffold extends StatelessWidget {
         );
     final doFadeTop =
         topEdgeFade ?? (edgeFade && appBar != null && !barOwnsFullBlurSurface);
-    final doFadeBottom =
-        bottomEdgeFade ?? (edgeFade && bottomBar != null && !bottomBarInStrip);
+    // On native iOS 26 / iOS 27 styles, floating GlassTabBar platters are
+    // self-contained optical surfaces whose CoreAnimation face matrix ensures
+    // icon/label legibility over arbitrary scrolling content — native UITabBar
+    // paints zero opaque background fade behind or below the bar so scrolling
+    // cards and rim refractions remain crisp and vivid. Suppress the automatic
+    // soft bottom fade unless the caller explicitly opted in via
+    // `bottomEdgeFade: true`, a non-soft `edgeStyle` (.blur / .hard), or a
+    // custom `bottomEdgeFadeExtent`. Classic style preserves historical fade.
+    final scaffoldExplicitBottomEdge = bottomEdgeFade == true ||
+        (bottomEdgeFade == null &&
+            edgeFade &&
+            (edgeStyle != GlassScrollEdgeStyle.soft ||
+                bottomEdgeFadeExtent != 20.0));
+    final bottomBarIsNativeTabBar = bottomBar is GlassTabBar &&
+        resolvedStyle != GlassStyle.classic &&
+        !scaffoldExplicitBottomEdge;
+    final doFadeBottom = bottomEdgeFade ??
+        (edgeFade &&
+            bottomBar != null &&
+            !bottomBarInStrip &&
+            !bottomBarIsNativeTabBar);
 
     // Calculate fade heights.
     // Only include appBarHeight when an appBar is present — without one, the
@@ -684,6 +706,17 @@ class GlassScaffold extends StatelessWidget {
           ),
         ),
 
+      // 2c. Scoped Pass-1 frost hoist slot (after body/overlays/header, before
+      // floating glass chrome). Lets eligible non-overlapping glass layers in
+      // appBar and bottomBar hoist Pass 1 blur/frost into one shared layer
+      // (1 framebuffer copy) and share glassKey on Pass 2 (1 framebuffer copy),
+      // reducing N + 1 screen copies to 2 total.
+      if (appBar != null || bottomBar != null)
+        const Positioned.fill(
+          key: ValueKey('glass_scaffold_backdrop_hoist'),
+          child: IgnorePointer(child: GlassBackdropHoistSlot()),
+        ),
+
       // 2. App bar (above body — painted after body in Stack).
       // Uses _GlassIsolationScope to tell descendant glass widgets
       // (GlassButton, AdaptiveGlass) to render with their own independent
@@ -769,7 +802,7 @@ class GlassScaffold extends StatelessWidget {
         // share a single full-screen backdrop read on Impeller while body and
         // bodyOverlays explicitly opt out above.
         child: GlassBackdropGroup(
-          enabled: appBar != null && bottomBar != null,
+          enabled: appBar != null || bottomBar != null,
           child: Stack(clipBehavior: Clip.none, children: stackChildren),
         ),
       ),

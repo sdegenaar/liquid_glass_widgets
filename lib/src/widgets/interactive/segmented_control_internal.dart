@@ -64,6 +64,7 @@ class SegmentedControlContent extends StatefulWidget {
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.glowColor,
     this.glowRadius = 1.5,
+    this.enabled = true,
     super.key,
   });
 
@@ -101,6 +102,7 @@ class SegmentedControlContent extends StatefulWidget {
   final GlassInteractionBehavior interactionBehavior;
   final Color? glowColor;
   final double glowRadius;
+  final bool enabled;
 
   @override
   State<SegmentedControlContent> createState() =>
@@ -167,6 +169,11 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         _mainAlign = _computeAlignmentForSegment(widget.selectedIndex);
       });
     }
+    if (oldWidget.enabled && !widget.enabled) {
+      _isDown = false;
+      _isDragging = false;
+      _mainAlign = _computeAlignmentForSegment(widget.selectedIndex);
+    }
     if (oldWidget.segments.length != widget.segments.length) {
       _disposeNotifiers();
       _initNotifiers();
@@ -196,10 +203,12 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   // ── Gesture handlers ──────────────────────────────────────────────────────
 
   void _onDragDown(DragDownDetails details) {
+    if (!widget.enabled) return;
     setState(() => _isDown = true);
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
+    if (!widget.enabled) return;
     final nextAlignment =
         _getAlignmentFromGlobalPosition(details.globalPosition);
     setState(() {
@@ -265,7 +274,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   }
 
   void _onSegmentTap(int index) {
-    if (!widget.segments[index].enabled) return;
+    if (!widget.enabled || !widget.segments[index].enabled) return;
     if (index != widget.selectedIndex) {
       widget.onSegmentSelected(index);
     }
@@ -386,32 +395,51 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     return Listener(
       // Raw pointer events fire BEFORE gesture recognizers and never compete
       // in the gesture arena, so _isDown is always set on the very first event.
-      onPointerDown: (_) => setState(() => _isDown = true),
+      onPointerDown:
+          widget.enabled ? (_) => setState(() => _isDown = true) : null,
       // On finger/button lift, clear _isDown if not mid-drag.
-      onPointerUp: (_) {
-        if (!_isDragging) setState(() => _isDown = false);
-      },
-      onPointerCancel: (_) {
-        if (!_isDragging) setState(() => _isDown = false);
-      },
+      onPointerUp: widget.enabled
+          ? (_) {
+              if (!_isDragging) setState(() => _isDown = false);
+            }
+          : null,
+      onPointerCancel: widget.enabled
+          ? (_) {
+              if (!_isDragging) setState(() => _isDown = false);
+            }
+          : null,
       child: GestureDetector(
         excludeFromSemantics: true,
         onHorizontalDragDown:
-            widget.direction == Axis.horizontal ? _onDragDown : null,
+            widget.enabled && widget.direction == Axis.horizontal
+                ? _onDragDown
+                : null,
         onHorizontalDragUpdate:
-            widget.direction == Axis.horizontal ? _onDragUpdate : null,
+            widget.enabled && widget.direction == Axis.horizontal
+                ? _onDragUpdate
+                : null,
         onHorizontalDragEnd:
-            widget.direction == Axis.horizontal ? _onDragEnd : null,
+            widget.enabled && widget.direction == Axis.horizontal
+                ? _onDragEnd
+                : null,
         onHorizontalDragCancel:
-            widget.direction == Axis.horizontal ? _onDragCancel : null,
-        onVerticalDragDown:
-            widget.direction == Axis.vertical ? _onDragDown : null,
+            widget.enabled && widget.direction == Axis.horizontal
+                ? _onDragCancel
+                : null,
+        onVerticalDragDown: widget.enabled && widget.direction == Axis.vertical
+            ? _onDragDown
+            : null,
         onVerticalDragUpdate:
-            widget.direction == Axis.vertical ? _onDragUpdate : null,
-        onVerticalDragEnd:
-            widget.direction == Axis.vertical ? _onDragEnd : null,
+            widget.enabled && widget.direction == Axis.vertical
+                ? _onDragUpdate
+                : null,
+        onVerticalDragEnd: widget.enabled && widget.direction == Axis.vertical
+            ? _onDragEnd
+            : null,
         onVerticalDragCancel:
-            widget.direction == Axis.vertical ? _onDragCancel : null,
+            widget.enabled && widget.direction == Axis.vertical
+                ? _onDragCancel
+                : null,
         child: VelocitySpringBuilder(
           value: _mainAlign,
           springWhenActive: GlassSpring.interactive(),
@@ -567,16 +595,18 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
             child: RepaintBoundary(
               child: GestureDetector(
                 excludeFromSemantics: true,
-                onTap: () => _onSegmentTap(i),
-                onTapDown: (_) {
-                  if (!widget.segments[i].enabled) return;
-                  if (i != widget.selectedIndex) {
-                    widget.onSegmentSelected(i);
-                  }
-                },
+                onTap: widget.enabled ? () => _onSegmentTap(i) : null,
+                onTapDown: widget.enabled
+                    ? (_) {
+                        if (!widget.segments[i].enabled) return;
+                        if (i != widget.selectedIndex) {
+                          widget.onSegmentSelected(i);
+                        }
+                      }
+                    : null,
                 behavior: HitTestBehavior.opaque,
                 child: GlassFocusRegion(
-                  enabled: widget.segments[i].enabled,
+                  enabled: widget.enabled && widget.segments[i].enabled,
                   isButton: true,
                   tracksSelection: true,
                   isSelected: widget.selectedIndex == i,

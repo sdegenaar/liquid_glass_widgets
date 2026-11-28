@@ -98,6 +98,8 @@ Ideas under consideration. None committed.
   a tappable glass swatch that opens a `GlassPopover`; colour picker content
   is supplied by the caller.
 - [ ] `GlassTip` (TipKit `.popoverTip(_:arrowEdge:)` / `TipView`, context: #516) — non-blocking contextual hint anchored to a control over app chrome (`.tipBackgroundInteraction(.enabled)`). Needs iOS 26/27 simulator calibration first to match native TipKit arrow/chrome styling rather than custom tail geometry.
+- [ ] `GlassEditMenu` (`UIEditMenuInteraction` — Phase 4 candidate) — horizontal pill text-selection / contextual edit bar with pagination chevrons, arrowed pointer, and auto-flip above/below selection rect.
+- [ ] Arrowed `GlassPopover` (`arrowEdge` / directional pointer) & `GlassAppBar` back-button long-press navigation history menu (Phase 4 candidates).
 
 ### Enhancements
 
@@ -120,14 +122,7 @@ Ideas under consideration. None committed.
   in 1.10, and `GlassBarItem.text` / `GlassBarItemStyle.prominent` in `1.21.0`),
   unblocking the major-release flip to make the data-driven API the plain
   `GlassAppBar` in 2.0.0.
-- [ ] **Unify lone bar-item sizing** (2.0) — a group holding a single item renders
-  at the 46pt icon-slot height when its items are
-  `GlassBarItemBackground.shared`, and at the 44pt back-button diameter when they
-  share with nothing. iOS 26/27 draws one circular button in both cases, so a lone
-  action is 2pt larger than the back button beside it. Collapsing them to 44pt is
-  a behaviour change to every shipped one-action pinned bar, so it waits for a
-  major. The shape already agrees — at 44pt the capsule's 22pt radius clamps to
-  exactly half the box — so this is a metrics change, not a rendering one.
+- [ ] **Unify lone bar-item sizing & UIKit control metrics** (2.0) — collapse lone shared bar items from 46pt to 44pt and evaluate UIKit default metric alignment (`GlassSwitch` 58→63pt, `GlassTabBar` 64→62pt, `GlassModalSheet` half detent 0.45→0.56, `GlassMenu` width 200→250pt) in a major release so existing 1.x layouts are never silently shifted.
 
 ### Platform Edge Cases
 
