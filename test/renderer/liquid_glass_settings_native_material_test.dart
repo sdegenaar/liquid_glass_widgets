@@ -240,6 +240,13 @@ void main() {
       expect(s.lensModel, GlassLensModel.paraxial);
     });
 
+    test('light outline keeps 30% at the ends of the light axis', () {
+      // iOS 27.2 light glass: the outline steps 24/255 below white at the top
+      // and bottom against 80/255 at the sides; the dark one fades out there.
+      expect(LiquidGlassSettings.ios27Light.rimShadeEnds, 0.3);
+      expect(LiquidGlassSettings.ios27Dark.rimShadeEnds, 0);
+    });
+
     test('dark holds light detail from going lighter than the cloud', () {
       const s = LiquidGlassSettings.ios27Dark;
       expect(s.frost, greaterThan(0));

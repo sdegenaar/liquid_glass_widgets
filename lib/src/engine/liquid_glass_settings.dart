@@ -426,6 +426,7 @@ class LiquidGlassSettings {
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
     rimShade: 1,
+    rimShadeEnds: 0.3,
     rimLight: 1,
     shadow: [
       BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
@@ -849,10 +850,11 @@ class LiquidGlassSettings {
   ///
   /// iOS 27 glass is bounded by a half-point line that is the backdrop at
   /// its own position, untinted and unblurred, darkened by a fixed step:
-  /// about 31% across the light axis and a fifth of that at its ends, where
-  /// the rim light sits ([rimShadeEnds]). Together with [rimLight] this is
-  /// what reads as the "bubble" edge of a native control. `1.0` matches both
-  /// native materials, the dark one's taken below a [bodyShade].
+  /// about 31% across the light axis and, on the light material, 30% of that
+  /// at its ends, where the rim light sits ([rimShadeEnds]). Together with
+  /// [rimLight] this is what reads as the "bubble" edge of a native control.
+  /// `1.0` matches both native materials, the dark one's taken below a
+  /// [bodyShade].
   ///
   /// Unlike [edgeAbsorption], which darkens the whole bevel, this touches
   /// only the outermost pixels. The line is subtracted from the colour
@@ -863,8 +865,11 @@ class LiquidGlassSettings {
   /// native one is: its anti-aliasing narrows to half a logical pixel, so the
   /// outline lands on an opaque pixel, and the silhouette grows by a
   /// physical pixel at 3x, where the native outline sits outside the frame.
+  /// On the Standard path, which is clipped to the frame, the light line takes
+  /// the outermost half point inside it and darkens the glass composite by
+  /// the same step.
   ///
-  /// Only affects the Premium (Impeller) path. Defaults to `0.0`, off.
+  /// Defaults to `0.0`, off.
   final double rimShade;
 
   /// The effective rim shade taking visibility into account.
@@ -873,9 +878,12 @@ class LiquidGlassSettings {
   /// How much of [rimShade] survives at the ends of the light axis, where
   /// the [rimLight] lobes sit, as a fraction of its strength across it.
   ///
-  /// The native light material keeps about a fifth of the outline there
-  /// (`0.2`, the default); the dark material's outline dissolves into the
-  /// lobes entirely (`0.0`).
+  /// Between the ends and the sides the outline follows cos^2 of the angle
+  /// from across the axis on both materials (measured on iOS 27.2). The
+  /// native light material keeps 30% at the ends (`0.3`, used by
+  /// [ios27Light]), which keeps the long top and bottom edges of a wide
+  /// control visible on white; the dark material's outline dissolves into
+  /// the lobes entirely (`0.0`). Defaults to `0.2`.
   final double rimShadeEnds;
 
   /// Strength of the iOS 27 rim highlight.

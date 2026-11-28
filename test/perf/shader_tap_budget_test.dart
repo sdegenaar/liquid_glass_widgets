@@ -208,8 +208,9 @@ void main() {
       expect(render, isNot(contains('pow(max(across, 0.0), 1.75)')));
       expect(
         render,
-        contains('float across = acrossRaw * acrossSqrt * sqrt(acrossSqrt);'),
+        contains('float acrossRaw = max(1.0 - litness * litness, 0.0);'),
       );
+      expect(render, contains('? acrossRaw * acrossSqrt * sqrt(acrossSqrt)'));
     });
 
     test('render.glsl applyGlassColor exits early when alpha == 0', () {
