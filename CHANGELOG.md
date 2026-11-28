@@ -12,8 +12,17 @@
 - **Control-level `enabled` on `GlassSegmentedControl` & `GlassSegmentedControl.scrollable`:** Adds `bool enabled = true` blocking taps, drags, scrolling, and keyboard activation while dimming the resting control to 50% opacity.
 - **Lifecycle-aware & optional frame-driven sampling on `GlassContentAwareScope` (`sampleOnFrame`):** Pauses sampling automatically when the app leaves `AppLifecycleState.resumed`, adds opt-in `sampleOnFrame: true` (throttled persistent frame callback with zero idle timers for video/carousels), and composites premultiplied alpha accurately over `backgroundColor` in `computeVerdict`.
 
+## Changes
+
+- **Native iOS 26 / iOS 27 default control metrics:**
+  - `GlassSwitch` defaults to `width: 63.0, height: 28.0` (was `58.0 × 26.0`), matching native `UISwitch` dimensions and its calibrated lifted-lens geometry.
+  - `GlassTabBar.bottom`, `.searchable`, and `.minimizable` default to `barHeight: 62.0` (was `64.0`) and `horizontalPadding: 21.0` (was `20.0`), `GlassTabBarExtraButton` defaults to `size: 62.0`, and the selected tab icon and label tint with `CupertinoTheme.of(context).primaryColor` under `GlassStyle.ios26` / `GlassStyle.ios27` (matching native `UITabBar`; `GlassStyle.classic` and explicit `selectedIconColor` / `selectedLabelColor` overrides are unchanged).
+  - `GlassMenu` (and menu-backed `GlassPullDownButton`, `GlassButtonGroup`, `GlassBarItem.menu`, and `GlassTabBarExtraButton.menu`) defaults to `menuWidth: 250.0` (was `200.0`), matching native `UIMenu`.
+  - `GlassModalSheet` defaults to `halfSize: 0.525` (was `0.45`), matching live iOS 26 / iOS 27 floating `.medium` sheet height (~52.5% of screen height on Face ID iPhones) while keeping `showDragIndicator: true`, and `GlassModalSheet.show` uses brightness-aware barrier scrims (`0x2B000000` light / `0x6D000000` dark) under `GlassStyle.ios26` / `GlassStyle.ios27` matching UIKit's dark-mode sheet dimming.
+
 ## Bug Fixes
 
+- **`GlassModalSheet` exact spring-settle on detent snaps:** Passes `snapToEnd: true` to `SpringSimulation` in detent snaps so overdamped springs settle to the exact detent coordinate (`progress == 1.0`) rather than parking slightly short within simulation tolerance.
 - **`GlassScaffold` native `GlassTabBar` bottom scroll edge parity:** Suppresses the automatic opaque soft `bottomEdgeFade` behind `GlassTabBar` under `GlassStyle.ios26` and `GlassStyle.ios27` (matching native `UITabBar` where scrolling cards pass at full colour and contrast through the floating glass bar and its rim refractions). Explicit `bottomEdgeFade: true`, non-soft `edgeStyle` (`.blur` / `.hard`), custom `bottomEdgeFadeExtent`, non-tab bottom bars (`GlassToolbar`), and `GlassStyle.classic` remain unchanged.
 - **Untinted `GlassButton(style: GlassButtonStyle.prominent)` & `GlassIconButton(style: GlassButtonStyle.prominent)`:** In glass mode, enabled untinted prominent buttons now default to `CupertinoTheme.of(context).primaryColor` with Rec. 709 luminance-contrasted foregrounds (eliminating illegible white-on-white light-mode pills), and disabled prominent buttons revert to neutral glass pills with dimmed foregrounds (matching `GlassBarItemStyle.prominent`, `GlassToggle.button`, and UIKit).
 - **Disabled `GlassSlider` thumb & track dimming:** `GlassSlider(onChanged: null)` now dims its resting thumb and track to 50% opacity (matching native disabled `UISlider`).

@@ -901,7 +901,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Sheet widget displayed inside the glass sheet.
   final Widget sheet;
 
-  /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
+  /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.525.
   /// Has no effect on a [GlassSheetDetent.fitted] sheet.
   final double halfSize;
 
@@ -1104,7 +1104,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     super.key,
     required this.body,
     required this.sheet,
-    this.halfSize = 0.45,
+    this.halfSize = 0.525,
     this.fullSize,
     this.initialState = GlassSheetState.half,
     this.topBorderRadius = 38,

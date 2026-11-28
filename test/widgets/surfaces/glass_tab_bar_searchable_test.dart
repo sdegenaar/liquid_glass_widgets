@@ -504,9 +504,9 @@ void main() {
 
       expect(bar.isSearchActive, isFalse);
       expect(bar.spacing, equals(8));
-      expect(bar.barHeight, equals(64));
+      expect(bar.barHeight, equals(62));
       expect(bar.barBorderRadius, equals(GlassDefaults.capsuleRadius));
-      expect(bar.horizontalPadding, equals(20));
+      expect(bar.horizontalPadding, equals(21));
       expect(bar.verticalPadding, equals(20));
       expect(bar.showIndicator, isTrue);
       expect(bar.quality, isNull);

@@ -522,7 +522,7 @@ final class GlassBarMenuItem extends GlassBarActionItem {
     required this.icon,
     required this.menuItems,
     this.menuAlignment,
-    this.menuWidth = 200,
+    this.menuWidth = 250,
     this.menuHeight,
     this.menuSettings,
     super.id,

@@ -641,5 +641,111 @@ void main() {
       );
       expect(boundary.hasHoistHost, isFalse);
     });
+
+    testWidgets(
+        'PR 2 native iOS 26/27 control metrics and primaryColor tab tinting',
+        (tester) async {
+      // Default control metrics match native iOS 26 / iOS 27 UIKit.
+      final sw = GlassSwitch(value: true, onChanged: (_) {});
+      expect(sw.width, equals(63.0));
+      expect(sw.height, equals(28.0));
+
+      final tabBar = GlassTabBar.bottom(
+        tabs: const [
+          GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+          GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+        ],
+        selectedIndex: 0,
+        onTabSelected: (_) {},
+      );
+      expect(tabBar.barHeight, equals(62.0));
+      expect(tabBar.horizontalPadding, equals(21.0));
+
+      final extra = GlassTabBarExtraButton(
+        icon: const Icon(CupertinoIcons.add),
+        label: 'Add',
+        onTap: () {},
+      );
+      expect(extra.size, equals(62.0));
+      expect(extra.menuWidth, equals(250.0));
+
+      final menu = GlassMenu(
+        trigger: const SizedBox(width: 44, height: 44),
+        items: [GlassMenuItem(title: 'Copy', onTap: () {})],
+      );
+      expect(menu.menuWidth, equals(250.0));
+
+      final sheet = GlassModalSheet(child: const SizedBox());
+      expect(sheet.halfSize, equals(0.525));
+      expect(sheet.showDragIndicator, isTrue);
+
+      // GlassTabBar active tab tints icon & label with primaryColor on ios27/ios26,
+      // stays monochrome on classic, and respects explicit selectedIconColor.
+      const customBlue = Color(0xFF007AFF);
+
+      Future<Color?> resolveSelectedIconColor({
+        required GlassThemeData glassTheme,
+        Color? explicitSelectedColor,
+      }) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(
+              brightness: Brightness.light,
+              primaryColor: customBlue,
+            ),
+            home: GlassTheme(
+              data: glassTheme,
+              child: GlassTabBar.bottom(
+                tabs: const [
+                  GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                  GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+                ],
+                selectedIndex: 0,
+                selectedIconColor: explicitSelectedColor,
+                onTabSelected: (_) {},
+                quality: GlassQuality.minimal,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final iconTheme = tester.widget<IconTheme>(
+          find
+              .ancestor(
+                of: find.byIcon(CupertinoIcons.home).last,
+                matching: find.byType(IconTheme),
+              )
+              .first,
+        );
+        return iconTheme.data.color;
+      }
+
+      expect(
+        await resolveSelectedIconColor(
+          glassTheme: const GlassThemeData.ios27(),
+        ),
+        equals(customBlue),
+      );
+      expect(
+        await resolveSelectedIconColor(
+          glassTheme: const GlassThemeData.ios26(),
+        ),
+        equals(customBlue),
+      );
+      expect(
+        await resolveSelectedIconColor(
+          glassTheme: const GlassThemeData.classic(),
+        ),
+        isNot(equals(customBlue)),
+      );
+      const overrideColor = Color(0xFFFF3B30);
+      expect(
+        await resolveSelectedIconColor(
+          glassTheme: const GlassThemeData.ios27(),
+          explicitSelectedColor: overrideColor,
+        ),
+        equals(overrideColor),
+      );
+    });
   });
 }

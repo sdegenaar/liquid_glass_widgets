@@ -192,12 +192,12 @@ void main() {
       expect(item.menuItems, hasLength(1));
     });
 
-    test('defaults: menuWidth=200, menuAlignment=null, enabled=true', () {
+    test('defaults: menuWidth=250, menuAlignment=null, enabled=true', () {
       final item = GlassButtonGroupItem.menu(
         icon: const Icon(CupertinoIcons.ellipsis),
         menuItems: [],
       );
-      expect(item.menuWidth, 200);
+      expect(item.menuWidth, 250);
       expect(item.menuAlignment, isNull);
       expect(item.enabled, isTrue);
     });
@@ -240,7 +240,7 @@ void main() {
       final item = GlassButtonGroupItem(
           icon: const Icon(CupertinoIcons.add), onTap: () {});
       expect(item.menuItems, isNull);
-      expect(item.menuWidth, 200);
+      expect(item.menuWidth, 250);
     });
   });
 

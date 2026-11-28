@@ -55,9 +55,11 @@ class GlassModalSheet extends StatefulWidget {
   // Geometry Properties
   // ===========================================================================
 
-  /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
+  /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.525.
   ///
-  /// Has no effect on a [GlassSheetDetent.fitted] sheet.
+  /// Matches native iOS 26 / iOS 27 floating `.medium` sheet height (~52.5% of
+  /// full screen height, measured at 458.7 pt on 874 pt Face ID iPhones). Has
+  /// no effect on a [GlassSheetDetent.fitted] sheet.
   final double halfSize;
 
   /// Maximum sheet height in 'full' state.
@@ -328,7 +330,7 @@ class GlassModalSheet extends StatefulWidget {
   const GlassModalSheet({
     super.key,
     required this.child,
-    this.halfSize = 0.45,
+    this.halfSize = 0.525,
     this.fullSize,
     this.initialState = GlassSheetState.half,
     this.topBorderRadius = 38,
@@ -491,7 +493,7 @@ class GlassModalSheet extends StatefulWidget {
   static Future<T?> show<T>({
     required BuildContext context,
     required WidgetBuilder builder,
-    double halfSize = 0.45,
+    double halfSize = 0.525,
     double? fullSize,
     GlassSheetState initialState = GlassSheetState.half,
     double fillThreshold = 0.60,
@@ -630,10 +632,13 @@ class GlassModalSheet extends StatefulWidget {
       to: navigator.context,
     );
     final capturedStyle = GlassThemeHelpers.resolveStyle(context);
+    final capturedDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final effectiveBarrierColor = barrierColor ??
         (capturedStyle == GlassStyle.classic
             ? GlassDefaults.barrierColor
-            : const Color(0x24000000));
+            : (capturedDark
+                ? const Color(0x6D000000)
+                : const Color(0x2B000000)));
 
     return navigator.push<T>(_GlassModalSheetRoute<T>(
       anchorPoint: subScreen?.center,

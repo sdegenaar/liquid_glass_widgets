@@ -118,8 +118,8 @@ class GlassSwitch extends StatefulWidget {
     this.inactiveColor,
     this.thumbColor = CupertinoColors.white,
     this.thumbShadow,
-    this.width = 58.0,
-    this.height = 26.0,
+    this.width = 63.0,
+    this.height = 28.0,
     this.settings,
     this.useOwnLayer = false,
     this.quality,
@@ -175,12 +175,12 @@ class GlassSwitch extends StatefulWidget {
 
   /// Width of the switch.
   ///
-  /// Defaults to 58.0.
+  /// Defaults to 63.0 (native iOS 26/27 `UISwitch` width).
   final double width;
 
   /// Height of the switch.
   ///
-  /// Defaults to 26.0.
+  /// Defaults to 28.0 (native iOS 26/27 `UISwitch` height).
   final double height;
 
   // ===========================================================================

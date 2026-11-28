@@ -122,7 +122,7 @@ Ideas under consideration. None committed.
   in 1.10, and `GlassBarItem.text` / `GlassBarItemStyle.prominent` in `1.21.0`),
   unblocking the major-release flip to make the data-driven API the plain
   `GlassAppBar` in 2.0.0.
-- [ ] **Unify lone bar-item sizing & UIKit control metrics** (2.0) — collapse lone shared bar items from 46pt to 44pt and evaluate UIKit default metric alignment (`GlassSwitch` 58→63pt, `GlassTabBar` 64→62pt, `GlassModalSheet` half detent 0.45→0.56, `GlassMenu` width 200→250pt) in a major release so existing 1.x layouts are never silently shifted.
+- [ ] **Unify lone bar-item sizing** (2.0) — collapse lone shared bar items from 46pt to 44pt in a major release. *(Native iOS 26/27 control defaults — `GlassSwitch` 63×28, `GlassTabBar` 62pt / 21pt + accent selected tint, `GlassModalSheet` `halfSize: 0.525` + adaptive scrim, and `GlassMenu` 250pt — shipped in `1.23.0`.)*
 
 ### Platform Edge Cases
 

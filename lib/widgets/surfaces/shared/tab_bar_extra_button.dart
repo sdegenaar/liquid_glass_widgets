@@ -52,7 +52,7 @@ class GlassTabBarExtraButton {
     required this.onTap,
     required this.label,
     this.iconColor,
-    this.size = 64,
+    this.size = 62,
     this.placement = GlassExtraButtonPlacement.right,
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
@@ -60,7 +60,7 @@ class GlassTabBarExtraButton {
     this.selected,
   })  : menuItems = null,
         menuAlignment = null,
-        menuWidth = 200,
+        menuWidth = 250,
         menuHeight = null;
 
   /// Opens a [GlassMenu] pull-down when the extra button is tapped.
@@ -79,14 +79,14 @@ class GlassTabBarExtraButton {
     required List<Widget> this.menuItems,
     required this.label,
     this.iconColor,
-    this.size = 64,
+    this.size = 62,
     this.placement = GlassExtraButtonPlacement.right,
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
     this.enabled = true,
     this.selected,
     this.menuAlignment,
-    this.menuWidth = 200,
+    this.menuWidth = 250,
     this.menuHeight,
   }) : onTap = _noOp;
 
@@ -104,7 +104,7 @@ class GlassTabBarExtraButton {
 
   /// Width and height of the button.
   ///
-  /// Defaults to 64 to match the default bar height.
+  /// Defaults to 62 to match the default bar height.
   final double size;
 
   /// Where this button is placed in [GlassTabBar.bottom].

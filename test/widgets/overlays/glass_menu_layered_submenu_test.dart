@@ -341,15 +341,15 @@ void main() {
     final c = GlassMenuController();
     await open(tester, c);
     final root = paintedRect(tester, surfaceFor(find.text('Open')));
-    expect(root.width, closeTo(200, .01));
+    expect(root.width, closeTo(250, .01));
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
     final parent = paintedRect(tester, surfaceFor(find.text('Open')));
     final card = paintedRect(tester, surfaceFor(header(1)));
-    expect(parent.width, closeTo(194.2, .05));
+    expect(parent.width, closeTo(242.75, .05));
     expect(parent.top, closeTo(root.top, .05));
     expect(parent.center.dx, closeTo(root.center.dx, .05));
-    expect(card.width, closeTo(200, .05));
+    expect(card.width, closeTo(250, .05));
     expect(card.center.dx, closeTo(root.center.dx, .05));
     final source = find.text('Share').first;
     expect(tester.getCenter(header(1)).dy,
