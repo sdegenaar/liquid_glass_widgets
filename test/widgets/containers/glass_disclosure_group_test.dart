@@ -476,8 +476,15 @@ void main() {
     });
 
     testWidgets(
-        'a title that asks for one line keeps it, ending in an ellipsis',
+        'a title that asks for one line keeps it at the largest text size',
         (tester) async {
+      const title = 'Advanced settings for statistics, backups and sync';
+      // The same phone and AX5 text size as above, where an unlimited title
+      // of this length wraps.
+      tester.view
+        ..physicalSize = const Size(1170, 2532)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         CupertinoApp(
           builder: (context, child) => MediaQuery(
@@ -490,7 +497,7 @@ void main() {
               children: const [
                 GlassDisclosureGroup(
                   title: Text(
-                    'Advanced settings',
+                    title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -502,10 +509,15 @@ void main() {
         ),
       );
 
-      final paragraph =
-          tester.renderObject<RenderParagraph>(find.text('Advanced settings'));
-      expect(paragraph.maxLines, 1);
-      expect(paragraph.overflow, TextOverflow.ellipsis);
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(title));
+      expect(paragraph.didExceedMaxLines, isTrue,
+          reason: 'the title needs more than one line at this size');
+      final lineTops = paragraph
+          .getBoxesForSelection(
+              const TextSelection(baseOffset: 0, extentOffset: title.length))
+          .map((box) => box.top)
+          .toSet();
+      expect(lineTops, hasLength(1), reason: 'the app asked for one line');
     });
   });
 }
