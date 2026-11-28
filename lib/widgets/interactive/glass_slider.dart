@@ -434,8 +434,11 @@ class _GlassSliderState extends State<GlassSlider>
   }
 
   void _handleDragEnd(DragEndDetails details) {
+    // The value the drag last reported, which the slider may not have been
+    // rebuilt with yet: the last move and the lift can arrive in one frame.
+    final endValue = _dragValue ?? widget.value;
     _cleanupDrag();
-    widget.onChangeEnd?.call(widget.value);
+    widget.onChangeEnd?.call(endValue);
   }
 
   void _handleDragCancel() {
@@ -459,6 +462,15 @@ class _GlassSliderState extends State<GlassSlider>
     // Let the spring settle — this produces the elastic bounce-back jelly
     // animation as the velocity decays through the spring curve.
     // (No need to reset; the spring naturally settles to its current target.)
+  }
+
+  /// Moves the slider to [newValue] in one step, reporting the start, the
+  /// change and the end, as Flutter's Slider does for a screen-reader or
+  /// keyboard adjustment.
+  void _adjustTo(double newValue) {
+    widget.onChangeStart?.call(widget.value);
+    widget.onChanged?.call(newValue);
+    widget.onChangeEnd?.call(newValue);
   }
 
   // Cache effectiveQuality at state level to make it accessible in _buildThumbGlass
@@ -520,16 +532,10 @@ class _GlassSliderState extends State<GlassSlider>
           semanticValue: '${(normalizedValue * 100).round()}%',
           semanticIncreasedValue: '${(normalizedIncreased * 100).round()}%',
           semanticDecreasedValue: '${(normalizedDecreased * 100).round()}%',
-          semanticOnIncrease: widget.onChanged != null
-              ? () {
-                  widget.onChanged!(increasedValue);
-                }
-              : null,
-          semanticOnDecrease: widget.onChanged != null
-              ? () {
-                  widget.onChanged!(decreasedValue);
-                }
-              : null,
+          semanticOnIncrease:
+              widget.onChanged != null ? () => _adjustTo(increasedValue) : null,
+          semanticOnDecrease:
+              widget.onChanged != null ? () => _adjustTo(decreasedValue) : null,
           shape: const StadiumBorder(),
           isFocusedNotifier: _isFocused,
           isHoveredNotifier: _isHovered,
