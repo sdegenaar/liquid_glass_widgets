@@ -182,6 +182,7 @@ class GlassThemeSettings {
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
     rimShade: 1,
+    rimShadeEnds: 0.3,
     rimLight: 1,
     bodyShade: 0,
     shadow: [

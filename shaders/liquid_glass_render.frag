@@ -1360,11 +1360,16 @@ void main() {
     }
 
     // iOS 27 / iOS 26 hairline darkening: 0.31 across the light axis, uRimConfig.z
-    // of that at its ends (0.2 on the light material, 0 on the dark, where
+    // of that at its ends (0.3 on the light material, 0 on the dark, where
     // the line dissolves into the lobes), falling off as cos^3.5 of the
-    // angle from the axis' perpendicular. Subtracted (a linear burn) rather
-    // than blended, which is how the native line stays a fixed step below
-    // any backdrop colour.
+    // angle from the axis' perpendicular. On surfaces the ends are a floor
+    // the falloff is added to: the iOS 27.2 light line steps 80/255 below
+    // white at the sides, 68 at 30 degrees from them, 36-42 at 60 and 24 at
+    // the ends, on circles, capsules and the tab bar alike, which keeps the
+    // long top and bottom edges of a capsule visible on white. With no floor
+    // (the dark material) the two forms are the same. Subtracted (a linear
+    // burn) rather than blended, which is how the native line stays a fixed
+    // step below any backdrop colour.
     if (hairline > 0.0) {
         float acrossRaw = max(1.0 - litness * litness, 0.0);
         // x^1.75 = x * sqrt(x) * sqrt(sqrt(x)), avoiding transcendental pow().
@@ -1380,7 +1385,10 @@ void main() {
         float effectiveShadeEnds = isClearIndicator
             ? mix(uRimConfig.z * 0.35, max(uRimConfig.z, 0.68), brightBackdrop)
             : uRimConfig.z;
-        float shade = effectiveRimShade * 0.314 * mix(effectiveShadeEnds, 1.0, across);
+        float shadeProfile = isClearIndicator
+            ? mix(effectiveShadeEnds, 1.0, across)
+            : min(effectiveShadeEnds + across, 1.0);
+        float shade = effectiveRimShade * 0.314 * shadeProfile;
         finalColor.rgb = max(finalColor.rgb - vec3(shade * hairline), 0.0);
     }
 

@@ -225,7 +225,13 @@ void main() {
   float maxQLen = length(maxQ);
   float dist = maxQLen + min(max(q.x, q.y), 0.0) - r;
   float smoothing = 1.0 / uScale.x;
-  float mask = 1.0 - smoothstep(-smoothing, smoothing, dist);
+  // Under the light iOS 27 outline (rimShade) the edge ramps over one physical
+  // pixel instead of two, as on the Premium path: the widget's clip already
+  // anti-aliases the silhouette, and the wider ramp let the backdrop through
+  // the outline's own pixels (a third of the outermost, a sixth of the next).
+  bool lightRim = uRimShade > 0.001 && uBackdropLuma >= 0.5;
+  float edgeAA = lightRim ? 0.5 * smoothing : smoothing;
+  float mask = 1.0 - smoothstep(-edgeAA, edgeAA, dist);
 
   // Skip shading outside the shape or when fully dematerialized without an
   // early return (multiple returns in main() alongside samplers can fail
@@ -404,7 +410,13 @@ void main() {
       // Replace the harsh n=16 vertical specular bar with a smooth perimeter rim
       // that stays continuous across the sides/corners and rises via cos³ at the
       // top and bottom lobes, plus any explicit directional specular (ios26Dark).
-      float hairline = 1.0 - smoothstep(0.30, 1.10, distFromEdge);
+      // The light line is a full half point inside the clip: the native one
+      // sits just outside the frame, where this path cannot draw, so taking the
+      // outermost half point keeps its weight (the anti-aliased pixel plus one
+      // at full strength) instead of fading over the bevel.
+      float hairline = lightRim
+          ? 1.0 - smoothstep(0.6, 0.85, distFromEdge)
+          : 1.0 - smoothstep(0.30, 1.10, distFromEdge);
       float hairlineGate = 1.0 - hairline * step(0.001, uRimShade);
       float nativeRimBright = 0.28 + 0.14 * uRimLight * lobe
                             + totalSpecular * kRimSpecularMix
@@ -427,9 +439,11 @@ void main() {
       }
       if (uRimShade > 0.001 && distFromEdge < 2.0) {
         float across   = fastPowLW(max(0.0, 1.0 - along * along), 1.75);
-        float shadeWeight = mix(0.22, 0.28, step(0.5, uBackdropLuma));
+        // 0.314 is the Premium step; the ends are a floor the falloff is added
+        // to, as in liquid_glass_render.frag.
+        float shadeWeight = mix(0.22, 0.314, step(0.5, uBackdropLuma));
         nativeRimShade = clamp(
-            uRimShade * shadeWeight * mix(uRimShadeEnds, 1.0, across) * hairline,
+            uRimShade * shadeWeight * min(uRimShadeEnds + across, 1.0) * hairline,
             0.0,
             1.0);
       }
@@ -491,8 +505,12 @@ void main() {
       pmRgb2 *= (1.0 - absorbDarken2);
       outA2   = outA2 + absorbDarken2 * (1.0 - outA2);
       if (nativeRimLight > 0.0) {
-        pmRgb2 = pmRgb2 * (1.0 - nativeRimLight) + vec3(nativeRimLight);
-        outA2  = outA2 + nativeRimLight * (1.0 - outA2);
+        if (lightRim) {
+          pmRgb2 += vec3(nativeRimLight);
+        } else {
+          pmRgb2 = pmRgb2 * (1.0 - nativeRimLight) + vec3(nativeRimLight);
+          outA2  = outA2 + nativeRimLight * (1.0 - outA2);
+        }
       }
       if (nativeRimShade > 0.0) {
         pmRgb2 *= (1.0 - nativeRimShade);
@@ -629,8 +647,14 @@ void main() {
     pmA    = pmA + absorbDarken * (1.0 - pmA);
 
     if (nativeRimLight > 0.0) {
-      pmRgb = pmRgb * (1.0 - nativeRimLight) + vec3(nativeRimLight);
-      pmA   = pmA + nativeRimLight * (1.0 - pmA);
+      if (lightRim) {
+        // Added, as on the Premium path: blending towards white has no room
+        // left over a near-white body, where the native highlight still shows.
+        pmRgb += vec3(nativeRimLight);
+      } else {
+        pmRgb = pmRgb * (1.0 - nativeRimLight) + vec3(nativeRimLight);
+        pmA   = pmA + nativeRimLight * (1.0 - pmA);
+      }
     }
     if (nativeRimShade > 0.0) {
       pmRgb *= (1.0 - nativeRimShade);
