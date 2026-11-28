@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **`GlassSlider.semanticFormatterCallback`:** Formats the value a screen reader announces, and the values an increment or decrement reaches, as Material's `Slider.semanticFormatterCallback` does. The value was always a percentage of the range, so a 0.5x to 2x speed slider at 1x read "33%". `null` (the default) keeps the percentage.
+
 # 1.22.0
 
 ## Features
