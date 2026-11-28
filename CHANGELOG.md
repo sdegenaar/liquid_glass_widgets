@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Standard glass on the first screen without an awaited `initialize()`:** A `LightweightLiquidGlass` surface built before the lightweight shader program had loaded painted the shader-less fallback, a flat wash of its `glassColor`, and kept it until something unrelated rebuilt it. On native platforms, in an app that starts `LiquidGlassWidgets.initialize()` without awaiting it, or never calls it, every Standard-quality surface on the first screen lost its blur and rim, and a selected `GlassToggle.button` or other prominent tinted button read as untinted glass (in dark mode, a dark fill behind dark text). The surface now rebuilds once the shared shader exists. `LightweightLiquidGlass.preWarm()` and `GlassEffect.preWarm()` now return the load in flight to a caller that comes during the load, so every surface mounted in the same frame waits for it; before, a second `GlassEffect` (such as a second `GlassSwitch` thumb) returned at once and never took the shader.
+
 # 1.22.0
 
 ## Features

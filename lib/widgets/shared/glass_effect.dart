@@ -91,7 +91,9 @@ class GlassEffect extends StatefulWidget {
   final EdgeInsets clipExpansion;
 
   static ui.FragmentProgram? _cachedProgram;
-  static bool _isPreparing = false;
+
+  // The load in flight, which every [preWarm] call made meanwhile returns.
+  static Future<void>? _preparing;
 
   /// Detects if Impeller rendering engine is active
   static bool get _canUseImpeller => ui.ImageFilter.isShaderFilterSupported;
@@ -117,15 +119,28 @@ class GlassEffect extends StatefulWidget {
   @visibleForTesting
   static void resetForTesting() {
     _cachedProgram = null;
-    _isPreparing = false;
+    _preparing = null;
     _dummyImage?.dispose();
     _dummyImage = null;
   }
 
   /// Pre-warms the shaders for this effect.
-  static Future<void> preWarm() async {
-    if (_cachedProgram != null || _isPreparing) return;
-    _isPreparing = true;
+  ///
+  /// A call made while the program is loading returns that load, so every
+  /// caller resumes once the program is ready (or has failed to load).
+  static Future<void> preWarm() {
+    if (_cachedProgram != null) return Future<void>.value();
+    if (_preparing case final pending?) return pending;
+    final load = _load();
+    _preparing = load;
+    // _load reports its own errors, so this chain never throws.
+    load.whenComplete(() {
+      if (identical(_preparing, load)) _preparing = null;
+    });
+    return load;
+  }
+
+  static Future<void> _load() async {
     const path =
         'packages/liquid_glass_widgets/shaders/interactive_indicator.frag';
     const testPath = 'shaders/interactive_indicator.frag';
@@ -141,8 +156,6 @@ class GlassEffect extends StatefulWidget {
       _cachedProgram = program;
     } catch (e) {
       debugPrint('[GlassEffect] Pre-warm failed: $e');
-    } finally {
-      _isPreparing = false;
     }
   }
 

@@ -122,7 +122,9 @@ class LightweightLiquidGlass extends StatefulWidget {
 
   // Cache the FragmentProgram (compiled shader code) globally
   static ui.FragmentProgram? _cachedProgram;
-  static bool _isPreparing = false;
+
+  // The load in flight, which every [preWarm] call made meanwhile returns.
+  static Future<void>? _preparing;
 
   // On native: Share one shader instance (efficient)
   // On web: Each widget needs its own instance (CanvasKit requirement)
@@ -151,15 +153,28 @@ class LightweightLiquidGlass extends StatefulWidget {
   static void resetForTesting() {
     _cachedProgram = null;
     _sharedShader = null;
-    _isPreparing = false;
+    _preparing = null;
     _dummyImage?.dispose();
     _dummyImage = null;
   }
 
   /// Global pre-warm method - loads and compiles the shader program.
-  static Future<void> preWarm() async {
-    if (_cachedProgram != null || _isPreparing) return;
-    _isPreparing = true;
+  ///
+  /// A call made while the program is loading returns that load, so every
+  /// caller resumes once the program is ready (or has failed to load).
+  static Future<void> preWarm() {
+    if (_cachedProgram != null) return Future<void>.value();
+    if (_preparing case final pending?) return pending;
+    final load = _load();
+    _preparing = load;
+    // _load reports its own errors, so this chain never throws.
+    load.whenComplete(() {
+      if (identical(_preparing, load)) _preparing = null;
+    });
+    return load;
+  }
+
+  static Future<void> _load() async {
     const path = 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
     const testPath = 'shaders/lightweight_glass.frag';
 
@@ -179,8 +194,6 @@ class LightweightLiquidGlass extends StatefulWidget {
       }
     } catch (e) {
       debugPrint('[LightweightGlass] Pre-warm failed: $e');
-    } finally {
-      _isPreparing = false;
     }
   }
 
@@ -408,6 +421,16 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     // Ensure program is loaded
     if (LightweightLiquidGlass._cachedProgram == null) {
       await LightweightLiquidGlass.preWarm();
+      // A surface built before the program loaded paints the shader-less
+      // fallback (a flat wash of glassColor at 15%). Nothing else rebuilds a
+      // resting surface, so rebuild it now to hand it the shared shader;
+      // otherwise it keeps the fallback until an unrelated rebuild.
+      if (!kIsWeb &&
+          mounted &&
+          !_isDisposed &&
+          LightweightLiquidGlass._sharedShader != null) {
+        setState(() {});
+      }
     }
 
     // On web, create a per-widget shader instance
