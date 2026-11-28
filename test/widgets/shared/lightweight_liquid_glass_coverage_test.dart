@@ -8,7 +8,7 @@
 //   - Asymmetric shape: LiquidVerticalRoundedSuperellipse
 //   - Dynamic property extraction: borderRadius as num / BorderRadius / BorderRadiusGeometry
 //   - Class-name heuristics: oval/circle/stadium fallback
-//   - preWarm guard: _isPreparing=true / _cachedProgram != null
+//   - preWarm guard: a load in flight / _cachedProgram != null
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -309,9 +309,9 @@ void main() {
 
   group('LightweightLiquidGlass.preWarm guards', () {
     test('calling preWarm twice is idempotent (no crash)', () async {
-      // First call sets _isPreparing=true while async; second call returns early.
+      // The first call starts the load; the second returns that load.
       final f1 = LightweightLiquidGlass.preWarm();
-      final f2 = LightweightLiquidGlass.preWarm(); // should return early
+      final f2 = LightweightLiquidGlass.preWarm(); // joins the load
       await Future.wait([f1, f2]);
       // No assertions needed — absence of exceptions = success.
     });
