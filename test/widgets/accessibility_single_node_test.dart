@@ -73,7 +73,13 @@ void main() {
   }
 
   final controls = <String, Widget Function()>{
-    'GlassSwitch': () => GlassSwitch(value: true, onChanged: (_) {}),
+    // A switch has no default name (screen readers already say "switch"),
+    // so it is named here as an app names it.
+    'GlassSwitch': () => GlassSwitch(
+          value: true,
+          onChanged: (_) {},
+          semanticLabel: 'Wi-Fi',
+        ),
     'GlassSegmentedControl': () => GlassSegmentedControl(
           segments: const [
             GlassSegment(label: 'System'),
@@ -206,7 +212,6 @@ void main() {
         tester.getSemantics(find.bySemanticsLabel('Wi-Fi')),
         matchesSemantics(
           label: 'Wi-Fi',
-          isButton: true,
           hasEnabledState: true,
           isEnabled: true,
           isFocusable: true,

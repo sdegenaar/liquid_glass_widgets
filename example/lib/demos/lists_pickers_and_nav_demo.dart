@@ -685,35 +685,39 @@ class _ListsPickersAndNavDemoPageState
     Widget? trailing,
     Color? valueColor,
     Widget? leading,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              SizedBox(width: 24, child: Center(child: leading)),
-              const SizedBox(width: 11),
-            ],
+  }) {
+    final Widget row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Row(
+        children: [
+          if (leading != null) ...[
+            SizedBox(width: 24, child: Center(child: leading)),
+            const SizedBox(width: 11),
+          ],
+          Text(
+            k,
+            style: TextStyle(
+              fontSize: 17,
+              color: CupertinoColors.label.resolveFrom(context),
+            ),
+          ),
+          const Spacer(),
+          if (v != null)
             Text(
-              k,
+              v,
               style: TextStyle(
                 fontSize: 17,
-                color: CupertinoColors.label.resolveFrom(context),
+                color: valueColor ?? CupertinoColors.systemGrey,
               ),
             ),
-            const Spacer(),
-            if (v != null)
-              Text(
-                v,
-                style: TextStyle(
-                  fontSize: 17,
-                  color: valueColor ?? CupertinoColors.systemGrey,
-                ),
-              ),
-            if (trailing != null) trailing,
-          ],
-        ),
-      );
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+    // The trailing GlassSwitch has no name of its own: merged with the row,
+    // it reads as one switch named by the row's label.
+    return trailing != null ? MergeSemantics(child: row) : row;
+  }
 
   // -- 2. Edit mode ---------------------------------------------------------
 
