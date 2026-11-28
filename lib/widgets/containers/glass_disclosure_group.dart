@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_surface_style.dart';
+import '../shared/glass_focus_region.dart';
 import '../shared/glass_solid_surface.dart';
 import 'glass_container.dart';
 import 'glass_divider.dart';
@@ -239,6 +241,7 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
 
   bool _isExpanded = false;
   bool _isPressed = false;
+  final ValueNotifier<bool> _isFocused = ValueNotifier(false);
 
   /// Whether the disclosure group is currently expanded.
   bool get isExpanded => _isExpanded;
@@ -290,6 +293,7 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
   @override
   void dispose() {
     _controller.dispose();
+    _isFocused.dispose();
     super.dispose();
   }
 
@@ -346,22 +350,27 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
 
   @override
   Widget build(BuildContext context) {
-    Widget header = widget.headerBuilder != null
-        ? widget.headerBuilder!(context, _isExpanded, toggle)
-        : _buildDefaultHeader(context);
-
-    // Accessibility semantics
-    header = Semantics(
-      button: true,
-      expanded: _isExpanded,
-      child: header,
-    );
+    final stateValue = _semanticStateValue(context);
+    final Widget header = widget.headerBuilder != null
+        ? Semantics(
+            button: true,
+            expanded: _isExpanded,
+            value: stateValue,
+            child: widget.headerBuilder!(context, _isExpanded, toggle),
+          )
+        : _buildDefaultHeader(context, stateValue);
 
     final effectiveSurfaceStyle = widget.surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
 
-    final childrenWidgets = _buildChildren(context, effectiveSurfaceStyle);
+    // The rows of a closed group stay built (clipped to zero height), so
+    // keep them out of keyboard focus: Tab would otherwise stop on rows that
+    // cannot be seen, and Space or Enter would activate them.
+    final childrenWidgets = ExcludeFocus(
+      excluding: !_isExpanded,
+      child: _buildChildren(context, effectiveSurfaceStyle),
+    );
 
     final expandedContent = AnimatedBuilder(
       animation: _controller.view,
@@ -405,7 +414,23 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
     return group;
   }
 
-  Widget _buildDefaultHeader(BuildContext context) {
+  /// The open or closed state as the header's semantics value, on iOS
+  /// only: VoiceOver there reads no `expanded` flag (macOS and Android do).
+  /// The words are Flutter's localized ones, as [CupertinoExpansionTile]
+  /// reads them.
+  String? _semanticStateValue(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return null;
+    final localizations = Localizations.of<CupertinoLocalizations>(
+        context, CupertinoLocalizations);
+    if (localizations == null) return null;
+    // CupertinoLocalizations names these after the change: collapsedHint is
+    // "Expanded" and expandedHint is "Collapsed".
+    return _isExpanded
+        ? localizations.collapsedHint
+        : localizations.expandedHint;
+  }
+
+  Widget _buildDefaultHeader(BuildContext context, String? stateValue) {
     final dynamicLabelColor =
         CupertinoTheme.of(context).textTheme.textStyle.color ??
             CupertinoColors.label;
@@ -479,34 +504,57 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
             child: widget.title,
           );
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      onTap: toggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        color: _isPressed
-            ? CupertinoColors.systemGrey4
-                .resolveFrom(context)
-                .withValues(alpha: 0.18)
-            : CupertinoColors.transparent,
-        padding: widget.contentPadding,
-        child: Row(
-          children: [
-            if (leadingWidget != null) ...[
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Center(child: leadingWidget),
-              ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(child: titleColumn),
-            const SizedBox(width: 8),
-            trailingWidget,
-          ],
+    final row = Row(
+      children: [
+        if (leadingWidget != null) ...[
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Center(child: leadingWidget),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(child: titleColumn),
+        const SizedBox(width: 8),
+        trailingWidget,
+      ],
+    );
+
+    // One node for the header: its title and subtitle, the button role, the
+    // expanded state and the tap. It takes keyboard focus (highlighted like
+    // a pressed row, as a focused GlassListTile is) and toggles with Space
+    // or Enter.
+    return GlassFocusRegion(
+      enabled: true,
+      isFocusedNotifier: _isFocused,
+      isButton: true,
+      semanticValue: stateValue,
+      semanticOnTap: toggle,
+      onKeyboardActivate: toggle,
+      child: Semantics(
+        expanded: _isExpanded,
+        child: GestureDetector(
+          // The tap lives on the focus region's node with the label.
+          excludeFromSemantics: true,
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: toggle,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _isFocused,
+            builder: (context, isFocused, child) => AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              color: _isPressed || isFocused
+                  ? CupertinoColors.systemGrey4
+                      .resolveFrom(context)
+                      .withValues(alpha: 0.18)
+                  : CupertinoColors.transparent,
+              padding: widget.contentPadding,
+              child: child,
+            ),
+            child: row,
+          ),
         ),
       ),
     );
