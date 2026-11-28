@@ -219,15 +219,18 @@ void main() {
   });
 
   group('Wave 1.3 — geometry, lightweight, indicator, progressive_blur', () {
-    test('sdfRRectAsym short-circuits equal radii and sceneSDF nests bwd()',
+    test(
+        'sdfRRectAsym short-circuits equal radii and sceneSDF uses O(N) 2-nearest normal-weighted union',
         () {
       final asym = _body(sdf, 'float sdfRRectAsym(');
       expect(
           asym, contains('if (rTop == rBottom) return sdfRRect(p, b, rTop);'));
 
       final scene = _body(sdf, 'float sceneSDF(');
-      expect(scene, contains('if (n == 2) return fwd;'));
-      expect(scene, contains('if (k <= 0.0) return fwd;'));
+      expect(scene, contains('if (n == 1) return sdf0(p);'));
+      expect(scene, contains('if (k <= 0.0) return near1.x;'));
+      expect(scene, contains('TRACK_NEAR2('));
+      expect(scene, contains('1.0 - dot(near1.yz, near2.yz)'));
       expect(scene, isNot(contains('float b16n')));
     });
 

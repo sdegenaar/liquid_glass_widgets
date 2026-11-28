@@ -227,6 +227,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
     this.indicatorShadow,
+    this.enabled = true,
   })  : assert(
           segments.length >= 2,
           'GlassSegmentedControl requires at least 2 segments',
@@ -294,6 +295,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
     this.indicatorShadow,
+    this.enabled = true,
   })  : isScrollable = true,
         indicatorJelly = null,
         direction = Axis.horizontal,
@@ -601,6 +603,13 @@ class GlassSegmentedControl extends StatefulWidget {
   /// Optional box shadows on the pill indicator. Scrollable mode only.
   final List<BoxShadow>? indicatorShadow;
 
+  /// Whether the control responds to taps, drags, and keyboard activation.
+  ///
+  /// When `false`, interaction is blocked across all segments and the control
+  /// renders at 50% opacity (matching native disabled `UISegmentedControl`).
+  /// Defaults to `true`.
+  final bool enabled;
+
   @override
   State<GlassSegmentedControl> createState() => _GlassSegmentedControlState();
 }
@@ -694,17 +703,21 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
           dividerSettings: widget.dividerSettings,
           indicatorShadow: widget.indicatorShadow,
           tabBarBorderRadius: borderRadius,
+          enabled: widget.enabled,
         ),
       );
+
+      final effectiveContent =
+          widget.enabled ? content : Opacity(opacity: 0.5, child: content);
 
       if (widget.useOwnLayer) {
         return AdaptiveLiquidGlassLayer(
           settings: effectiveSettings,
           quality: effectiveQuality,
-          child: content,
+          child: effectiveContent,
         );
       }
-      return content;
+      return effectiveContent;
     }
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
@@ -750,18 +763,22 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
             interactionBehavior: widget.interactionBehavior,
             glowColor: widget.glowColor,
             glowRadius: widget.glowRadius,
+            enabled: widget.enabled,
           ),
         ),
       ),
     );
 
+    final effectiveControl =
+        widget.enabled ? control : Opacity(opacity: 0.5, child: control);
+
     if (widget.useOwnLayer) {
       return AdaptiveLiquidGlassLayer(
         settings: effectiveSettings,
         quality: effectiveQuality,
-        child: control,
+        child: effectiveControl,
       );
     }
-    return control;
+    return effectiveControl;
   }
 }

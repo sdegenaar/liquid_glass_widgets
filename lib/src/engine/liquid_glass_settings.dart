@@ -12,6 +12,7 @@ import '../../constants/glass_defaults.dart';
 import '../../constants/glass_shadow.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_specular_sharpness.dart';
+import '../../types/glass_style.dart';
 import 'liquid_glass_render_scope.dart';
 
 /// Internal shader transport for the backdrop warp of the native tab-bar lens
@@ -143,6 +144,7 @@ class LiquidGlassSettings {
     this.platformViewFallbackColor,
     this.platformViewMode = PlatformViewGlassMode.fallbackColor,
     this.bodyMode = GlassBodyMode.adaptive,
+    this.sizeAdaptive = false,
   })  : pinchStrength = 0.0,
         lensWarp = null;
 
@@ -186,6 +188,7 @@ class LiquidGlassSettings {
     this.platformViewFallbackColor,
     this.platformViewMode = PlatformViewGlassMode.fallbackColor,
     this.bodyMode = GlassBodyMode.adaptive,
+    this.sizeAdaptive = false,
     required this.pinchStrength,
     this.lensWarp,
   });
@@ -326,6 +329,7 @@ class LiquidGlassSettings {
     shadow: [
       BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, 6)),
     ],
+    sizeAdaptive: true,
   );
 
   /// iOS 26.0 `glassEffect(.regular)` in the dark appearance.
@@ -358,6 +362,7 @@ class LiquidGlassSettings {
     rimLight: 0.22,
     bodyShade: 0.0,
     shadowElevation: 0,
+    sizeAdaptive: true,
   );
 
   /// iOS 26.0 interactive indicator lens preset (`_UILiquidLensView` on iOS 26.0).
@@ -430,6 +435,7 @@ class LiquidGlassSettings {
     shadow: [
       BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
     ],
+    sizeAdaptive: true,
   );
 
   /// iOS 27 `glassEffect(.regular)` in the dark appearance; see
@@ -456,6 +462,7 @@ class LiquidGlassSettings {
     rimLight: 1.15,
     bodyShade: 0.28,
     shadowElevation: 0,
+    sizeAdaptive: true,
   );
 
   /// iOS 27 interactive indicator lens preset (`_UILiquidLensView`).
@@ -485,6 +492,61 @@ class LiquidGlassSettings {
       GlassTheme.brightnessOf(context) == Brightness.dark
           ? ios27Dark
           : ios27Light;
+
+  /// iOS 26 `UIGlassEffect.Style.clear` preset — low-frost crystal glass for
+  /// controls floating over rich photography, maps, or video.
+  ///
+  /// Uses a light blur (`1.8` pt), no frost veil or drop shadow, and crisp
+  /// paraxial rim refraction.
+  static const LiquidGlassSettings ios26Clear = LiquidGlassSettings(
+    glassColor: Color(0x00FFFFFF),
+    saturation: 1.0,
+    blur: 1.8,
+    blurWeight: 1.0,
+    frost: 0,
+    thickness: 28,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: GlassDefaults.lightAngle,
+    lightIntensity: 0.18,
+    ambientStrength: 0.05,
+    fresnelStrength: 0.35,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.0,
+    rimShade: 0,
+    rimLight: 0.65,
+    shadowElevation: 0,
+  );
+
+  /// iOS 27 `UIGlassEffect.Style.clear` preset — measured against the live
+  /// iOS 27.0 CoreAnimation `glassBackground` filter (`inputBlurRadius = 0.75`,
+  /// `inputFaceColorMatrixSaturation = 1.06`, no blur-fill veil, no shadow,
+  /// deep paraxial edge refraction).
+  static const LiquidGlassSettings ios27Clear = LiquidGlassSettings(
+    glassColor: Color(0x00FFFFFF),
+    saturation: 1.06,
+    blur: 0.75,
+    blurWeight: 1.0,
+    frost: 0,
+    thickness: 40,
+    refractiveIndex: 1.28,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: 1.5707963267948966,
+    lightIntensity: 0,
+    fresnelStrength: 0,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.0,
+    rimShade: 0,
+    rimLight: 0.75,
+    shadowElevation: 0,
+  );
+
+  /// Resolves [ios26Clear] or [ios27Clear] based on the ambient
+  /// [GlassThemeData.style] in [context].
+  static LiquidGlassSettings clear(BuildContext context) =>
+      GlassTheme.maybeOf(context)?.data.style == GlassStyle.ios26
+          ? ios26Clear
+          : ios27Clear;
 
   /// Retrieves the nearest [LiquidGlassSettings] from the widget tree.
   ///
@@ -972,6 +1034,7 @@ class LiquidGlassSettings {
         platformViewFallbackColor: platformViewFallbackColor,
         platformViewMode: platformViewMode,
         bodyMode: bodyMode,
+        sizeAdaptive: sizeAdaptive,
         pinchStrength: pinchStrength,
         lensWarp: value,
       );
@@ -1018,6 +1081,7 @@ class LiquidGlassSettings {
         platformViewFallbackColor: platformViewFallbackColor,
         platformViewMode: platformViewMode,
         bodyMode: bodyMode,
+        sizeAdaptive: sizeAdaptive,
         pinchStrength: value,
         lensWarp: lensWarp,
       );
@@ -1078,6 +1142,20 @@ class LiquidGlassSettings {
   /// (luminance-preserving tint). Set to [GlassBodyMode.clear] to match Apple's
   /// `Glass.clear` (direct alpha-composite tint without luminance normalization).
   final GlassBodyMode bodyMode;
+
+  /// Enables CoreAnimation-calibrated face luminance mapping, SDR max-luma
+  /// ceilings, edge bleed, and size-adaptive frost scaling (`h = 30..160 pt`).
+  ///
+  /// Enabled by default on the era presets ([ios26Light], [ios26Dark],
+  /// [ios27Light], [ios27Dark]) so small controls (`≤ 64 pt`) stay crisp while
+  /// larger platters (`64–160 pt`, such as menus, dialogs, and cards) deepen
+  /// their frost, dark-mode smoking, and perimeter bleed to match UIKit's
+  /// `CABackdropLayer` `glassBackground` laws.
+  ///
+  /// Defaults to `false` on custom and classic [LiquidGlassSettings] instances
+  /// for bit-exact backwards compatibility. Automatically bypassed when
+  /// [bodyMode] is [GlassBodyMode.clear].
+  final bool sizeAdaptive;
 
   /// The effective saturation taking visibility into account.
   double get effectiveSaturation => 1 + (saturation - 1) * visibility;
@@ -1143,6 +1221,7 @@ class LiquidGlassSettings {
         // other enum in this class.
         platformViewMode: t < 0.5 ? a.platformViewMode : b.platformViewMode,
         bodyMode: t < 0.5 ? a.bodyMode : b.bodyMode,
+        sizeAdaptive: t < 0.5 ? a.sizeAdaptive : b.sizeAdaptive,
         // pinchStrength is interaction state — lerp it so transitions are smooth
         // when the indicator fades between active/resting states.
         pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!,
@@ -1194,6 +1273,7 @@ class LiquidGlassSettings {
     Color? platformViewFallbackColor,
     PlatformViewGlassMode? platformViewMode,
     GlassBodyMode? bodyMode,
+    bool? sizeAdaptive,
   }) =>
       LiquidGlassSettings._withPinch(
         visibility: visibility ?? this.visibility,
@@ -1232,6 +1312,7 @@ class LiquidGlassSettings {
             platformViewFallbackColor ?? this.platformViewFallbackColor,
         platformViewMode: platformViewMode ?? this.platformViewMode,
         bodyMode: bodyMode ?? this.bodyMode,
+        sizeAdaptive: sizeAdaptive ?? this.sizeAdaptive,
         pinchStrength: pinchStrength,
         lensWarp: lensWarp,
       );
@@ -1275,6 +1356,7 @@ class LiquidGlassSettings {
         other.platformViewFallbackColor == platformViewFallbackColor &&
         other.platformViewMode == platformViewMode &&
         other.bodyMode == bodyMode &&
+        other.sizeAdaptive == sizeAdaptive &&
         other.pinchStrength == pinchStrength &&
         other.lensWarp == lensWarp;
   }
@@ -1315,6 +1397,7 @@ class LiquidGlassSettings {
         platformViewFallbackColor,
         platformViewMode,
         bodyMode,
+        sizeAdaptive,
         pinchStrength,
         lensWarp,
       ]);

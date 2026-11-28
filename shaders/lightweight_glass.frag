@@ -40,6 +40,9 @@ uniform float uFresnelStrength;
 uniform float uBodyMode;
 // 35..38: uRimConfig — (rimShade, rimLight, rimShadeEnds, visibility)
 uniform vec4 uRimConfig;
+// 39..42: uFace — CoreAnimation glassFace tone transform:
+//   x: faceBlack, y: faceWhite (y <= x disables), z: faceMaxLuma, w: faceFillAlpha
+uniform vec4 uFace;
 
 uniform sampler2D uBackground; // The captured background texture
 // Slot 22 (uData5.z): specular sharpness level — passed as float 0.0/1.0/2.0, cast to int.
@@ -544,12 +547,33 @@ void main() {
       float ambientDarken = clamp((uAmbientStrength * 0.25 + 0.08) * (1.0 + densityFactor * 0.5) + bottomDarken, 0.0, 0.8);
       vec3 darkenedBg = saturatedBg * (1.0 - ambientDarken);
 
-      // PATH A body: use luminosity-preserving glass tint (applyGlassColorLW) in adaptive mode.
-      // In clear mode (uBodyMode > 0.5, iOS 26 Glass.clear), bypass luminosity normalization
-      // and directly alpha composite the glass color over the background.
+      // PATH A body: CoreAnimation glassFace when active (uFace.y > uFace.x),
+      // else luminosity-preserving tint (adaptive) or direct mix (clear).
       vec3 bodyColor;
       if (uBodyMode > 0.5) {
         bodyColor = mix(saturatedBg, uGlassColor.rgb, uGlassColor.a);
+      } else if (uFace.y > uFace.x) {
+        float faceL = clamp(bgLuminance, 0.0, 1.0);
+        float mappedL = uFace.x + (uFace.y - uFace.x) * faceL;
+        vec3 faceRgb = clamp(vec3(mappedL) + (bgRgb - vec3(faceL)) * 1.2, 0.0, 1.0);
+        if (uFace.w > 0.001) {
+          faceRgb = mix(faceRgb, vec3(1.0), uFace.w);
+        } else if (uFace.w < -0.001) {
+          faceRgb = mix(faceRgb, vec3(0.0), -uFace.w);
+        }
+        float outL = dot(faceRgb, LUMA_WEIGHTS);
+        if (uFace.z > 0.001 && outL > uFace.z) {
+          faceRgb *= uFace.z / max(outL, 0.001);
+        }
+        float gcChroma = max(max(uGlassColor.r, uGlassColor.g), uGlassColor.b)
+                       - min(min(uGlassColor.r, uGlassColor.g), uGlassColor.b);
+        if (gcChroma > 0.04 && uGlassColor.a > 0.001) {
+          vec3 darkTint = uGlassColor.rgb * 0.45;
+          vec3 brightTint = mix(uGlassColor.rgb, vec3(1.0), 0.35);
+          bodyColor = mix(faceRgb, mix(darkTint, brightTint, faceL), uGlassColor.a);
+        } else {
+          bodyColor = faceRgb;
+        }
       } else {
         bodyColor = applyGlassColorLW(darkenedBg, uGlassColor);
       }
@@ -599,6 +623,16 @@ void main() {
     ambientDarken *= (1.0 - isClear);
     
     pmA = pmA + ambientDarken * (1.0 - pmA);
+
+    // CoreAnimation dark-mode face smoke (PATH B, no backdrop texture):
+    // pulls bright backdrops down to smoked dark glass on Web/Skia/Desktop
+    // proportionally to the preset's maxLuma ceiling and black fill alpha.
+    if (uFace.y > uFace.x && isClear < 0.5 && isLight < 0.5) {
+      float smokeA = clamp((1.0 - uFace.z) * 0.65 + max(-uFace.w, 0.0), 0.0, 0.72);
+      vec3 smokeRgb = vec3(uFace.x) * smokeA;
+      pmRgb = smokeRgb + pmRgb * (1.0 - smokeA);
+      pmA   = smokeA + pmA * (1.0 - smokeA);
+    }
 
     // Rim color: full white in dark mode, no dimming needed in light mode
     // because rimAlphaBase is already near-zero via rimFade.

@@ -159,6 +159,20 @@ uniform vec4 uNativeLens;
 // width (physical pixels), zw: unused.
 uniform vec4 uNativeAberration;
 
+// Slots 54-57: uFace — CoreAnimation glassFace tone transform:
+//   x: faceBlack (lower luma anchor)
+//   y: faceWhite (upper luma anchor; uFace.y <= uFace.x disables the model)
+//   z: faceMaxLuma (SDR luminance cap; 1.0 = uncapped)
+//   w: faceFillAlpha (+alpha mixes white, -alpha mixes black)
+uniform vec4 uFace;
+
+// Slots 58-61: uFaceExtra —
+//   x: faceChroma (chroma preservation multiplier)
+//   y: bleedStrength (edge-inward bleed on large surfaces h > 64 pt)
+//   z: bleedSign (+1 = light frost bleed, -1 = dark smoked bleed)
+//   w: lumaBracketTint (1 = luma-bracketed chromatic tinting)
+uniform vec4 uFaceExtra;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -1071,39 +1085,64 @@ void main() {
         refractColor.a = step(0.001, refractColor.a);
     }
 
-    vec4 bodyGlassColor = uGlassColor;
-    bodyGlassColor.a *= 1.0 - hairline;
-    vec4 finalColor = applyGlassColor(refractColor, bodyGlassColor, uBodyMode);
+    bool useFaceModel = (uFace.y > uFace.x) && (uBodyMode < 0.5);
+    float glassChroma = max(max(uGlassColor.r, uGlassColor.g), uGlassColor.b)
+                      - min(min(uGlassColor.r, uGlassColor.g), uGlassColor.b);
+    bool hasChromaticTint = (glassChroma > 0.04) && (uGlassColor.a > 0.001);
 
-    // VQ4: Content-adaptive glass strength.
-    //
-    // iOS 26 glass dynamically adjusts its material intensity based on the
-    // luminance of the content beneath it.  Dark backdrops produce richer,
-    // more vivid glass; bright or uniform backdrops produce a subtler material
-    // to avoid overwhelming the UI.
-    //
-    // Implementation: dot-product backdrop luminance from refractColor —
-    // the already-sampled background at the refracted UV.  Zero extra texture
-    // reads; the sample is already in the register file.
-    //
-    // LUMA_WEIGHTS = vec3(0.2126, 0.7152, 0.0722) (ITU-R Rec.709, defined in render.glsl)
-    //
-    // adaptiveStrength range [0.8, 1.2]:
-    //   • backdropLuma = 0.0 (black)  → strength 1.2 (richer glass)
-    //   • backdropLuma = 1.0 (white)  → strength 0.8 (subtler glass)
-    //
-    // Cost: 1 dot product + 1 mix() + 1 extra mix() for tint = 3 MADs.
-    // Effectively free on modern GPUs.
     float backdropLuma     = dot(refractColor.rgb, LUMA_WEIGHTS);
     float adaptiveStrength = mix(1.2, 0.8, backdropLuma);
 
-    // Apply saturation with adaptive scaling.
-    // adaptiveStrength > 1.0 → more vivid (dark backdrop).
-    // adaptiveStrength < 1.0 → more muted (bright/uniform backdrop).
-    // uSaturation is the artist-set base; we only modulate it, never replace it.
-    // The hairline shows the backdrop as it is, so it takes no saturation.
-    finalColor.rgb = applySaturation(
-        finalColor.rgb, mix(uSaturation * adaptiveStrength, 1.0, hairline));
+    vec4 finalColor = refractColor;
+    if (useFaceModel) {
+        if (hairline < 0.999) {
+            float faceL = clamp(backdropLuma, 0.0, 1.0);
+            float mappedL = uFace.x + (uFace.y - uFace.x) * faceL;
+            vec3 faceRgb = clamp(
+                vec3(mappedL) + (refractColor.rgb - vec3(faceL)) * uFaceExtra.x,
+                0.0,
+                1.0);
+            if (uFace.w > 0.001) {
+                faceRgb = mix(faceRgb, vec3(1.0), uFace.w);
+            } else if (uFace.w < -0.001) {
+                faceRgb = mix(faceRgb, vec3(0.0), -uFace.w);
+            }
+            if (uFaceExtra.y > 0.001 && uThickness > 0.01) {
+                float bleedBand = 1.0 - smoothstep(0.0, uThickness * 1.4, rimDist);
+                float bleedMix = bleedBand * bleedBand * uFaceExtra.y * 0.35;
+                vec3 bleedTarget = uFaceExtra.z >= 0.0
+                    ? clamp(vec3(0.9 + 0.1 * faceL) + (refractColor.rgb - vec3(faceL)) * 1.2, 0.0, 1.0)
+                    : clamp(vec3(0.125 + 0.375 * faceL) + (refractColor.rgb - vec3(faceL)), 0.0, 1.0);
+                faceRgb = mix(faceRgb, bleedTarget, bleedMix);
+            }
+            float outL = dot(faceRgb, LUMA_WEIGHTS);
+            if (uFace.z > 0.001 && outL > uFace.z) {
+                faceRgb *= uFace.z / max(outL, 0.001);
+            }
+            finalColor.rgb = mix(faceRgb, refractColor.rgb, hairline);
+        }
+        if (hasChromaticTint) {
+            vec4 bodyGlassColor = uGlassColor;
+            bodyGlassColor.a *= 1.0 - hairline;
+            finalColor = applyGlassColorBracketed(finalColor, bodyGlassColor);
+        }
+    } else {
+        vec4 bodyGlassColor = uGlassColor;
+        bodyGlassColor.a *= 1.0 - hairline;
+        if (uFaceExtra.w > 0.5 && uBodyMode < 0.5 && hasChromaticTint) {
+            finalColor = applyGlassColorBracketed(refractColor, bodyGlassColor);
+        } else {
+            finalColor = applyGlassColor(refractColor, bodyGlassColor, uBodyMode);
+        }
+
+        // Apply saturation with adaptive scaling.
+        // adaptiveStrength > 1.0 → more vivid (dark backdrop).
+        // adaptiveStrength < 1.0 → more muted (bright/uniform backdrop).
+        // uSaturation is the artist-set base; we only modulate it, never replace it.
+        // The hairline shows the backdrop as it is, so it takes no saturation.
+        finalColor.rgb = applySaturation(
+            finalColor.rgb, mix(uSaturation * adaptiveStrength, 1.0, hairline));
+    }
 
     // Native iOS 27 _UILiquidLensView (ClearGlassView CASDFKeyFillHighlightEffect
     // + vibrantColorMatrix +0.1471 offset) adds an equal RGB diffuse lift
@@ -1126,57 +1165,29 @@ void main() {
         finalColor.rgb = max(finalColor.rgb - vec3(keyShade), 0.0);
     }
 
-    // Modulate glass tint blend weight by adaptiveStrength.
-    // On dark backgrounds the tint reads heavier (+20%); on bright backgrounds
-    // it reads lighter (-20%).  The delta is small (max ±20% of the 12% base
-    // weight = ±2.4%) — within a single JND step, noticeable as a property
-    // not a glitch.  Uses mix() to re-blend toward uGlassColor.rgb over the
-    // already-tinted finalColor, scaled by the adaptive delta only.
-    // In clear mode (uBodyMode == 1.0), adaptive tint modulation is bypassed.
-    finalColor.rgb = mix(finalColor.rgb,
-                         uGlassColor.rgb,
-                         uGlassColor.a * 0.12 * (adaptiveStrength - 1.0) * (1.0 - uBodyMode)
-                         * (1.0 - hairline));
+    // Modulate glass tint blend weight by adaptiveStrength (legacy path only;
+    // CoreAnimation glassFace handles backdrop-luma adaptation directly).
+    if (!useFaceModel) {
+        finalColor.rgb = mix(finalColor.rgb,
+                             uGlassColor.rgb,
+                             uGlassColor.a * 0.12 * (adaptiveStrength - 1.0) * (1.0 - uBodyMode)
+                             * (1.0 - hairline));
+    }
 
     // Whitening veil — applied here, right after the body tint and BEFORE the
-    // rim/fresnel passes. Applying it before the edge lighting means the rim
-    // and fresnel highlights are drawn on top of the whitened body, so the
-    // bright edges stay crisp even when the body is heavily whitened —
-    // matching iOS 26's light-mode bar, where the white ring / edge
-    // reflections stay sharp over a whitened interior.
-    //
-    // Luminance-gated mode: scale the whiten by how bright this pixel already
-    // is, so near-white content beneath the glass lifts to pure white while
-    // darks (text, icons) are left untouched — instead of a uniform veil that
-    // grays the darks too. This is a point operation (per-pixel, depending
-    // only on this pixel's own luminance — no neighbourhood sampling), so
-    // unlike a spatial content detector it cannot produce a halo or seam; at
-    // a dark-on-light edge it just steepens the existing gradient (crisper
-    // edge, no gray ring).
-    //
-    // WHITEN_LO / WHITEN_HI are content-classification thresholds (what
-    // luminance counts as "a dark to protect" vs "a white to push"), not
-    // aesthetic per-recipe values — so they are hardcoded rather than passed
-    // as uniforms. The single tunable lever is uWhiten (the strength).
-    //   below WHITEN_LO → gate 0 (fully protected, stays dark)
-    //   above WHITEN_HI → gate 1 (fully whitened, lifts to white)
+    // rim/fresnel passes.
     const float WHITEN_LO = 0.40;
     const float WHITEN_HI = 0.80;
     if (uWhiten > 0.001 && hairline < 0.999) {
         float whitenLuma = dot(finalColor.rgb, LUMA_WEIGHTS);
-        // uWhitenGated 1 → gate by luminance (light mode, protects darks);
-        // uWhitenGated 0 → gate = 1, uniform whiten (dark mode, even lift).
         float whitenGate =
             mix(1.0, smoothstep(WHITEN_LO, WHITEN_HI, whitenLuma), uWhitenGated);
         finalColor.rgb = mix(finalColor.rgb, vec3(1.0),
                              clamp(uWhiten, 0.0, 1.0) * whitenGate * (1.0 - hairline));
     }
-    // iOS 27 body shade (uBodyShade): the dark material pulls a bright
-    // backdrop down, white to about 184/255, where its tint alone would lift
-    // it. Scaled by 1 - shade * luma^2, so darks keep the tint's lift. The
-    // hairline is shaded too, and the rim shade below then sits its fixed
-    // step under the darkened backdrop, as the native dark outline does.
-    if (uBodyShade > 0.0) {
+    // Legacy iOS 27 body shade (uBodyShade): skipped when CoreAnimation uFace
+    // already applies the size-adaptive SDR maxLuma ceiling.
+    if (!useFaceModel && uBodyShade > 0.0) {
         float shadeLuma = dot(finalColor.rgb, LUMA_WEIGHTS);
         finalColor.rgb *= 1.0 - uBodyShade * shadeLuma * shadeLuma;
     }

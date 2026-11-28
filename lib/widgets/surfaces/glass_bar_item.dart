@@ -74,10 +74,9 @@ enum GlassBarItemStyle {
   /// with a dimmed foreground, matching native iOS 26/27 so an unavailable
   /// primary action does not dominate the bar.
   ///
-  /// Note: unlike standalone `GlassButton(style: GlassButtonStyle.prominent)`
-  /// (which stays neutral frosted glass when untinted for 1.x compatibility),
-  /// [GlassBarItemStyle.prominent] defaults directly to the app's accent colour
-  /// to match native iOS 26/27 `UIBarButtonItem.Style.prominent`.
+  /// Matches `GlassButton(style: GlassButtonStyle.prominent)` and native
+  /// iOS 26/27 `UIBarButtonItem.Style.prominent` by defaulting to the app's
+  /// accent colour when untinted and reverting to neutral glass when disabled.
   prominent,
 }
 

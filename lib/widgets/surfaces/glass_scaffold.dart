@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import '../../theme/glass_theme.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
+import '../../src/renderer/glass_backdrop_group_boundary.dart'
+    show GlassBackdropHoistSlot;
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../src/widgets/surfaces/app_bar_scroll_under_surface.dart';
@@ -684,6 +686,17 @@ class GlassScaffold extends StatelessWidget {
           ),
         ),
 
+      // 2c. Scoped Pass-1 frost hoist slot (after body/overlays/header, before
+      // floating glass chrome). Lets eligible non-overlapping glass layers in
+      // appBar and bottomBar hoist Pass 1 blur/frost into one shared layer
+      // (1 framebuffer copy) and share glassKey on Pass 2 (1 framebuffer copy),
+      // reducing N + 1 screen copies to 2 total.
+      if (appBar != null || bottomBar != null)
+        const Positioned.fill(
+          key: ValueKey('glass_scaffold_backdrop_hoist'),
+          child: IgnorePointer(child: GlassBackdropHoistSlot()),
+        ),
+
       // 2. App bar (above body — painted after body in Stack).
       // Uses _GlassIsolationScope to tell descendant glass widgets
       // (GlassButton, AdaptiveGlass) to render with their own independent
@@ -769,7 +782,7 @@ class GlassScaffold extends StatelessWidget {
         // share a single full-screen backdrop read on Impeller while body and
         // bodyOverlays explicitly opt out above.
         child: GlassBackdropGroup(
-          enabled: appBar != null && bottomBar != null,
+          enabled: appBar != null || bottomBar != null,
           child: Stack(clipBehavior: Clip.none, children: stackChildren),
         ),
       ),

@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../theme/glass_theme.dart';
@@ -127,6 +128,7 @@ class GlassContentAwareScope extends StatefulWidget {
     this.lightToDarkThreshold = 0.6,
     this.darkToLightThreshold = 0.6,
     this.backgroundColor,
+    this.sampleOnFrame = false,
     super.key,
   })  : assert(
           lightToDarkThreshold >= 0.5 && lightToDarkThreshold <= 1.0,
@@ -182,6 +184,14 @@ class GlassContentAwareScope extends StatefulWidget {
   /// null, defaults to white in light mode and black in dark mode.
   final Color? backgroundColor;
 
+  /// When `true`, also samples automatically whenever Flutter draws a frame
+  /// (throttled by [sampleInterval]), catching non-scroll visual changes such
+  /// as playing video, auto-advancing carousels, or animated backgrounds with
+  /// zero idle timers and automatic app-lifecycle pause when backgrounded.
+  ///
+  /// Defaults to `false` (scroll-notification-driven sampling only).
+  final bool sampleOnFrame;
+
   /// The [GlassContentAwareScopeState] from the closest enclosing scope, or
   /// null if there is none.
   ///
@@ -228,14 +238,19 @@ class GlassContentAwareScope extends StatefulWidget {
           final i = (y * width + x) * 4;
           final a = rgba[i + 3] / 255.0;
           if (a < 0.02) {
-            // Unpainted pixel — evaluate as the page background.
+            // Unpainted pixel — evaluate as the page background regardless of
+            // any garbage/unpremultiplied RGB bytes.
             sumR += background.r;
             sumG += background.g;
             sumB += background.b;
           } else {
-            sumR += rgba[i] / 255.0;
-            sumG += rgba[i + 1] / 255.0;
-            sumB += rgba[i + 2] / 255.0;
+            // Premultiplied srcOver compositing over `background` so
+            // semi-transparent overlays blend accurately rather than reading
+            // darker than their composited appearance.
+            final invA = 1.0 - a;
+            sumR += (rgba[i] / 255.0).clamp(0.0, a) + background.r * invA;
+            sumG += (rgba[i + 1] / 255.0).clamp(0.0, a) + background.g * invA;
+            sumB += (rgba[i + 2] / 255.0).clamp(0.0, a) + background.b * invA;
           }
           n++;
         }
@@ -299,7 +314,8 @@ class GlassContentAwareScope extends StatefulWidget {
 /// Custom controls obtain this via [GlassContentAwareScope.maybeOf] and call
 /// [register]; the bars do this internally through
 /// [GlassContentAwareBrightness].
-class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
+class GlassContentAwareScopeState extends State<GlassContentAwareScope>
+    with WidgetsBindingObserver {
   final List<GlassContentAwareSubscription> _subscriptions =
       <GlassContentAwareSubscription>[];
   GlobalKey? _contentKey;
@@ -307,7 +323,54 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   bool _samplePending = false;
   bool _sampling = false;
   bool _scrollDirty = false;
+  bool _appPaused = false;
+  bool _postFrameArmed = false;
+  Duration _lastFrameSampleTimestamp = Duration.zero;
   Size? _lastSampleImageSize;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _armNextFrameCallback();
+  }
+
+  void _armNextFrameCallback() {
+    if (!mounted || !widget.sampleOnFrame || _appPaused || _postFrameArmed) {
+      return;
+    }
+    _postFrameArmed = true;
+    SchedulerBinding.instance.addPostFrameCallback(_onPostFrame);
+  }
+
+  void _onPostFrame(Duration timestamp) {
+    _postFrameArmed = false;
+    if (!mounted || !widget.sampleOnFrame || _appPaused) return;
+    // Self-chain without calling scheduleFrame(): fires only when Flutter
+    // naturally draws a frame (0 idle frames/timers) and releases the State
+    // reference immediately on dispose (unlike addPersistentFrameCallback).
+    _armNextFrameCallback();
+    if (_sampling || _subscriptions.isEmpty || _contentKey == null) return;
+    if (timestamp - _lastFrameSampleTimestamp < widget.sampleInterval) return;
+    _lastFrameSampleTimestamp = timestamp;
+    unawaited(_sample());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final paused = state != AppLifecycleState.resumed;
+    if (_appPaused == paused) return;
+    _appPaused = paused;
+    if (paused) {
+      _scrollTimer?.cancel();
+      _scrollTimer = null;
+    } else {
+      _armNextFrameCallback();
+      if (_subscriptions.isNotEmpty) {
+        requestSample();
+      }
+    }
+  }
 
   /// Physical dimensions of the most recently captured sampling bitmap.
   @visibleForTesting
@@ -443,13 +506,14 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   @override
   void didUpdateWidget(GlassContentAwareScope oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _armNextFrameCallback();
     if (oldWidget.sampleInterval != widget.sampleInterval &&
         _scrollTimer != null) {
       _scrollTimer!.cancel();
       _scrollTimer = Timer.periodic(
         widget.sampleInterval,
         (_) {
-          if (_scrollDirty) unawaited(_sample());
+          if (_scrollDirty && !_appPaused) unawaited(_sample());
         },
       );
     }
@@ -457,6 +521,7 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollTimer?.cancel();
     _scrollTimer = null;
     for (final sub in _subscriptions) {
@@ -467,7 +532,7 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   }
 
   Future<void> _sample() async {
-    if (!mounted || _sampling || _subscriptions.isEmpty) return;
+    if (!mounted || _appPaused || _sampling || _subscriptions.isEmpty) return;
     final boundary = _contentKey?.currentContext?.findRenderObject();
     if (boundary is! RenderRepaintBoundary ||
         !boundary.hasSize ||

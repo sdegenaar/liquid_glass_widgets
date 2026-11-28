@@ -19,6 +19,7 @@ import 'package:flutter/widgets.dart';
 import '../../renderer/fragment_shader_extensions.dart';
 import '../../renderer/liquid_glass_renderer.dart'
     show debugPaintLiquidGlassGeometry;
+import '../glass_face_optics.dart';
 import '../liquid_glass.dart' show RenderLiquidGlass;
 import '../liquid_glass_settings.dart';
 import '../render_liquid_glass_geometry.dart';
@@ -318,6 +319,29 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   @protected
   ui.Image? get geometryImage => _geometryImage;
 
+  /// Resolved CoreAnimation face optics for the current paint pass.
+  @protected
+  ResolvedGlassFaceOptics resolvedFaceOptics = ResolvedGlassFaceOptics.disabled;
+
+  double _resolveShortestSideLogical() {
+    double maxShortest = 0.0;
+    for (final entry in _shapesWithGeometry) {
+      if (!entry.$1.attached) continue;
+      final shapes = entry.$2.shapes;
+      if (shapes.isNotEmpty) {
+        for (final shape in shapes) {
+          final s = shape.shapeBounds.shortestSide;
+          if (s > maxShortest) maxShortest = s;
+        }
+      } else {
+        final s = entry.$2.bounds.shortestSide;
+        if (s > maxShortest) maxShortest = s;
+      }
+    }
+    if (maxShortest > 0.0) return maxShortest;
+    return _geometryLocalBounds.shortestSide;
+  }
+
   /// Bounding box of [_geometryImage] in the render object's LOCAL logical-pixel
   /// coordinate space (snapped to physical pixels).
   /// Apply `matteTransform` at paint time to get the current screen-space bounds.
@@ -546,6 +570,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
 
         final dpr = devicePixelRatio;
 
+        resolvedFaceOptics =
+            resolveGlassFaceOptics(settings, _resolveShortestSideLogical());
+
         writeScreenUniforms();
         // The frost's opacity, eased in over its first 2 pt so a frost that
         // animates up from 0 doesn't start as a sharp, opaque cloud, and kept
@@ -566,7 +593,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               ..setFloats([
                 settings.effectiveRefractiveIndex,
                 settings.effectiveChromaticAberration,
-                settings.effectiveThickness * scale,
+                resolvedFaceOptics.effectiveThickness * scale,
                 1.0, // uRefractScale (slot 13) - normalization handled by physical geometry curve scaling
                 settings.effectiveLightIntensity,
                 settings.effectiveAmbientStrength,
@@ -631,6 +658,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               settings.effectiveBodyShade.clamp(0.0, 1.0),
               // Slots 46-53: uNativeLens + uNativeAberration.
               ...lensWarpUniforms(settings.lensWarp, dpr),
+              // Slots 54-61: uFace + uFaceExtra.
+              ...resolvedFaceOptics.uFace,
+              ...resolvedFaceOptics.uFaceExtra,
             ]);
           })
           ..setImageSampler(
@@ -851,7 +881,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           ..setFloats([
             settings.effectiveRefractiveIndex,
             settings.effectiveChromaticAberration,
-            settings.effectiveThickness * scale,
+            resolvedFaceOptics.effectiveThickness * scale,
             1.0, // uRefractScale (slot 13) - normalization handled by physical geometry curve scaling
             settings.effectiveLightIntensity,
             settings.effectiveAmbientStrength,
@@ -919,6 +949,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           settings.effectiveBodyShade.clamp(0.0, 1.0),
           // Slots 46-53: uNativeLens + uNativeAberration.
           ...lensWarpUniforms(settings.lensWarp, dpr),
+          // Slots 54-61: uFace + uFaceExtra.
+          ...resolvedFaceOptics.uFace,
+          ...resolvedFaceOptics.uFaceExtra,
         ]);
       })
       // Slot 0: captured background image (replaces the BackdropFilter read).

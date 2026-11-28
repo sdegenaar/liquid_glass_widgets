@@ -72,6 +72,7 @@ class GlassThemeSettings {
     this.lensModel,
     this.shadowElevation,
     this.shadow,
+    this.sizeAdaptive,
   });
 
   /// Classic `v1.x` surface preset in the light appearance, matching
@@ -132,6 +133,7 @@ class GlassThemeSettings {
         offset: Offset(0, 6),
       ),
     ],
+    sizeAdaptive: true,
   );
 
   /// iOS 26.0 `glassEffect(.regular)` in the dark appearance, matching
@@ -159,6 +161,7 @@ class GlassThemeSettings {
     rimLight: 0.22,
     bodyShade: 0.0,
     shadowElevation: 0,
+    sizeAdaptive: true,
   );
 
   /// iOS 27 `glassEffect(.regular)` in the light appearance, matching
@@ -191,6 +194,7 @@ class GlassThemeSettings {
         offset: Offset(0, 7),
       ),
     ],
+    sizeAdaptive: true,
   );
 
   /// iOS 27 `glassEffect(.regular)` in the dark appearance, matching
@@ -218,6 +222,7 @@ class GlassThemeSettings {
     rimLight: 1.15,
     bodyShade: 0.28,
     shadowElevation: 0,
+    sizeAdaptive: true,
   );
 
   /// See [LiquidGlassSettings.visibility].
@@ -295,6 +300,9 @@ class GlassThemeSettings {
   /// See [LiquidGlassSettings.shadow].
   final List<BoxShadow>? shadow;
 
+  /// See [LiquidGlassSettings.sizeAdaptive].
+  final bool? sizeAdaptive;
+
   /// Returns a new [LiquidGlassSettings] by applying this override onto [base].
   ///
   /// Only non-null fields in this override replace the corresponding
@@ -333,6 +341,7 @@ class GlassThemeSettings {
       blurWeight: blurWeight ?? base.blurWeight,
       backerColor: base.backerColor,
       platformViewFallbackColor: base.platformViewFallbackColor,
+      sizeAdaptive: sizeAdaptive ?? base.sizeAdaptive,
     );
   }
 
@@ -384,6 +393,7 @@ class GlassThemeSettings {
       lensModel: pick(lensModel, baseline.lensModel),
       shadowElevation: pick(shadowElevation, baseline.shadowElevation),
       shadow: listEquals(shadow, baseline.shadow) ? null : shadow,
+      sizeAdaptive: pick(sizeAdaptive, baseline.sizeAdaptive),
     );
   }
 
@@ -445,6 +455,7 @@ class GlassThemeSettings {
       shadow: (a.shadow == null || b.shadow == null)
           ? (t < 0.5 ? a.shadow : b.shadow)
           : BoxShadow.lerpList(a.shadow, b.shadow, t),
+      sizeAdaptive: t < 0.5 ? a.sizeAdaptive : b.sizeAdaptive,
     );
   }
 
@@ -485,6 +496,7 @@ class GlassThemeSettings {
     GlassLensModel? lensModel,
     double? shadowElevation,
     List<BoxShadow>? shadow,
+    bool? sizeAdaptive,
   }) {
     return GlassThemeSettings(
       visibility: visibility ?? this.visibility,
@@ -512,6 +524,7 @@ class GlassThemeSettings {
       lensModel: lensModel ?? this.lensModel,
       shadowElevation: shadowElevation ?? this.shadowElevation,
       shadow: shadow ?? this.shadow,
+      sizeAdaptive: sizeAdaptive ?? this.sizeAdaptive,
     );
   }
 
@@ -544,7 +557,8 @@ class GlassThemeSettings {
           bodyShade == other.bodyShade &&
           lensModel == other.lensModel &&
           shadowElevation == other.shadowElevation &&
-          listEquals(shadow, other.shadow);
+          listEquals(shadow, other.shadow) &&
+          sizeAdaptive == other.sizeAdaptive;
 
   @override
   int get hashCode => Object.hashAll([
@@ -573,6 +587,7 @@ class GlassThemeSettings {
         lensModel,
         shadowElevation,
         shadow == null ? null : Object.hashAll(shadow!),
+        sizeAdaptive,
       ]);
 
   @override

@@ -61,6 +61,11 @@ final _configs = <_Config>[
     _ios27.copyWith(frostWeight: 1),
   ),
   _Config('ios27', GlassQuality.premium, _ios27),
+  _Config(
+    'ios27_legacy_face',
+    GlassQuality.premium,
+    _ios27.copyWith(sizeAdaptive: false),
+  ),
   // No blur under the frost: the ghost runs at its floor sigma.
   _Config('ios27_noblur', GlassQuality.premium, _ios27.copyWith(blur: 0)),
   const _Config(
@@ -75,8 +80,8 @@ final _configs = <_Config>[
         (c) => _onlyConfigs.isEmpty || _onlyConfigs.split(',').contains(c.name))
     .toList();
 
-bool _runs(String scene) =>
-    _onlyScenes.isEmpty || _onlyScenes.split(',').contains(scene);
+bool _runs(String scene, {bool optIn = false}) =>
+    _onlyScenes.isEmpty ? !optIn : _onlyScenes.split(',').contains(scene);
 
 GlassThemeSettings _themeSettings(LiquidGlassSettings s) => GlassThemeSettings(
       glassColor: s.glassColor,
@@ -100,6 +105,7 @@ GlassThemeSettings _themeSettings(LiquidGlassSettings s) => GlassThemeSettings(
       rimShadeEnds: s.rimShadeEnds,
       rimLight: s.rimLight,
       lensModel: s.lensModel,
+      sizeAdaptive: s.sizeAdaptive,
     );
 
 const _images = [
@@ -254,10 +260,110 @@ class _BenchScreen extends StatelessWidget {
   }
 }
 
+/// GlassScaffold benchmark screen exercising scoped Pass-1 frost hoisting
+/// (GlassBackdropHoistSlot + shared Pass-2 glassKey) across floating chrome.
+class _ScaffoldBenchScreen extends StatelessWidget {
+  const _ScaffoldBenchScreen({
+    super.key,
+    required this.config,
+    required this.groupBars,
+  });
+
+  final _Config config;
+  final bool groupBars;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = _dark ? Colors.white : Colors.black;
+    return GlassScaffold(
+      backgroundColor:
+          _dark ? const Color(0xFF101014) : const Color(0xFFF4F2EE),
+      edgeFade: false,
+      appBar: GlassAppBar(
+        groupBackdrop: groupBars,
+        surfaceStyle: GlassAppBarSurfaceStyle.transparent,
+        leading: GlassIconButton(
+          icon: Icon(CupertinoIcons.chevron_back, color: ink),
+          onPressed: () {},
+          useOwnLayer: true,
+        ),
+        title: Text(config.name, style: TextStyle(color: ink)),
+        actions: [
+          for (final icon in const [
+            CupertinoIcons.search,
+            CupertinoIcons.bell,
+            CupertinoIcons.add,
+          ])
+            GlassIconButton(
+              icon: Icon(icon, color: ink),
+              onPressed: () {},
+              useOwnLayer: true,
+            ),
+        ],
+      ),
+      body: ListView.builder(
+        key: const ValueKey('bench-list'),
+        padding: const EdgeInsets.fromLTRB(16, 120, 16, 140),
+        itemCount: 200,
+        itemBuilder: (context, i) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  _images[i % _images.length],
+                  width: 88,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  cacheWidth: 264,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Headline number $i with a longer title that wraps',
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Source · ${i % 12 + 1} min read',
+                      style: TextStyle(color: ink.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomBar: GlassTabBar.bottom(
+        groupBackdrop: groupBars,
+        tabs: const [
+          GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
+          GlassTab(icon: Icon(CupertinoIcons.news), label: 'News'),
+          GlassTab(icon: Icon(CupertinoIcons.person), label: 'Profile'),
+        ],
+        selectedIndex: 0,
+        onTabSelected: (_) {},
+      ),
+    );
+  }
+}
+
 Widget _app(
   _Config config, {
   required bool cards,
   bool withMenu = false,
+  bool useGlassScaffold = false,
+  bool scaffoldGroupBars = true,
 }) {
   final variant = GlassThemeVariant(
     settings: _themeSettings(config.settings),
@@ -271,15 +377,23 @@ Widget _app(
       theme: ThemeData(
         brightness: _dark ? Brightness.dark : Brightness.light,
       ),
-      home: _BenchScreen(
-        key: ValueKey('${config.name}-$cards-$withMenu'),
-        config: config,
-        cards: cards,
-        withMenu: withMenu,
-      ),
+      home: useGlassScaffold
+          ? _ScaffoldBenchScreen(
+              key: ValueKey('scaffold-${config.name}-$scaffoldGroupBars'),
+              config: config,
+              groupBars: scaffoldGroupBars,
+            )
+          : _BenchScreen(
+              key: ValueKey('${config.name}-$cards-$withMenu'),
+              config: config,
+              cards: cards,
+              withMenu: withMenu,
+            ),
     ),
   );
-  return config.group ? GlassBackdropGroup(child: app) : app;
+  return config.group && !useGlassScaffold
+      ? GlassBackdropGroup(child: app)
+      : app;
 }
 
 Future<void> _pumpFor(WidgetTester tester, Duration duration) async {
@@ -316,9 +430,19 @@ void main() {
       int round, {
       required bool cards,
       bool withMenu = false,
+      bool useGlassScaffold = false,
+      bool scaffoldGroupBars = true,
       required Future<void> Function() action,
     }) async {
-      await tester.pumpWidget(_app(config, cards: cards, withMenu: withMenu));
+      await tester.pumpWidget(
+        _app(
+          config,
+          cards: cards,
+          withMenu: withMenu,
+          useGlassScaffold: useGlassScaffold,
+          scaffoldGroupBars: scaffoldGroupBars,
+        ),
+      );
       await _pumpFor(tester, const Duration(milliseconds: 1500));
       // Warm-up outside the measurement: first use of every shader and image.
       await _fling(tester, 400);
@@ -355,6 +479,38 @@ void main() {
               await _fling(tester, -1400);
             }
           });
+        }
+        if (_runs('scaffold_hoist', optIn: true)) {
+          await scene(
+            'scaffold_hoist',
+            config,
+            round,
+            cards: false,
+            useGlassScaffold: true,
+            scaffoldGroupBars: true,
+            action: () async {
+              for (var i = 0; i < 4; i++) {
+                await _fling(tester, 1400);
+                await _fling(tester, -1400);
+              }
+            },
+          );
+        }
+        if (_runs('scaffold_nogroup', optIn: true)) {
+          await scene(
+            'scaffold_nogroup',
+            config,
+            round,
+            cards: false,
+            useGlassScaffold: true,
+            scaffoldGroupBars: false,
+            action: () async {
+              for (var i = 0; i < 4; i++) {
+                await _fling(tester, 1400);
+                await _fling(tester, -1400);
+              }
+            },
+          );
         }
         if (_runs('cards')) {
           await scene('cards', config, round, cards: true, action: () async {

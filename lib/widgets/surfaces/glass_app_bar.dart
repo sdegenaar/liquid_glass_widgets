@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
+import '../../src/renderer/glass_backdrop_group_boundary.dart'
+    show GlassBackdropHoistOptOut;
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/app_bar_scroll_under_surface.dart';
 import '../../src/widgets/surfaces/status_bar_row.dart';
@@ -680,7 +682,10 @@ class GlassAppBar extends StatelessWidget
           ),
         KeyedSubtree(
           key: const ValueKey('glass_app_bar_chrome'),
-          child: barChrome,
+          child: GlassBackdropHoistOptOut(
+            optedOut: usesFullBlur,
+            child: barChrome,
+          ),
         ),
       ],
     );

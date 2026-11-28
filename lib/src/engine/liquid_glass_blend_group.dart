@@ -13,6 +13,7 @@ import 'dart:ui';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import '../renderer/fragment_shader_extensions.dart';
+import 'glass_face_optics.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass.dart';
 import 'liquid_glass_render_scope.dart';
@@ -369,6 +370,8 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     layer?.markNeedsPaint();
   }
 
+  double _lastShortestSide = 0.0;
+
   @override
   void updateShaderWithSettings(
     LiquidGlassSettings settings,
@@ -378,12 +381,14 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     // To maintain this exact logical thickness on all screens, we multiply by (DPR / 3.0).
     // This scales the physical rim width so it always occupies the same logical space.
     final scale = devicePixelRatio / 3.0;
+    final effectiveThickness =
+        resolveEffectiveGlassThickness(settings, _lastShortestSide);
 
     geometryShader.setFloatUniforms(initialIndex: 2, (value) {
       value.setFloats([
         settings.effectiveRefractiveIndex,
         settings.effectiveChromaticAberration,
-        settings.effectiveThickness * scale,
+        effectiveThickness * scale,
         blend * devicePixelRatio,
       ]);
     });
@@ -413,6 +418,20 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
       throw UnsupportedError(
         'Only ${LiquidGlassBlendGroup.maxShapesPerLayer} shapes are supported '
         'at the moment!',
+      );
+    }
+
+    double maxShortest = 0.0;
+    for (final shape in shapes) {
+      final s = shape.shapeBounds.shortestSide;
+      if (s > maxShortest) maxShortest = s;
+    }
+    if (maxShortest != _lastShortestSide) {
+      _lastShortestSide = maxShortest;
+      final scale = devicePixelRatio / 3.0;
+      geometryShader.setFloat(
+        4,
+        resolveEffectiveGlassThickness(settings, _lastShortestSide) * scale,
       );
     }
 
@@ -495,6 +514,18 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
       shapes,
       anyShapeChangedInLayer || shapes.length != cachedShapes.length,
     );
+  }
+
+  @override
+  bool get hasInsideGlassContent {
+    for (final shapeEntry in link.shapeEntries) {
+      if (shapeEntry.key.glassVisible &&
+          shapeEntry.key.attached &&
+          shapeEntry.key.glassContainsChild) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override

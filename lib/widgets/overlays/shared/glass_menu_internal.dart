@@ -795,11 +795,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       final bool isCenterBand = screenWidth.isFinite &&
           triggerCenterX >= screenWidth * 0.35 &&
           triggerCenterX <= screenWidth * 0.65;
+      final bool leftEdgeFits = !screenWidth.isFinite ||
+          position.dx + widget.menuWidth <= screenWidth;
+      final bool rightEdgeFits =
+          !screenWidth.isFinite || position.dx + tw - widget.menuWidth >= 0.0;
       final bool centeredFitsScreen = !screenWidth.isFinite ||
           (triggerCenterX - widget.menuWidth * 0.5 >= 0.0 &&
               triggerCenterX + widget.menuWidth * 0.5 <= screenWidth);
       final double alignX;
-      if ((isWideTrigger || isCenterBand) &&
+      if ((isWideTrigger ||
+              isCenterBand ||
+              (!leftEdgeFits && !rightEdgeFits)) &&
           (widget.autoAdjustToScreen || centeredFitsScreen)) {
         alignX = 0.0;
       } else {

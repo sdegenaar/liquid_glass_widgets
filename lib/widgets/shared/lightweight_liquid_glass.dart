@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import '../../constants/glass_defaults.dart';
+import '../../src/engine/glass_face_optics.dart';
 import '../../src/engine/internal/transform_tracking_repaint_boundary_mixin.dart';
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -1126,5 +1127,15 @@ class _RenderLightweightGlass extends RenderProxyBox
     shader.setFloat(index++, _settings.rimLight.clamp(0.0, 4.0));
     shader.setFloat(index++, _settings.rimShadeEnds.clamp(0.0, 1.0));
     shader.setFloat(index++, _settings.visibility.clamp(0.0, 1.0));
+
+    // 39..42 (uFace): CoreAnimation glassFace tone transform
+    final face = resolveGlassFaceOptics(
+      _settings,
+      math.min(size.width, size.height),
+    );
+    shader.setFloat(index++, face.faceBlack);
+    shader.setFloat(index++, face.faceWhite);
+    shader.setFloat(index++, face.faceMaxLuma);
+    shader.setFloat(index++, face.faceFillAlpha);
   }
 }
