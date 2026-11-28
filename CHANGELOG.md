@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassSlider` change callbacks for screen-reader adjustments and the end of a drag:** A VoiceOver or TalkBack increment or decrement called `onChanged` only, so an app that saves the value in `onChangeEnd` lost every change made with a screen reader; it now reports `onChangeStart`, `onChanged` and `onChangeEnd`, as Flutter's `Slider` does. `onChangeEnd` at the end of a drag reported the value from the slider's last build, not the drag's last value, when the last move and the lift arrived with no frame in between; it now reports the last value `onChanged` reported.
+
 # 1.22.0
 
 ## Features
