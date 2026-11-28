@@ -1002,26 +1002,30 @@ class _ParityHostState extends State<_ParityHost> {
   }
 
   Widget _kv(String k, String? v,
-          {Widget? trailing, Color? valueColor, Widget? leading}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              SizedBox(width: 24, child: Center(child: leading)),
-              const SizedBox(width: 11),
-            ],
-            Text(k, style: const TextStyle(fontSize: 17)),
-            const Spacer(),
-            if (v != null)
-              Text(v,
-                  style: TextStyle(
-                      fontSize: 17,
-                      color: valueColor ?? CupertinoColors.systemGrey)),
-            if (trailing != null) trailing,
+      {Widget? trailing, Color? valueColor, Widget? leading}) {
+    final Widget row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Row(
+        children: [
+          if (leading != null) ...[
+            SizedBox(width: 24, child: Center(child: leading)),
+            const SizedBox(width: 11),
           ],
-        ),
-      );
+          Text(k, style: const TextStyle(fontSize: 17)),
+          const Spacer(),
+          if (v != null)
+            Text(v,
+                style: TextStyle(
+                    fontSize: 17,
+                    color: valueColor ?? CupertinoColors.systemGrey)),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+    // The trailing GlassSwitch has no name of its own: merged with the row,
+    // it reads as one switch named by the row's label.
+    return trailing != null ? MergeSemantics(child: row) : row;
+  }
 
   // -- 2. Edit mode ---------------------------------------------------------
 
