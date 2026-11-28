@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassSlider` arrow keys:** A focused slider took keyboard focus but ignored the arrow keys, so it could not be moved from a hardware keyboard (a Mac, an iPad with a keyboard, Full Keyboard Access). Up and the trailing arrow (Right, or Left in a right-to-left layout) now increase it by one step, Down and the leading arrow decrease it, and each press reports `onChangeStart`, `onChanged` and `onChangeEnd`, as Flutter's `Slider` does. The step is the one a screen reader uses: one division, or a tenth of the range. Under `NavigationMode.directional` only Left and Right adjust it, and Up and Down still move focus.
+
 # 1.22.0
 
 ## Features
