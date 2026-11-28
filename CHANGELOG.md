@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassSwitch` 44 pt tap target:** The default 58 x 26 pt switch reported its semantics node, and took touches, only over its track, under the 44 x 44 pt minimum (`iOSTapTargetGuideline`) that VoiceOver, Voice Control, Switch Control and fingers rely on. Its semantics node is now at least 44 x 44 pt everywhere, centred on the track, without changing its layout size, its look or its focus ring. Its touch area extends to 44 pt only as far as the parent's bounds allow, because a hit test stops at the parent: a parent that is already 44 pt tall gives the full area, and one no taller than the track, such as the row a `GlassListTile` puts its trailing widget in, gives none beyond it. A touch or drag that starts beside the track works as one on it does, and the corners beside the round track ends now take touches too. A switch of 44 pt or more keeps its own size as its target.
+
 # 1.22.0
 
 ## Features
