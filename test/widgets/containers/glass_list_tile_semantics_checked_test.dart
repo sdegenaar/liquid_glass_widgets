@@ -10,13 +10,14 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// radio button and reports no selected state, so the row reads as a plain
 /// button there unless it is a radio button with a checked state.
 void main() {
-  Widget options({required bool? lightChecked}) => CupertinoApp(
+  Widget options({required bool? lightChecked, VoidCallback? onLightTap}) =>
+      CupertinoApp(
         home: CupertinoPageScaffold(
           child: ListView(
             children: [
               GlassListTile(
                 title: const Text('Light'),
-                onTap: () {},
+                onTap: onLightTap ?? () {},
                 semanticsChecked: lightChecked,
               ),
               GlassListTile(
@@ -76,6 +77,16 @@ void main() {
       expect(row(tester, 'Dark').flagsCollection.isSelected, Tristate.none);
       semantics.dispose();
     }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+    testWidgets('a tap still reaches onTap', (tester) async {
+      var taps = 0;
+      await tester
+          .pumpWidget(options(lightChecked: false, onLightTap: () => taps++));
+
+      await tester.tap(find.text('Light'));
+      await tester.pump();
+      expect(taps, 1);
+    });
 
     testWidgets('null (the default) keeps the button', (tester) async {
       final semantics = tester.ensureSemantics();

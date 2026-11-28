@@ -210,7 +210,11 @@ class GlassListTile extends StatefulWidget {
   /// reach VoiceOver there; a radio button's checked state does, as
   /// `AXValue` 1 or 0. On iOS and macOS the row is also reported as selected
   /// when checked, as Flutter's radio buttons are, since iOS reads a radio
-  /// button's selected trait rather than its checked state.
+  /// button's selected trait rather than its checked state. Unlike
+  /// `GlassMenuItem`, which takes `semanticsSelected` and `semanticsChecked`
+  /// separately, the tile derives the selected state from this one value per
+  /// platform, as Flutter's `RawRadio` does, so an app sets a single value on
+  /// every platform and the two states cannot disagree.
   ///
   /// Applies to a row with [onTap] or [onLongPress]. `null` (the default)
   /// keeps the button.
