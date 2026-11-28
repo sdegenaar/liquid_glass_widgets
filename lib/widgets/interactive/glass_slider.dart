@@ -133,6 +133,7 @@ class GlassSlider extends StatefulWidget {
     this.glowRadius = 1.5,
     this.focusNode,
     this.autofocus = false,
+    this.semanticFormatterCallback,
   });
 
   // ===========================================================================
@@ -169,8 +170,26 @@ class GlassSlider extends StatefulWidget {
   /// to discrete values.
   final int? divisions;
 
-  /// Optional label shown above the thumb.
+  /// What screen readers call the slider, such as "Speed".
+  ///
+  /// Without it the slider has no name of its own, as a `UISlider` or a
+  /// SwiftUI `Slider` without a label: VoiceOver reads its value and its
+  /// role ("33%, adjustable"), or the name of a parent that merges it.
   final String? label;
+
+  /// Formats the value a screen reader announces, and the values an
+  /// increment or decrement reaches, as Material's
+  /// `Slider.semanticFormatterCallback` does (for example
+  /// `(v) => '${v.toStringAsFixed(1)}x'` for a speed).
+  ///
+  /// It receives the value in [min]..[max]. If null, the value is announced
+  /// as a percentage of the range.
+  ///
+  /// It runs three times on every build of the slider (the value and the two
+  /// values an adjustment reaches), every frame of a drag included, so keep
+  /// it cheap and pure, as Material's must be in practice: no side effects,
+  /// and the same string for the same value.
+  final String Function(double value)? semanticFormatterCallback;
 
   // ===========================================================================
   // Style Properties
@@ -376,6 +395,12 @@ class _GlassSliderState extends State<GlassSlider>
     return widget.min + (normalized * (widget.max - widget.min));
   }
 
+  /// The [value] a screen reader announces: the app's format, else the
+  /// percentage of the range ([normalized]).
+  String _semanticValue(double value, double normalized) =>
+      widget.semanticFormatterCallback?.call(value) ??
+      '${(normalized * 100).round()}%';
+
   void _handleDragDown(DragDownDetails details) {
     // Instant visual response on touch down (iOS 26)
     if (_isDragging) return;
@@ -515,11 +540,13 @@ class _GlassSliderState extends State<GlassSlider>
           enabled: widget.onChanged != null,
           focusNode: widget.focusNode,
           autofocus: widget.autofocus,
-          semanticLabel: widget.label ?? 'Slider',
+          semanticLabel: widget.label,
           isSlider: true,
-          semanticValue: '${(normalizedValue * 100).round()}%',
-          semanticIncreasedValue: '${(normalizedIncreased * 100).round()}%',
-          semanticDecreasedValue: '${(normalizedDecreased * 100).round()}%',
+          semanticValue: _semanticValue(effectiveValue, normalizedValue),
+          semanticIncreasedValue:
+              _semanticValue(increasedValue, normalizedIncreased),
+          semanticDecreasedValue:
+              _semanticValue(decreasedValue, normalizedDecreased),
           semanticOnIncrease: widget.onChanged != null
               ? () {
                   widget.onChanged!(increasedValue);

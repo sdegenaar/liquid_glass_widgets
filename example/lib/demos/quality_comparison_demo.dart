@@ -872,6 +872,7 @@ class GlassQualityComparisonDemoState
           _FullWidthRow(
             label: 'GlassSlider',
             premiumWidget: GlassSlider(
+              label: 'Premium quality',
               value: _sliderValue,
               quality: GlassQuality.premium,
               activeColor: const Color(0xFF007AFF), // iOS system blue
@@ -881,6 +882,7 @@ class GlassQualityComparisonDemoState
               onChanged: (v) => setState(() => _sliderValue = v),
             ),
             standardWidget: GlassSlider(
+              label: 'Standard quality',
               value: _sliderValue,
               quality: GlassQuality.standard,
               activeColor: const Color(0xFF007AFF), // iOS system blue

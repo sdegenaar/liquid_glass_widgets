@@ -349,6 +349,7 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               ),
               const SizedBox(height: 10),
               GlassSlider(
+                label: 'Animated pill',
                 value: _sliderValue,
                 onChanged: (v) => setState(() => _sliderValue = v),
                 settings: _indicatorLiveSettings,

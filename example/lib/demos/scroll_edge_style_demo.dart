@@ -290,6 +290,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                     'Top Extent (${_topExtent.round()} px)'),
                                 const SizedBox(height: 4),
                                 GlassSlider(
+                                  label: 'Top extent',
                                   value: _topExtent,
                                   min: -40,
                                   max: 60,
@@ -308,6 +309,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                     'Bottom Extent (${_bottomExtent.round()} px)'),
                                 const SizedBox(height: 4),
                                 GlassSlider(
+                                  label: 'Bottom extent',
                                   value: _bottomExtent,
                                   min: -40,
                                   max: 60,
@@ -333,6 +335,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                       'maxSigma (${_maxSigma.round()} px)'),
                                   const SizedBox(height: 4),
                                   GlassSlider(
+                                    label: 'maxSigma',
                                     value: _maxSigma,
                                     min: 0,
                                     max: 30,

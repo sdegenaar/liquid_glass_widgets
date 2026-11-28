@@ -1114,6 +1114,7 @@ class _NowPlayingViewState extends State<NowPlayingView> {
           ),
           SizedBox(height: 30),
           GlassSlider(
+            label: 'Playback position',
             value: _progress,
             onChanged: (v) => setState(() => _progress = v),
             activeColor: CupertinoColors.label.resolveFrom(context),
@@ -1166,6 +1167,7 @@ class _NowPlayingViewState extends State<NowPlayingView> {
               SizedBox(width: 12),
               Expanded(
                 child: GlassSlider(
+                  label: 'Volume',
                   value: _volume,
                   onChanged: (v) => setState(() => _volume = v),
                   activeColor: CupertinoColors.label.resolveFrom(context),
