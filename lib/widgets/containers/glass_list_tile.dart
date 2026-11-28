@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
@@ -111,6 +112,7 @@ class GlassListTile extends StatefulWidget {
     this.canSelect = false,
     this.isSelected = false,
     this.onSelectedChanged,
+    this.semanticsChecked,
   })  : _useOwnLayer = false,
         _settings = null,
         _quality = null;
@@ -162,6 +164,7 @@ class GlassListTile extends StatefulWidget {
     this.canSelect = false,
     this.isSelected = false,
     this.onSelectedChanged,
+    this.semanticsChecked,
     LiquidGlassSettings? settings,
     GlassQuality? quality,
   })  : _useOwnLayer = true,
@@ -197,6 +200,21 @@ class GlassListTile extends StatefulWidget {
 
   /// Called when the user long-presses the tile.
   final VoidCallback? onLongPress;
+
+  /// Whether this row is the checked choice of a list of options (such as a
+  /// row with a checkmark), reported as a radio button that is checked or
+  /// not, in place of the button role; for assistive technologies only.
+  ///
+  /// macOS gives the button role precedence over radio button and reports no
+  /// selected state for any role, so a selected flag around the row does not
+  /// reach VoiceOver there; a radio button's checked state does, as
+  /// `AXValue` 1 or 0. On iOS and macOS the row is also reported as selected
+  /// when checked, as Flutter's radio buttons are, since iOS reads a radio
+  /// button's selected trait rather than its checked state.
+  ///
+  /// Applies to a row with [onTap] or [onLongPress]. `null` (the default)
+  /// keeps the button.
+  final bool? semanticsChecked;
 
   // ===========================================================================
   // Swipe Actions Properties
@@ -930,12 +948,21 @@ class _GlassListTileState extends State<GlassListTile>
     }
 
     if (widget.onTap != null || widget.onLongPress != null) {
+      final bool reportsSelected = widget.semanticsChecked != null &&
+          (defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS);
       tile = GlassFocusRegion(
         enabled: true,
         // No shape → background highlight pattern for list rows, not outset ring.
         isFocusedNotifier: isFocused,
         semanticLabel: null, // title widget provides its own text semantics
         isButton: true,
+        // A non-null checked state reads as a radio in place of the button.
+        checked: widget.semanticsChecked,
+        // Apple platforms read a radio's state from `selected`, as Flutter's
+        // own radio buttons report it there.
+        tracksSelection: reportsSelected,
+        isSelected: reportsSelected && widget.semanticsChecked!,
         onKeyboardActivate: widget.onTap,
         semanticOnTap: widget.onTap,
         semanticOnLongPress: widget.onLongPress,

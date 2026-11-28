@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **`GlassListTile` checked radio semantics (`GlassListTile.semanticsChecked`):** Reports a tappable row as a checked or unchecked item of a mutually exclusive group, in place of the button role, without changing visuals, so a checkmark list tells VoiceOver on macOS which row is chosen (`AXRadioButton`, `AXValue` 1 or 0). macOS gives the button role precedence over radio button and reports no selected state, so a selected flag around the row did not reach VoiceOver there. On iOS and macOS the checked row is also reported as selected, as Flutter's radio buttons are. `null` (the default) keeps the button.
+
 # 1.22.0
 
 ## Features
