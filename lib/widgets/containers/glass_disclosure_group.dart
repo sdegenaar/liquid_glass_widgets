@@ -416,8 +416,10 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
 
   /// The open or closed state as the header's semantics value, on iOS
   /// only: VoiceOver there reads no `expanded` flag (macOS and Android do).
-  /// The words are Flutter's localized ones, as [CupertinoExpansionTile]
-  /// reads them.
+  /// The words are Flutter's localized ones, which [CupertinoExpansionTile]
+  /// puts in its hint. Here they are the value instead: VoiceOver reads a
+  /// value right after the label, as the control's state, and still reads it
+  /// when hints are turned off, while a hint comes last and can be off.
   String? _semanticStateValue(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.iOS) return null;
     final localizations = Localizations.of<CupertinoLocalizations>(
