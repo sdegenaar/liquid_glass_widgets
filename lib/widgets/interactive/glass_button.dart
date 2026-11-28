@@ -177,6 +177,7 @@ class GlassButton extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.isSelected,
     this.isToggled,
+    this.isChecked,
     this.isStationary = false,
   }) : child = null;
 
@@ -245,6 +246,7 @@ class GlassButton extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.isSelected,
     this.isToggled,
+    this.isChecked,
     this.isStationary = false,
   })  : icon = null,
         iconSize = 24.0,
@@ -312,8 +314,25 @@ class GlassButton extends StatefulWidget {
   ///
   /// When `null` (the default), the button omits toggled semantics. When `true`
   /// or `false` (for example in `GlassToggle.button`), the button exposes
-  /// toggle semantics (`Semantics.toggled`) on its single accessibility node.
+  /// toggle semantics (`Semantics.toggled`) on its single accessibility node,
+  /// in place of the button role: it reads as a switch that is on or off.
+  /// macOS gives the button role precedence over the switch role and then
+  /// reports no on/off state; iOS and Android read any toggled node as a
+  /// switch.
   final bool? isToggled;
+
+  /// Optional checked state of a radio button reported to assistive
+  /// technology, for a button that is one option of a set where exactly one
+  /// is chosen (for example in `GlassToggle.button` with
+  /// `semanticsInMutuallyExclusiveGroup`).
+  ///
+  /// When `null` (the default), the button omits checked semantics. When
+  /// `true` or `false`, the button reads as an option of a mutually
+  /// exclusive group that is checked or not, in place of the button role,
+  /// which macOS gives precedence over the radio button role. Pair it with
+  /// [isSelected] on iOS, which reads a radio button's selected trait rather
+  /// than its checked state. Takes precedence over [isToggled].
+  final bool? isChecked;
 
   /// Semantic label for accessibility.
   ///
@@ -1307,11 +1326,19 @@ class _GlassButtonState extends State<GlassButton>
       semanticLabel: (!widget.excludeFromSemantics && widget.label.isNotEmpty)
           ? widget.label
           : null,
-      isButton: !widget.excludeFromSemantics,
+      // A toggled button reads as a switch, a checked one as a radio
+      // button: macOS gives `button` its role before either and then
+      // reports no state.
+      isButton: !widget.excludeFromSemantics &&
+          widget.isToggled == null &&
+          widget.isChecked == null,
       tracksSelection:
           !widget.excludeFromSemantics && widget.isSelected != null,
       isSelected: widget.isSelected ?? false,
-      toggled: !widget.excludeFromSemantics ? widget.isToggled : null,
+      toggled: !widget.excludeFromSemantics && widget.isChecked == null
+          ? widget.isToggled
+          : null,
+      checked: !widget.excludeFromSemantics ? widget.isChecked : null,
       // Route the tap through the Semantics node that carries the label so
       // that label, button role, and tap action all live on the same node.
       // The GestureDetectors below are excluded from semantics to prevent
