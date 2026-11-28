@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -884,63 +886,70 @@ class _GlassSwitchState extends State<GlassSwitch>
       ),
     );
 
-    return GlassFocusRegion(
-      enabled: isInteractive,
-      focusNode: widget.focusNode,
-      autofocus: widget.autofocus,
-      semanticLabel: widget.semanticLabel ?? 'Switch',
-      isButton: true,
-      toggled: widget.value,
-      semanticOnTap: isInteractive ? _handleTap : null,
-      shape: const StadiumBorder(),
-      isFocusedNotifier: _isFocused,
-      isHoveredNotifier: _isHovered,
-      onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
-      // Use a responsive 3 px horizontal drag slop (instead of Flutter's
-      // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
-      // runway!) via RawGestureDetector so we don't subscribe to MediaQuery.of.
-      child: RawGestureDetector(
-        excludeFromSemantics: true,
-        gestures: isInteractive
-            ? <Type, GestureRecognizerFactory>{
-                TapGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-                  () => TapGestureRecognizer(debugOwner: this),
-                  (TapGestureRecognizer instance) {
-                    instance
-                      ..gestureSettings =
-                          const DeviceGestureSettings(touchSlop: 3.0)
-                      ..onTapDown = _onTapDown
-                      ..onTapUp = _onTapUp
-                      ..onTapCancel = _onTapCancel;
-                  },
+    // The track is smaller than the 44 x 44 pt minimum target: the touch
+    // area and the semantics node extend around it to that size, while the
+    // switch keeps the track's size in the layout.
+    return _SwitchTapTarget(
+      child: GlassFocusRegion(
+        enabled: isInteractive,
+        focusNode: widget.focusNode,
+        autofocus: widget.autofocus,
+        semanticLabel: widget.semanticLabel ?? 'Switch',
+        isButton: true,
+        toggled: widget.value,
+        semanticOnTap: isInteractive ? _handleTap : null,
+        shape: const StadiumBorder(),
+        isFocusedNotifier: _isFocused,
+        isHoveredNotifier: _isHovered,
+        onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
+        // Use a responsive 3 px horizontal drag slop (instead of Flutter's
+        // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
+        // runway!) via RawGestureDetector so we don't subscribe to MediaQuery.of.
+        child: RawGestureDetector(
+          excludeFromSemantics: true,
+          // The whole box, the corners beside the round track ends too.
+          behavior: isInteractive ? HitTestBehavior.opaque : null,
+          gestures: isInteractive
+              ? <Type, GestureRecognizerFactory>{
+                  TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                      TapGestureRecognizer>(
+                    () => TapGestureRecognizer(debugOwner: this),
+                    (TapGestureRecognizer instance) {
+                      instance
+                        ..gestureSettings =
+                            const DeviceGestureSettings(touchSlop: 3.0)
+                        ..onTapDown = _onTapDown
+                        ..onTapUp = _onTapUp
+                        ..onTapCancel = _onTapCancel;
+                    },
+                  ),
+                  HorizontalDragGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                          HorizontalDragGestureRecognizer>(
+                    () => HorizontalDragGestureRecognizer(debugOwner: this),
+                    (HorizontalDragGestureRecognizer instance) {
+                      instance
+                        ..gestureSettings =
+                            const DeviceGestureSettings(touchSlop: 3.0)
+                        ..onDown = _onDragDown
+                        ..onCancel = _onDragCancel
+                        ..onStart = _onDragStart
+                        ..onUpdate = _onDragUpdate
+                        ..onEnd = _onDragEnd;
+                    },
+                  ),
+                }
+              : const <Type, GestureRecognizerFactory>{},
+          // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
+          // CupertinoSwitch so the opaque white thumb does not bleed the track
+          // color underneath it.
+          child: isInteractive
+              ? switchVisual
+              : Opacity(
+                  opacity: _kDisabledSwitchOpacity,
+                  child: switchVisual,
                 ),
-                HorizontalDragGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<
-                        HorizontalDragGestureRecognizer>(
-                  () => HorizontalDragGestureRecognizer(debugOwner: this),
-                  (HorizontalDragGestureRecognizer instance) {
-                    instance
-                      ..gestureSettings =
-                          const DeviceGestureSettings(touchSlop: 3.0)
-                      ..onDown = _onDragDown
-                      ..onCancel = _onDragCancel
-                      ..onStart = _onDragStart
-                      ..onUpdate = _onDragUpdate
-                      ..onEnd = _onDragEnd;
-                  },
-                ),
-              }
-            : const <Type, GestureRecognizerFactory>{},
-        // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
-        // CupertinoSwitch so the opaque white thumb does not bleed the track
-        // color underneath it.
-        child: isInteractive
-            ? switchVisual
-            : Opacity(
-                opacity: _kDisabledSwitchOpacity,
-                child: switchVisual,
-              ),
+        ),
       ),
     );
   }
@@ -1133,6 +1142,63 @@ class _GlassSwitchState extends State<GlassSwitch>
 /// thumb leaves when on, an `O` on the side it leaves when off. Each fades
 /// with the thumb's position and while the thumb blooms under a press, like
 /// [CupertinoSwitch]'s.
+/// Extends the switch's touch area and semantics node to at least
+/// [kMinInteractiveDimensionCupertino] (44 pt) on each side, centred on the
+/// track, without changing its layout, like the extended touch area of a
+/// native control.
+///
+/// It owns the switch's single semantics node (merging the focus region's
+/// node into it), so the node spans the target, and it moves a touch that
+/// lands around the track onto the track, by a translation only, so a drag
+/// that starts there moves the thumb as one on the track does.
+class _SwitchTapTarget extends SingleChildRenderObjectWidget {
+  const _SwitchTapTarget({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderSwitchTapTarget();
+}
+
+class _RenderSwitchTapTarget extends RenderProxyBox {
+  Rect get _target => Rect.fromCenter(
+        center: size.center(Offset.zero),
+        width: math.max(size.width, kMinInteractiveDimensionCupertino),
+        height: math.max(size.height, kMinInteractiveDimensionCupertino),
+      );
+
+  @override
+  Rect get semanticBounds => _target;
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config
+      ..isSemanticBoundary = true
+      ..isMergingSemanticsOfDescendants = true;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (super.hitTest(result, position: position)) return true;
+    final child = this.child;
+    if (child == null || !_target.contains(position)) return false;
+    // The nearest point on the track's centre line, inside its stadium.
+    final radius = size.height / 2;
+    final onTrack = Offset(
+      position.dx.clamp(radius, math.max(radius, size.width - radius)),
+      radius,
+    );
+    final hit = result.addWithPaintOffset(
+      offset: position - onTrack,
+      position: position,
+      hitTest: (result, transformed) =>
+          child.hitTest(result, position: transformed),
+    );
+    if (hit) result.add(BoxHitTestEntry(this, position));
+    return hit;
+  }
+}
+
 class _OnOffLabelsPainter extends CustomPainter {
   _OnOffLabelsPainter({
     required this.onColor,
