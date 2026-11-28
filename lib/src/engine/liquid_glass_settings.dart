@@ -878,12 +878,12 @@ class LiquidGlassSettings {
   /// How much of [rimShade] survives at the ends of the light axis, where
   /// the [rimLight] lobes sit, as a fraction of its strength across it.
   ///
-  /// It is a floor the outline keeps all the way round, with the cos^3.5
-  /// falloff from across the axis added on top of it, so the long top and
-  /// bottom edges of a wide control stay visible on white. The native light
-  /// material keeps 30% there (`0.3`, used by [ios27Light]; measured on
-  /// iOS 27.2); the dark material's outline dissolves into the lobes
-  /// entirely (`0.0`). Defaults to `0.2`.
+  /// Between the ends and the sides the outline follows cos^2 of the angle
+  /// from across the axis on both materials (measured on iOS 27.2). The
+  /// native light material keeps 30% at the ends (`0.3`, used by
+  /// [ios27Light]), which keeps the long top and bottom edges of a wide
+  /// control visible on white; the dark material's outline dissolves into
+  /// the lobes entirely (`0.0`). Defaults to `0.2`.
   final double rimShadeEnds;
 
   /// Strength of the iOS 27 rim highlight.

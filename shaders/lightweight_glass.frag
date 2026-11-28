@@ -438,12 +438,12 @@ void main() {
             1.0);
       }
       if (uRimShade > 0.001 && distFromEdge < 2.0) {
-        float across   = fastPowLW(max(0.0, 1.0 - along * along), 1.75);
-        // 0.314 is the Premium step; the ends are a floor the falloff is added
-        // to, as in liquid_glass_render.frag.
+        // cos^2 falloff and the Premium step (0.314), as measured on iOS 27.2;
+        // see liquid_glass_render.frag.
+        float across   = max(0.0, 1.0 - along * along);
         float shadeWeight = mix(0.22, 0.314, step(0.5, uBackdropLuma));
         nativeRimShade = clamp(
-            uRimShade * shadeWeight * min(uRimShadeEnds + across, 1.0) * hairline,
+            uRimShade * shadeWeight * mix(uRimShadeEnds, 1.0, across) * hairline,
             0.0,
             1.0);
       }
